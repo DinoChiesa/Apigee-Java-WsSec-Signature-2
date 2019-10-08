@@ -1,0 +1,61 @@
+Thursday,  1 August 2019, 16:43
+
+Goal here is to produce a callout that did WS-SEC signing and verification with
+X.509, without relying on wss4j libraries, which prevent initialization of a
+callout because of Java security permissions.
+
+Current state: it mostly works.
+But there is no customer demanding this so this is not a priority.
+
+==================================================================
+
+todo:
+
+ +  0. push to git-on-borg for internal collaboration
+
+ x  1. implement getOrSetXmlnsPrefix in Sign.java
+       no duplicate xmlns or prefix clashes
+
+ x  2. parameterize the Sign::sign_RSA() method
+       to accept:
+ x        - want expiry
+ x        - SHA1 vs SHA256 for signing and digest methods
+ ?        - how to encode the keyvalue - modulus+exp vs BinarySecurityToken x509 cert.
+ ?        - ¿anything else?
+
+ +  3. Embed a BinarySecurityToken element with the base64 data for the X509 cert
+
+ +  4. Modify KeyInfo so that it references the BinarySecurityToken
+
+    5. add more tests
+
+         non-wellformed XML.
+            undefined namespace prefixes
+            not XML at all
+
+         xml that already uses the wsu namespace prefix, or the wse prefix
+
+         all the validation cases
+
+    6. Document all the optoins
+    
+    7. Test against a real WS-Sec enabled endpoint from a customer
+
+
+Questions:
+
+    1. what about soap 1.1?  Current thing supports SOAP 1.0
+
+
+For encoding the KeyInfo, idea:
+  if the private key ONLY is provided, then can embed the RSAKeyValue
+  as is currently done.
+
+  if there is a cert provided, then can embed that as a BST,
+  and not include the RSAKeyInfo.
+
+Todo:
+  ingest cert! and serialize it
+  
+
+

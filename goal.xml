@@ -1,0 +1,44 @@
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+   <SOAP-ENV:Header>
+      <wsse:Security SOAP-ENV:mustUnderstand="1" xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
+         <wsu:Timestamp wsu:Id="Timestamp-f1cd885f-336f-45cc-8c47-cdd78b4cd43b" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
+            <wsu:Created>2019-10-07T19:39:30Z</wsu:Created>
+            <wsu:Expires>2019-10-07T19:44:30Z</wsu:Expires>
+         </wsu:Timestamp>
+         <wsse:BinarySecurityToken wsu:Id="SecurityToken-3f132fb3-ca39-4d6f-b9fc-f0fb0625d957" EncodingType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary" ValueType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">**********************************************************************************************************************************************************************************************************************************************=</wsse:BinarySecurityToken>
+         <Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
+            <SignedInfo>
+               <CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+               <SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/>
+               <Reference URI="#Timestamp-f1cd885f-336f-45cc-8c47-cdd78b4cd43b">
+                  <Transforms>
+                     <Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+                  </Transforms>
+                  <DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
+                  <DigestValue>*************</DigestValue>
+               </Reference>
+            </SignedInfo>
+            <SignatureValue>*************==</SignatureValue>
+            <KeyInfo>
+               <wsse:SecurityTokenReference>
+                  <wsse:Reference URI="#SecurityToken-3f13wetb3-ca39-4d4f-b9fc-f0fb0345d957" ValueType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3"/>
+               </wsse:SecurityTokenReference>
+            </KeyInfo>
+         </Signature>
+      </wsse:Security>
+   </SOAP-ENV:Header>
+   <SOAP-ENV:Body>
+      <ns0:IVRDataExchangeRequest xmlns:ns0="http://fiserv.com/BillerSolutions/OnDemand/IVRDataExchangeService/V20151201">
+         <ns0:RequestHeader>
+            <ns1:RequestID xmlns:ns1="http://schemas.datacontract.org/2004/07/demo.bs">EIS:252505de-91c5-49d6-97e9-26c2a04a7ade</ns1:RequestID>
+            <ns1:SessionID xmlns:ns1="http://schemas.datacontract.org/2004/07/demo.bs">EIS:252505de-91c5-49d6-97e9-26c2a04a7ade</ns1:SessionID>
+            <ns1:TimeStamp xmlns:ns1="http://schemas.datacontract.org/2004/07/demo.bs">2019-10-07T15:22:55.101</ns1:TimeStamp>
+            <ns1:VendorID xmlns:ns1="http://schemas.datacontract.org/2004/07/demo.bs">DemoLegacy</ns1:VendorID>
+         </ns0:RequestHeader>
+         <ns0:RequestBody>
+            <ns1:AccountNumber xmlns:ns1="http://schemas.datacontract.org/2004/07/demo">860533721503</ns1:AccountNumber>
+            <ns1:LanguageIndicator xmlns:ns1="http://schemas.datacontract.org/2004/07/demo">en-US</ns1:LanguageIndicator>
+         </ns0:RequestBody>
+      </ns0:IVRDataExchangeRequest>
+   </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>

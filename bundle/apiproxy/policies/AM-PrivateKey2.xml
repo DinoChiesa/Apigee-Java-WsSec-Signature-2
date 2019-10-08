@@ -1,0 +1,42 @@
+<AssignMessage name='AM-PrivateKey2'>
+  <AssignVariable>
+    <Name>my_private_key_password</Name>
+    <Value>Secret123</Value>
+  </AssignVariable>
+  <AssignVariable>
+    <Name>my_private_key</Name>
+    <Value>
+      -----BEGIN RSA PRIVATE KEY-----
+      Proc-Type: 4,ENCRYPTED
+      DEK-Info: DES-EDE3-CBC,F561D7C01260A936
+
+      7v3CgdayHU7FJuM/qUr0Zw352Yx0wLMk1UclutEiFpx7rOGxSj9hLGGZN9rFEwfk
+      Jl0Ro7jXgRDHMZKT8uluw5JXDjhUBuVqxbOIqiQgGb8pVQ8AZw0kJ/B9l7O+K6qN
+      ZtygiXA7DohTQZttfw5lrUDQizk7MulM1n5+YdtDinDD42L0twqoB+or9GbeDEwf
+      ELgfB1Zt2FAuEwhinmroLPIFQ/29WbY3e5srN4f6a6aHwPlEM5QP5G/OoB3Purhu
+      SvLChi2DlnoMgbrvkaDMeWTDO13A2nGEYYynH87QpRDmcEGloMoZpbk4DQJbClaO
+      7toGEiCw9Ow9zgTguiPOXRk3iWAupZ+iH7Io+iPjOlxPHocH7ZXg/2OQte0eiFc1
+      IvoTwrjyDqfP8HE4LNAywcA1HbLM2/0MZIEraMkiF9I0R88jX93QtqXNj0lPs5QC
+      7Ltb9hxgsQU3bszII6eShGT6zz7B0MSn65TfFxB3S+56oH7qtN055bC5wa59Ft/c
+      a3ItK1eMcpfAvfY761ll27uaVu6VLtBGYs9b425Azg0w2r85A88iV3FKZHKH5hD3
+      WC8F0FZ6eLCfa4hR0WYaoUPiZU/n3PfSu40xQSF8JoEPCUBJyc3bOxLaP77bt2OD
+      UBcyruiVEqw2U+QCAHmFGpaAEriOjGXQDDTmrizpaDSSqNJFYXot8Ie8fuYnJKwV
+      FURYYR70Q0HuFg2AUfAdrPNQ2P/3hlHQKT6qwZ5B/PNh5Qf5jRtCE+jwV5E4Jjwk
+      u9DuVw3fhSprqQLctuBf0YPJxDZY5fzivaCaxI/CcYQIn8xwCAPZcNTPZ8KyCvHr
+      yp7sHB2APCdjSZ1pRySlwjxlG3OGCSzbLoWIXrat2hhqPwqegPaHRbsfkHJC0xA+
+      Bk2DFu0fBtQLwzRcCD0/nzAsZGHdnslEglJ326Hg97Bf4BCZZcIopFHzeiSd1wo6
+      Vf7eanCnw2SGkjEf+QjAKRG4wN2b2KD1XmOj1WX46UxcWPokWizsVrD1mqthZbst
+      nPWTswSwj/JLi8Jwu/xXOfVRlJQc1yhoP2Q+plT78cVcEaQ38rx5GW35qZ2yJeFi
+      XQsbwOlu9M+3nTOfR6wopyi+PwtRpzGY70iUn0Us3PQhxzesjEvJiE+x1wX45Qrv
+      hAqUouEj1txdg3N7oeujduj9E4WvivYH826z7q1m0+TLpAXQ/xagWMPl6sX8+WUd
+      ZnTerw/rZnfau+0QgTSOIKnkP7HDVAVncJSQ0Bjk6MPESdU9s2OL6qu/uT3xrkmx
+      37xadem4lJ24QW6Z6cvh1hbOtn2ayQ+LG1TK9NFf5O29QvTzy7/ghpsxDBkZYSkt
+      5NruVZVKHm+evJMMBea5VfhuKOjUIRb/kqrkClPVf4i9YPruTXnBLyCpUrIwgkC9
+      1rcMFeeYU8Yngmne//Xg+Oc+O8RwkN5tw+qFDOC7vtxf2srXLZdvNhYctgu7qKbZ
+      3CQHzBC4BqkSqfNrSevGkPUtJBKBLfKypsBr3cqcSoPhuZIPx7Rbkd8N+5F9XTPH
+      S/tr7oDey9EIYEb1wHVsdmXgTCo2lQt4e3X9YizVLfcJgBxPLd5BvQ==
+      -----END RSA PRIVATE KEY-----
+    </Value>
+  </AssignVariable>
+  <IgnoreUnresolvedVariables>true</IgnoreUnresolvedVariables>
+</AssignMessage>

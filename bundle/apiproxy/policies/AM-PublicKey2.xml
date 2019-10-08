@@ -1,0 +1,17 @@
+<AssignMessage name='AM-PublicKey2'>
+  <AssignVariable>
+    <Name>my_public_key</Name>
+    <Value>
+      -----BEGIN PUBLIC KEY-----
+      MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnXzb7k0ioAwHVBNeOlH/
+      /O+Xm4/tuJKXgUs+vpP+YMdlGwfzZe4gUMipHAHaycofE2LKi4CcDb/0fa6IT7nn
+      Y5+GJNQElsFD6H7MTAxhHcoPIXdM8mSE79RhDZRJkvP3ocAvjR7lEDOXFnyGZiGO
+      225U5MHh9rxF/Iur60GKd4UF5f2uFvrtsfEBFY2P+SRMlVAaSS54k82XFRfLZeIe
+      zfPW4Sf5T1/DLcgu+qa4Ov6N4vVa2llNb9A6b6IXlHaBnRQ82hMCtRakAMJuqRof
+      gFTlr9JxPFqj27/vwCz9DLiFHlY5XwAM2RTNL6JUfCd4H2Nhsd/OLSTvckPz1Ieo
+      MwIDAQAB
+      -----END PUBLIC KEY-----
+    </Value>
+  </AssignVariable>
+  <IgnoreUnresolvedVariables>true</IgnoreUnresolvedVariables>
+</AssignMessage>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<soapenv:Envelope
+    xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+    xmlns:ns1="http://ws.example.com/"
+    xmlns:wssec="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd"
+    xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
+  <soapenv:Header>
+    <wssec:Security soapenv:mustUnderstand="1">
+      <wsu:Timestamp wsu:Id="Timestamp-6ea64b32-37b6-468d-9a22-37ebdaa13603">
+        <wsu:Created>2019-10-08T02:23:39.107Z</wsu:Created>
+      </wsu:Timestamp>
+      <Signature
+          xmlns="http://www.w3.org/2000/09/xmldsig#">
+        <SignedInfo>
+          <CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+          <SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/>
+          <Reference URI="#Body-fec8c51d-a1f1-4c38-a937-22021ae5d167">
+            <Transforms>
+              <Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+            </Transforms>
+            <DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
+            <DigestValue>8mbR5mv528uoqZ9eq/3Bqb30xn8=</DigestValue>
+          </Reference>
+          <Reference URI="#Timestamp-6ea64b32-37b6-468d-9a22-37ebdaa13603">
+            <Transforms>
+              <Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+            </Transforms>
+            <DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
+            <DigestValue>v1fSzhfQW+UmeK8K6pDxNKv1hTY=</DigestValue>
+          </Reference>
+        </SignedInfo>
+        <SignatureValue>JdVD4B/TxICVCN0Umw1PQ19EzQ8xuoWy8cF4hd3Q0EAoWXpBIHB1qIw4FYtKySdbUCAc+BM+7Lc8
+        UcrdoiP7610dMFl3BTwcq+KJcbFObaGJ8xY+p/NRQN7I4pUS3t20D1+HbIvXifxqnFQvsCliT5ns
+        j//eUho74kdJwHkm9zvr7vJRF76/QPiIpGBbxE+074uup/lheKDcTwqPk/D4XVFv9cSlCL9kJjBX
+        +9zmlZQtiP43XaFlFnAiS+9MBXukK1oB+hTjdHZfFPjeGNZm1mXbdlmgL06BU2ouAX7YeJl5l9sV
+        wS60SnPv4H+Y3p+LOGUTxurBjO57pSk3Vn+8Rg==</SignatureValue>
+        <KeyInfo>
+          <KeyValue>
+            <RSAKeyValue>
+              <Modulus>B6PenDyGOg0P5vb5DfJ13DmjJi82KdPT58LjZlG6LYD27IFCh1yO+4ygJAxfIB00muiIuB8YyQ3T
+              JKgkJdEWcVTGL1aomN0PuHTHP67FfBPHgmCM1+wEtm6tn+uoxyvQhLkB1/4Ke0VA7wJx4LB5Nxoo
+              /4GCYZp+m/1DAqTvDy99hRuSTWt+VJacgPvfDMA2akFJAwUVSJwh/SyFZf2yqonzfnkHEK/hnC81
+              vACs6usAj4wR04yj5yElXW+pQ5Vk4RUwR6Q0E8nKWLfYFrXygeYUbTSQEj0f44DGVHOdMdT+BoGV
+              5SJ1ITs+peOCYjhVZvdngyCP9YNDtsLZftMLoQ==</Modulus>
+              <Exponent>AQAB</Exponent>
+            </RSAKeyValue>
+          </KeyValue>
+        </KeyInfo>
+      </Signature>
+    </wssec:Security>
+  </soapenv:Header>
+  <soapenv:Body wsu:Id="Body-fec8c51d-a1f1-4c38-a937-22021ae5d167">
+    <ns1:sumResponse>
+      <return>9</return>
+    </ns1:sumResponse>
+  </soapenv:Body>
+</soapenv:Envelope>
