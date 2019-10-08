@@ -161,8 +161,87 @@ public class TestWssecSignCallout {
           + "-----END RSA PRIVATE KEY-----\n";
 
   private static final String privateKey3 =
+"-----BEGIN PRIVATE KEY-----\n"
++"MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCokDY3Bd6pdpVo\n"
++"c7SaQoOlN2E8KH/zSAfY66fgMk5iNiC90xEnzfEHofCbzT1Pn3euRf0/A6NQNDuQ\n"
++"m8fRotqrFv4WutMNMVxdlclnrl1xr2VgBHGAQDBqw8iS8F2vSc/ZbZVCA8q2TBK1\n"
++"mKcyImH8lKVcLPtQsMZWpbwXKSUZpUiTGteEeyMf6GEnwqn7OMWx92xOQZtqpeP+\n"
++"p7F4dQFwXoZsd7vGFouiP8/bgPuYUcHe5fHi83eiE/5mJPXLlfx8ItW7lJIL68MU\n"
++"dHZnkjbrJOVw1HAq3biU3KkawTMzkpkgsmUSvcGcADWqRxJfvBlAMendc4ckdpHq\n"
++"XFqu9iWZAgMBAAECggEBAICZXTNHQCOLe9svgxa5LhRLFty9jTg+uPXue6oY1yIo\n"
++"Z3xK3ei/PmbzTkyfHWp0n+sOLHH5xYu3/cWKg7zVAPzMUtdmewOyp+QiFYELTvEf\n"
++"vjityyXsUsPxUEGCLgdASdl4uAmgOPQxP4jZyJ0ADD+V7D5Rdv6NjxOl58THuC1C\n"
++"ZUq5wyJpm9U+MeUWCYJHWTh3Nj5BVdokYA4G0SeAMuQsGAWXQTR1VTrFEPEouX8a\n"
++"mCTMYHQP5mfrPD+gAYKGPrjwVyZZI8CnqfxlNhkSt3etuXbHjHHzPb6mPNjOJKgU\n"
++"5xS5I737wKR1kF0NM14WTeCvSzFNAgo9E9yfVTxIXjECgYEA3rgIgUoA3lk8lsJ/\n"
++"uOjYRMyDgiYVJ3GMyZ7ll+LqkWRWhEx69NiNeMED32oqKMxBvvM+Q/wgoC5rHJTM\n"
++"Nd1jbzlqGscJqlW66x8r5bXY9iwhJhiNpNlj+FIPaXktivVG741qTLWnsM5Rrv8L\n"
++"7leZjEsWNJWAw90FhJTaZ7A3dp0CgYEAwcB+LqjNQQdmNSyBaLTb6Shr6IgOCf/1\n"
++"NHlqatFsdmy8F2+5+ePExpb7HCbiY5Gi96JBczZ5qEK/yzAIC8WWCLxvtPn/x/vE\n"
++"ByO7ZXa4dN80KENta0sWWdV3mNFoqU1TR8Cno5a8a3A705CFjI6kSLDxhOSeBfuF\n"
++"JzErU/oXvC0CgYAF6AeBtj6zptYugVX1x2cE3A+Ywf3Jn/9F0YrxLjleRbTtqUGR\n"
++"gLSvwR6jLCOWFWSg9b5u+x66YMDCb0fDHe3nIzSnJSQiekeMuLTnUJ1CWgU/B2Oq\n"
++"PYGjMjnqaCZHCx4oeC2bfy3FSJNt+qGMXpJZ4BvkpRpXF2NwEqqAGXI/GQKBgDam\n"
++"y3Dx4GO1aJkbIq2cRmOwKTAAIKWlc08H6IKU7BlDdpLNyxG3s6uortA0D6uyStu7\n"
++"AucyuIJDwcHYnIxlgXqZXJEZ65JHa/XvmE54fHNK+nVY/6ZCGd3hHskWWIVY8GLO\n"
++"7vpv7FoJ4HY+z8zj92chsh6gNgrN9bMmZWhcpRFJAoGAMih1rmZx8PBwrnkMvwVB\n"
++"05Ar+LdS/CqG9egQJxtRSIzfdyc9CrZ6b7Sj+VWjieT/o78ODalbXQETia6bYv5b\n"
++"KWHu/XSeFDzGfCsZiGWECY0rpEKjvI8OBYljTKmB/14Iz51m8jgZRvTaoauUUpZi\n"
++"w+4PGMrpoKCGFBE4ucT7AvY=\n"
+    +"-----END PRIVATE KEY-----\n";
+
+  private static final String certificate3 =
+"-----BEGIN CERTIFICATE-----\n"
++"MIIDpDCCAowCCQDsXkZg2rbAwTANBgkqhkiG9w0BAQUFADCBkzELMAkGA1UEBhMC\n"
++"VVMxEzARBgNVBAgMCldhc2hpbmd0b24xETAPBgNVBAcMCEtpcmtsYW5kMQ8wDQYD\n"
++"VQQKDAZHb29nbGUxDzANBgNVBAsMBkFwaWdlZTEaMBgGA1UEAwwRYXBpZ2VlLmdv\n"
++"b2dsZS5jb20xHjAcBgkqhkiG9w0BCQEWD2Rpbm9AYXBpZ2VlLmNvbTAeFw0xOTEw\n"
++"MDgxMTExMjBaFw0yOTEwMDUxMTExMjBaMIGTMQswCQYDVQQGEwJVUzETMBEGA1UE\n"
++"CAwKV2FzaGluZ3RvbjERMA8GA1UEBwwIS2lya2xhbmQxDzANBgNVBAoMBkdvb2ds\n"
++"ZTEPMA0GA1UECwwGQXBpZ2VlMRowGAYDVQQDDBFhcGlnZWUuZ29vZ2xlLmNvbTEe\n"
++"MBwGCSqGSIb3DQEJARYPZGlub0BhcGlnZWUuY29tMIIBIjANBgkqhkiG9w0BAQEF\n"
++"AAOCAQ8AMIIBCgKCAQEAqJA2NwXeqXaVaHO0mkKDpTdhPCh/80gH2Oun4DJOYjYg\n"
++"vdMRJ83xB6Hwm809T593rkX9PwOjUDQ7kJvH0aLaqxb+FrrTDTFcXZXJZ65dca9l\n"
++"YARxgEAwasPIkvBdr0nP2W2VQgPKtkwStZinMiJh/JSlXCz7ULDGVqW8FyklGaVI\n"
++"kxrXhHsjH+hhJ8Kp+zjFsfdsTkGbaqXj/qexeHUBcF6GbHe7xhaLoj/P24D7mFHB\n"
++"3uXx4vN3ohP+ZiT1y5X8fCLVu5SSC+vDFHR2Z5I26yTlcNRwKt24lNypGsEzM5KZ\n"
++"ILJlEr3BnAA1qkcSX7wZQDHp3XOHJHaR6lxarvYlmQIDAQABMA0GCSqGSIb3DQEB\n"
++"BQUAA4IBAQBD+S4bF8b07955E7HshWFez5Q4/7cXhGPjFaiNw9lH9Ny1iIcblRl3\n"
++"6iiVda4Lemy1Kxa5xGJ+I5NZ8k1MyxZ1x5K9bPX5LiI8ThLGRxBNUNLgaoQ+7FZL\n"
++"klpZARoIuQ3Gg90V0qUqkm2eipgZxzdtEGj+lqoX10A2B+wimO6nzUv6vYoJARMB\n"
++"tqsYmQKz5GRBoajGdMn60UF9Ry5B32k31JVpat4qm7+Ig1YMwv2nfY6bgHzsI4Wj\n"
++"ETOLvFCYgBDJzIEy+0jA1FUe5Ec5Fs5nmiG8F7FRJ/9aYb1e+cbQVRZyc1wKlmIR\n"
++"eK/LgG8FjdDjeqFZTg0AjInG8/oOz5ib\n"
+    +"-----END CERTIFICATE-----\n";
+
+  private static final String privateKey4 =
       "-----BEGIN PRIVATE KEY-----\n"
-          + "MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDS00tbNFPsFw/ZExSv3DFxBFoXwKhDeape8LYUK5m7katvlPf7lwzWrKU0w6gYnJZ8gwgnpY35mTCqOvCU4fRnZLsiecuQE+VuibkfzNFrK9NkW8CrsZkAeSlZEJEslLdMzYH+en/6zCzeaRUkJbdN3U128kxvVUjPX4Bd/ITPPNrjEt9spZsvqrIgq1bRcN48kHvNsCMRVXFmpXGTgUKH9mkokcuVPqbS23xXG5lS6cJ8RQXAAJU5UP511biHpduoyqMqT3juPb1LxAWDztq9FMqAjtU3QLYPaWarjLsT7CQ14w2tUZ1pWP/JeAFqhyp32x9/3J4oRJLwdGTbwUY9AgMBAAECggEAB6PenDyGOg0P5vb5DfJ13DmjJi82KdPT58LjZlG6LYD27IFCh1yO+4ygJAxfIB00muiIuB8YyQ3TJKgkJdEWcVTGL1aomN0PuHTHP67FfBPHgmCM1+wEtm6tn+uoxyvQhLkB1/4Ke0VA7wJx4LB5Nxoo/4GCYZp+m/1DAqTvDy99hRuSTWt+VJacgPvfDMA2akFJAwUVSJwh/SyFZf2yqonzfnkHEK/hnC81vACs6usAj4wR04yj5yElXW+pQ5Vk4RUwR6Q0E8nKWLfYFrXygeYUbTSQEj0f44DGVHOdMdT+BoGV5SJ1ITs+peOCYjhVZvdngyCP9YNDtsLZftMLoQKBgQD2cxpph+h+8FsPHN/IjoqUpZ9HuCSxgUo0DorGnW0hewZ5AtZVARqONfhVeNt9TEgXFAHFtbdBYWlEhqT3yNPMpcM9gemuqyUOL35tHUCNccgKev2qyqHFQnUkRr+jRcch1yCmEvPYhPGZRh4KUzm7fuBVIJqROaZ0xBz7a8iv2QKBgQDa/sggatnPK0S9d4VF+a6mdCiUF3mEkROwwO2obUiNPuKRkgElHt8vx86Son2qdanPWYkOtrMFLpAKSFRbEtNNXtu0CgC2wMsPoo6W8IXDVxfl7tMaYpNJHs15IFxiIcTgXNxyTefRpRdTa4NTthtaIwnUVtenK7XOny8twdUvBQKBgQCoAZ2+1XTMnIQnEFMKQQn9/c5QsRrqmy3/wO4gKg/MZDbsZd/BQSheTDKH6gUPLOJ0QSJYKuHLw2Fk4rkxZgnlGBe6JYctmOSBACWasvdftXJemqu1M8AGXqDG4ygfYSE4U5ShQohTUYX2LFOsTEIuLHc38SsN15Q/Q7ZSO48rOQKBgHjIoTRP+oWqxaUCML1hcpRX6LGVKO6W3ZdVMT7911Af6PKE5qDEoDBIMYTqngjQELJOHavB1Ib9IXCqZ+w7O9Omh+KKyc4CE30yGRbi3cPZW1L0H/aje7yOgqFV2d495cohLWzVzw/v0CewWqRnAjr6rEczBoorL4EghvLjv2LJAoGBAMaAkmyjSVIKIf4T4Vz5BR0KXIx/qgIfQFRVgIFr5hDRlIBm8m13tzwgnXFba9D2DFinLo4SO8BZVPDbPPDz2IZWduv2c7eOT3NmwQlWg8kNgMZDif3nyIC4xX7k2ioP6eGh8G8jWfnhCW56uVMNgDsHY2kzSxXbwLs64zRqYMn3\n"
+          + "MIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQC6fOeMaBe11Axe\n"
+          + "4L6i0dTpkh+1ueBUYdgihFUyYPkYGOa4vaeuZSYe6EGhEO+DSksydfi7CCUuk4d9\n"
+          + "nFGeDsb01PWeA95ZCEZMfbU0b1USZlRyKdcAR8j4wewP9d5N0e+5GDzA+KnmXKXH\n"
+          + "FKNhSJqH5onAQUFolwQ0zy+dDWVMdh3m7mnQemTIofOBPU2IeTXsaYczwA3vZqPk\n"
+          + "i8/iYP1/6AuoNyx2yhOgmvUr9friVInm7hKKFRhnP04KIRUC+wEmroIet4Naf+XC\n"
+          + "5CCcVGU2nzS6fjjLeE7PTaCCv+XVGMmTREkvOF35kqy1xRov4dWFekilraRQzQRR\n"
+          + "l/Tnt/dNAgMBAAECggEARyiH9fR2L6R0//MD6v7kHifqv53ocmpPXYRfOfT0t3Qw\n"
+          + "/Ycop4vjCuIWwM3EhrVfkiafvUYzYd1bUtvF7Oi4lA16l0vkmNZmdKN29EYTEQ1I\n"
+          + "5bL/XhUGI51jZQetRsZ3kYolDIEV21e4zgka+nEIvhiCsYB04+LT8Q6pnWTSJWU5\n"
+          + "wrMKCJldDlsM65R4gWSvfU6YawX7R9N/gWDFDothJ5wPaIjd9u6m0LPgqJjJJQAw\n"
+          + "F/hSkQe2owQRA7ZcibhQMTD+GkPWY8J/3x7PzhupCChVrQ7ISzhN0N+LWfoXUlOh\n"
+          + "1yh4TtadP+n2yexvArWJRPphSEkTE1pc+kkHHR9xYQKBgQDkodIcOLW3cR742yH0\n"
+          + "wIsVfpPy7O6AcjcMj+wY1/J+sFrTfyC/lMD94p7FDRBi5AoL90efupj5TkoZqFjG\n"
+          + "XJH9VapDn+1IwfMuoJIHZMWpJP/4aedfvoCn9/ey66U0FEB5ExZQuQSOM+F47MS+\n"
+          + "Y3j1vEDPbOmCMYJP0gle7YzYhQKBgQDQz577m3rz62Vr8m5Owp160BGnTRb/kDgQ\n"
+          + "aAp5PwaKU9/njrV0Ptlpxm8TXBcC0et66iDMFb1LYteedh6qRYRrrWEU6M5rXqZK\n"
+          + "n9TJWQSag2yqdlwNad+dVDw4aHrWpMZ1jRCgS99lMsGlayKFRIQv4ucflB5hUmlc\n"
+          + "pZPf1itCKQKBgQCcBwcxtU3l27AsWreopUIFsDVdgm4dgFSrIQkZxz25UbcaQNbj\n"
+          + "h6vRV7fMeGbnZgKpOd9KVXiSIuiU6/txm7kRr0WcEudHUP0ZpAEkRJRUI2kAaZ26\n"
+          + "DHMWrjX/h6tdiDibp/gBrNI8DZHhCYwW9iGVahy8sfIFpK3utUMp4mnNVQKBgQCk\n"
+          + "KDUyVL9Kd2rafFKf9Hvdiyn1vrMv4u9QZpqlSxkXMm06G4UniClf8LJuI92rR+C6\n"
+          + "VsnF5+lTFLeySeY9sj0ycbF6wLNW0aglzpV4XVUzK9MIB9jCatNzWj+lkO3RROUI\n"
+          + "kQfbHQrZAhgetaUD5COPifBtcQKZPDK8tScVt8d2UQKBgQC2+kFWAfL/WPvOpNV6\n"
+          + "3wbcgoDh4PZPNgdnAqWiKRmFhHA02xvJZAmrRp3xo13w7zwHOxpMrOgTiyxTRm9a\n"
+          + "O0nD18snZqHQfGudOw/OP/Ow9oCXg3ohytwce65MYC5ZstbaxUdk9+qhEOdX35ZP\n"
+          + "qVEgJrIayuijmHBXXYZG3NjV1w==\n"
           + "-----END PRIVATE KEY-----\n";
 
   private static final String simpleSoap1 =
@@ -284,9 +363,10 @@ public class TestWssecSignCallout {
     Assert.assertEquals(nl.getLength(), 2, method + "Reference element");
 
     // DigestMethod
-    for (int i=0; i < nl.getLength(); i++) {
+    for (int i = 0; i < nl.getLength(); i++) {
       element = (Element) nl.item(i);
-      NodeList digestMethodNodes = element.getElementsByTagNameNS(XMLSignature.XMLNS, "DigestMethod");
+      NodeList digestMethodNodes =
+          element.getElementsByTagNameNS(XMLSignature.XMLNS, "DigestMethod");
       Assert.assertEquals(digestMethodNodes.getLength(), 1, method + "DigestMethod element");
       element = (Element) digestMethodNodes.item(0);
       String digestAlg = element.getAttribute("Algorithm");
@@ -327,7 +407,7 @@ public class TestWssecSignCallout {
     Assert.assertNull(stacktrace, method + "stacktrace");
 
     String output = (String) msgCtxt.getVariable("output");
-    //System.out.printf("** Output:\n" + output + "\n");
+    // System.out.printf("** Output:\n" + output + "\n");
 
     Document doc = docFromStream(new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8)));
 
@@ -340,7 +420,8 @@ public class TestWssecSignCallout {
     Assert.assertEquals(nl.getLength(), 1, method + "SignatureMethod element");
     Element element = (Element) nl.item(0);
     String signatureMethodAlgorithm = element.getAttribute("Algorithm");
-    Assert.assertEquals(signatureMethodAlgorithm, "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256");
+    Assert.assertEquals(
+        signatureMethodAlgorithm, "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256");
 
     // c14n
     nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "CanonicalizationMethod");
@@ -354,9 +435,10 @@ public class TestWssecSignCallout {
     Assert.assertEquals(nl.getLength(), 2, method + "Reference element");
 
     // DigestMethod
-    for (int i=0; i < nl.getLength(); i++) {
+    for (int i = 0; i < nl.getLength(); i++) {
       element = (Element) nl.item(i);
-      NodeList digestMethodNodes = element.getElementsByTagNameNS(XMLSignature.XMLNS, "DigestMethod");
+      NodeList digestMethodNodes =
+          element.getElementsByTagNameNS(XMLSignature.XMLNS, "DigestMethod");
       Assert.assertEquals(digestMethodNodes.getLength(), 1, method + "DigestMethod element");
       element = (Element) digestMethodNodes.item(0);
       String digestAlg = element.getAttribute("Algorithm");
@@ -397,7 +479,7 @@ public class TestWssecSignCallout {
     Assert.assertNull(stacktrace, method + "stacktrace");
 
     String output = (String) msgCtxt.getVariable("output");
-    //System.out.printf("** Output:\n" + output + "\n");
+    // System.out.printf("** Output:\n" + output + "\n");
 
     Document doc = docFromStream(new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8)));
 
@@ -424,9 +506,10 @@ public class TestWssecSignCallout {
     Assert.assertEquals(nl.getLength(), 2, method + "Reference element");
 
     // DigestMethod
-    for (int i=0; i < nl.getLength(); i++) {
+    for (int i = 0; i < nl.getLength(); i++) {
       element = (Element) nl.item(i);
-      NodeList digestMethodNodes = element.getElementsByTagNameNS(XMLSignature.XMLNS, "DigestMethod");
+      NodeList digestMethodNodes =
+          element.getElementsByTagNameNS(XMLSignature.XMLNS, "DigestMethod");
       Assert.assertEquals(digestMethodNodes.getLength(), 1, method + "DigestMethod element");
       element = (Element) digestMethodNodes.item(0);
       String digestAlg = element.getAttribute("Algorithm");
@@ -467,7 +550,7 @@ public class TestWssecSignCallout {
     Assert.assertNull(stacktrace, method + "stacktrace");
 
     String output = (String) msgCtxt.getVariable("output");
-    //System.out.printf("** Output:\n" + output + "\n");
+    // System.out.printf("** Output:\n" + output + "\n");
 
     Document doc = docFromStream(new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8)));
 
@@ -523,7 +606,7 @@ public class TestWssecSignCallout {
     Assert.assertNull(stacktrace, method + "stacktrace");
 
     String output = (String) msgCtxt.getVariable("output");
-    //System.out.printf("** Output:\n" + output + "\n");
+    // System.out.printf("** Output:\n" + output + "\n");
 
     Document doc = docFromStream(new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8)));
 
@@ -580,7 +663,7 @@ public class TestWssecSignCallout {
     Assert.assertNull(stacktrace, method + "stacktrace");
 
     String output = (String) msgCtxt.getVariable("output");
-    //System.out.printf("** Output:\n" + output + "\n");
+    // System.out.printf("** Output:\n" + output + "\n");
 
     Document doc = docFromStream(new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8)));
     NodeList nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "Signature");
@@ -608,8 +691,8 @@ public class TestWssecSignCallout {
   }
 
   @Test
-  public void test_ValidResult2() throws Exception {
-
+  public void oldFormatPrivateKeyEncrypted() throws Exception {
+    String method = "oldFormatPrivateKeyEncrypted() ";
     msgCtxt.setVariable("message.content", simpleSoap1);
     msgCtxt.setVariable("my-private-key", privateKey2);
 
@@ -626,28 +709,58 @@ public class TestWssecSignCallout {
     ExecutionResult actualResult = callout.execute(msgCtxt, exeCtxt);
     Assert.assertEquals(actualResult, ExecutionResult.SUCCESS, "result not as expected");
     Object exception = msgCtxt.getVariable("wssec_exception");
-    Assert.assertNull(exception, "test_ValidResult2() exception");
+    Assert.assertNull(exception, method + "exception");
     Object errorOutput = msgCtxt.getVariable("wssec_error");
     Assert.assertNull(errorOutput, "errorOutput");
     Object stacktrace = msgCtxt.getVariable("wssec_stacktrace");
-    Assert.assertNull(stacktrace, "test_ValidResult2() stacktrace");
+    Assert.assertNull(stacktrace, method + "stacktrace");
 
     String output = (String) msgCtxt.getVariable("output");
     Document doc = docFromStream(new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8)));
     NodeList nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "Signature");
-    Assert.assertEquals(nl.getLength(), 1, "test_ValidResult2() Signature element");
+    Assert.assertEquals(nl.getLength(), 1, method + "Signature element");
     System.out.println("=========================================================");
   }
 
   @Test
-  public void test_ValidResult3() throws Exception {
+  public void oldFormatPrivateKeyEncryptedNoPassword() throws Exception {
+    String method = "oldFormatPrivateKeyEncrypted() ";
+    String expectedException = "org.bouncycastle.openssl.PEMException: exception processing key pair: password empty";
     msgCtxt.setVariable("message.content", simpleSoap1);
-    msgCtxt.setVariable("my-private-key", privateKey3);
+    msgCtxt.setVariable("my-private-key", privateKey2);
 
     Map<String, String> props = new HashMap<String, String>();
+    props.put("debug", "true");
     props.put("source", "message.content");
     props.put("private-key", "{my-private-key}");
-    props.put("private-key-password", "");
+    // props.put("private-key-password", "Secret123");
+    props.put("output-variable", "output");
+
+    Sign callout = new Sign(props);
+
+    // execute and retrieve output
+    ExecutionResult actualResult = callout.execute(msgCtxt, exeCtxt);
+    Assert.assertEquals(actualResult, ExecutionResult.ABORT, "result not as expected");
+    Object exception = msgCtxt.getVariable("wssec_exception");
+    Assert.assertEquals(exception, expectedException, method + "exception");
+    Object errorOutput = msgCtxt.getVariable("wssec_error");
+    Assert.assertEquals(errorOutput, "password empty", "errorOutput");
+    System.out.println("=========================================================");
+  }
+
+  @Test
+  public void withCertificate() throws Exception {
+    String method = "withCertificate() ";
+    msgCtxt.setVariable("message.content", simpleSoap1);
+    msgCtxt.setVariable("my-private-key", privateKey3);
+    msgCtxt.setVariable("my-certificate", certificate3);
+
+    Map<String, String> props = new HashMap<String, String>();
+    props.put("debug", "true");
+    props.put("source", "message.content");
+    props.put("private-key", "{my-private-key}");
+    props.put("certificate", "{my-certificate}");
+    // props.put("private-key-password", "");
     props.put("output-variable", "output");
 
     Sign callout = new Sign(props);
@@ -656,16 +769,46 @@ public class TestWssecSignCallout {
     ExecutionResult actualResult = callout.execute(msgCtxt, exeCtxt);
     Assert.assertEquals(actualResult, ExecutionResult.SUCCESS, "result not as expected");
     Object exception = msgCtxt.getVariable("wssec_exception");
-    Assert.assertNull(exception, "test_ValidResult2() exception");
+    Assert.assertNull(exception, method + "exception");
     Object errorOutput = msgCtxt.getVariable("wssec_error");
     Assert.assertNull(errorOutput, "errorOutput");
     Object stacktrace = msgCtxt.getVariable("wssec_stacktrace");
-    Assert.assertNull(stacktrace, "test_ValidResult2() stacktrace");
+    Assert.assertNull(stacktrace, method + "stacktrace");
 
     String output = (String) msgCtxt.getVariable("output");
+    System.out.printf("** Output:\n" + output + "\n");
+
     Document doc = docFromStream(new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8)));
     NodeList nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "Signature");
-    Assert.assertEquals(nl.getLength(), 1, "test_ValidResult2() Signature element");
+    Assert.assertEquals(nl.getLength(), 1, method + "Signature element");
+    System.out.println("=========================================================");
+  }
+
+  @Test
+  public void withCertificateMismatch() throws Exception {
+    String method = "withCertificateMismatch() ";
+    String expectedError = "public key mismatch. The public key contained in the certificate does not match the private key.";
+      String expectedException = "java.security.KeyException: " + expectedError;
+    msgCtxt.setVariable("message.content", simpleSoap1);
+    msgCtxt.setVariable("my-private-key", privateKey4);
+    msgCtxt.setVariable("my-certificate", certificate3);
+
+    Map<String, String> props = new HashMap<String, String>();
+    props.put("debug", "true");
+    props.put("source", "message.content");
+    props.put("private-key", "{my-private-key}");
+    props.put("certificate", "{my-certificate}");
+    props.put("output-variable", "output");
+
+    Sign callout = new Sign(props);
+
+    // execute and retrieve output
+    ExecutionResult actualResult = callout.execute(msgCtxt, exeCtxt);
+    Assert.assertEquals(actualResult, ExecutionResult.ABORT, "result not as expected");
+    Object exception = msgCtxt.getVariable("wssec_exception");
+    Assert.assertEquals(exception, expectedException, method + "exception");
+    Object errorOutput = msgCtxt.getVariable("wssec_error");
+    Assert.assertEquals(errorOutput, expectedError, "errorOutput");
     System.out.println("=========================================================");
   }
 }

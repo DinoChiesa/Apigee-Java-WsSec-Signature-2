@@ -7,6 +7,76 @@ callout because of Java security permissions.
 Current state: it mostly works.
 But there is no customer demanding this so this is not a priority.
 
+
+The logic for WS-sec Signing with Binary Security Token:
+- RSA-SHA256 or RSA-SHA1 for signature algorithm,
+- XML-EXC-C14n# for Signature Canonicalization and
+- XMLENC#SHA256 or SHA1 for the Digest Algorithm.
+
+The process is:
+
+- generate and embed a Timestamp. Expires child element is optional.
+
+    <wsu:Timestamp wsu:Id="Timestamp-c1414e29–208f-4e5a-b0b7-f4e84ce870b9">
+      <wsu:Created>2012–12–31T23:50:43Z</wsu:Created>
+      <wsu:Expires>2012–12–31T23:55:43Z</wsu:Expires>
+    </wsu:Timestamp>
+
+- embed the BinarySecurityToken as child of wsse:Security.  The text
+  value is a base-64 encoded X509v3 public signer certificate that
+  corresponds to the private key that was used to generate the
+  digital signature
+
+- should sign some combination of {Timestamp, Body}.
+
+- embed signature element as child of SOAP:Header/ wsse:Security element
+
+- add KeyInfo, which is one of
+    A. a KeyIdentifier (SOAP-UI typical case)
+    B. a reference to the BinarySecurityToken element (WSS4J or Microsoft typical)
+    C. an issuer name and serial number
+
+KeyInfo/SecurityTokenReference could point to a BinarySecurityToken:
+
+<wsse:BinarySecurityToken
+    wsu:Id=”SecurityToken-49cac4a4-b108–49eb-af80–7226774dd3e4"
+    EncodingType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary"
+    ValueType=”http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3">....data...</wsse:BinarySecurityToken>
+
+<KeyInfo>
+  <wsse:SecurityTokenReference>
+    <wsse:Reference URI="#SecurityToken-49cac4a4-b108–49eb-af80–7226774dd3e4"
+      ValueType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3"/>
+  </wsse:SecurityTokenReference>
+</KeyInfo>
+
+KeyInfo/SecurityTokenReference could also be a KeyIdentifier
+
+<KeyInfo>
+  <wsse:SecurityTokenReference
+      wsu:Id="STRId-9E196BAFF73764EEEA12859248082589"
+      xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
+    <wsse:KeyIdentifier
+      EncodingType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary"
+      ValueType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3">[SANITIZED]</wsse:KeyIdentifier>
+   </wsse:SecurityTokenReference>
+</KeyInfo>
+
+
+KeyInfo/SecurityTokenReference could also be a serial number:
+
+<KeyInfo>
+  <wsse:SecurityTokenReference>
+      <ds:X509Data>
+          <ds:X509IssuerSerial>
+              <ds:X509IssuerName>issuer information</ds:X509IssuerName>
+              <ds:X509SerialNumber>issuer serial number</ds:X509SerialNumber>
+          </ds:X509IssuerSerial>
+      </ds:X509Data>
+  </wsse:SecurityTokenReference>
+</KeyInfo>
+
+
 ==================================================================
 
 todo:
@@ -20,14 +90,21 @@ todo:
        to accept:
  x        - want expiry
  x        - SHA1 vs SHA256 for signing and digest methods
- ?        - how to encode the keyvalue - modulus+exp vs BinarySecurityToken x509 cert.
  ?        - ¿anything else?
 
- +  3. Embed a BinarySecurityToken element with the base64 data for the X509 cert
+ x  3. Embed a BinarySecurityToken element with the base64 data for the X509 cert
 
- +  4. Modify KeyInfo so that it references the BinarySecurityToken
+ x  4. Modify KeyInfo so that it references the BinarySecurityToken
 
-    5. add more tests
+ x  5. When cert is provided, verify that it is consistent with private key
+
+ x  6. remove generation of public key
+
+    7. add more tests
+
+ x       provide certificate + private key for signing
+
+         rework all tests to provide cert
 
          non-wellformed XML.
             undefined namespace prefixes
@@ -37,25 +114,29 @@ todo:
 
          all the validation cases
 
-    6. Document all the optoins
-    
-    7. Test against a real WS-Sec enabled endpoint from a customer
+    8. Document all the options
+
+       - Extract the comments from the sign_RSA method into the readme
+
+    9. Test against a real WS-Sec enabled endpoint from a customer
+
+    10. Implement Validation correctly
+
+       check timestamp expiry
+       check existence of expiry
+       ...more here...
 
 
 Questions:
 
     1. what about soap 1.1?  Current thing supports SOAP 1.0
 
+========================================================================================
 
-For encoding the KeyInfo, idea:
-  if the private key ONLY is provided, then can embed the RSAKeyValue
-  as is currently done.
+Deferred Todo:
 
-  if there is a cert provided, then can embed that as a BST,
-  and not include the RSAKeyInfo.
+  Optionally allow encoding the Cert as a BinarySecurityToken element or a KeyIdentifier.
+
 
 Todo:
   ingest cert! and serialize it
-  
-
-
