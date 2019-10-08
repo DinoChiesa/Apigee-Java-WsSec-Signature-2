@@ -170,11 +170,8 @@ public class Sign extends WssecCalloutBase implements Execution {
 
   private static String getISOTimestamp(int offsetFromNow) {
     ZonedDateTime zdt = ZonedDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS);
-
     if (offsetFromNow != 0) zdt = zdt.plusSeconds(offsetFromNow);
-
     return zdt.format(DateTimeFormatter.ISO_INSTANT);
-
     // return ZonedDateTime.ofInstant(Instant.ofEpochSecond(secondsSinceEpoch), ZoneOffset.UTC)
     //     .format(DateTimeFormatter.ISO_INSTANT);
   }

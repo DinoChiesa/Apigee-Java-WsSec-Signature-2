@@ -2,7 +2,7 @@
 
 This directory contains the Java source code and pom.xml file required
 to compile a simple Java callout for Apigee Edge, that creates or validates 
-a digital signature that complies with WS-Security standard, using an X509 
+a digital signature that complies with WS-Security standard, using an x509v3
 Binary Security Token.
 
 ## Disclaimer
@@ -20,26 +20,26 @@ This code is open source but you don't need to compile it in order to use it.
 
 There are two callout classes,
 
-* com.google.apigee.edgecallouts.xmldsig.Sign - signs the input document.
-* com.google.apigee.edgecallouts.xmldsig.Validate - validates the signed document
+* com.google.apigee.edgecallouts.wssecdsig.Sign - signs the input SOAP document.
+* com.google.apigee.edgecallouts.wssecdsig.Validate - validates the signed SOAP document
 
-The signature uses these settings:
-* http://www.w3.org/2000/09/xmldsig
-* enveloped mode
-* signs the document root element
-* canonicalization method of "http://www.w3.org/2001/10/xml-exc-c14n#"
-* signature method of rsa-sha256
-* sha256 digest
-
-All of these are hardcoded into the callout. To modify them, you will
-need to change the callout code. File a pull request if you think it's
-useful!
+The Sign callout has these constraints and features:
+* supports RSA algorithms - rsa-sha1 (default) or rsa-sha256
+* Will automatically add a Timestamp to the WS-Security header
+* Can optionally add an Expiry to that timestamp
+* signs the SOAP Body, or the Timestamp, or both (default)
+* uses a canonicalization method of "http://www.w3.org/2001/10/xml-exc-c14n#"
+* uses a digest mode of sha1 (default) or sha256
 
 ## Dependencies
 
 Make sure these JARs are available as resources in the  proxy or in the environment or organization.
 
-* Bouncy Castle: bcprov-jdk15on-1.50.jar, bcpkix-jdk15on-1.50.jar
+* Bouncy Castle: bcprov-jdk15on-1.60.jar, bcpkix-jdk15on-1.60.jar
+
+This Callout does not depend on WSS4J.  The WSS4J is prohibited from use within
+Apigee SaaS, due to Java permissions settings. This callout is intended to be
+usable in Apigee SaaS.
 
 ## Usage
 
@@ -48,15 +48,15 @@ Make sure these JARs are available as resources in the  proxy or in the environm
 Configure the policy this way:
 
 ```xml
-<JavaCallout name='Java-XMLDSIG-Sign'>
+<JavaCallout name='Java-WSSEC-Sign'>
   <Properties>
     <Property name='source'>message.content</Property>
     <Property name='output-variable'>output</Property>
     <Property name='private-key'>{my_private_key}</Property>
-    <Property name='private-key-password'>{my_private_key_password}</Property>
+    <Property name='certificate'>{my_certificate}</Property>
   </Properties>
-  <ClassName>com.google.apigee.edgecallouts.xmldsig.Sign</ClassName>
-  <ResourceURL>java://edge-xmldsig-1.0.1.jar</ResourceURL>
+  <ClassName>com.google.apigee.edgecallouts.wssecdsig.Sign</ClassName>
+  <ResourceURL>java://edge-wssecdsig-20191008.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -67,7 +67,12 @@ The properties are:
 | source               | optional. the variable name in which to obtain the source document to sign. Defaults to message.content |
 | output-variable      | optional. the variable name in which to write the signed XML. Defaults to message.content |
 | private-key          | required. the PEM-encoded RSA private key. You can use a variable reference here as shown above. Probably you want to read this from encrypted KVM. |
-| private-key-password | optional. The password for the key if any. |
+| private-key-password | optional. The password for the key, if it is encrypted. |
+| certificate          | required. The certificate matching the private key. In PEM form. |
+| signing-method       | optional. Takes value rsa-sha1 or rsa-sha256. Defaults to rsa-sha1. |
+| digest-method        | optional. Takes value sha1 or sha256. Defaults to sha1. |
+| elements-to-sign     | optional. Takes a comma-separated value. parts can include "timestamp" and "body". Nothing else. Default: the signer signs both the timestamp and the soap body. |
+| expiry               | optional. Takes a string like 120s, 10m, 4d, etc to imply 120 seconds, 10 minutes, 4 days.  Default: no expiry. |
 
 This policy will sign the entire document and embed a Signature element as a child of the root element.
 
