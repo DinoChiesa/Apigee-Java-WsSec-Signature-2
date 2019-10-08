@@ -395,7 +395,8 @@ public class Sign extends WssecCalloutBase implements Execution {
       throw new IllegalStateException("Parsed object is null.  Bad input.");
     }
     if (!(
-        (o instanceof PKCS8EncryptedPrivateKeyInfo)
+          (o instanceof org.bouncycastle.openssl.PEMEncryptedKeyPair)
+          || (o instanceof PKCS8EncryptedPrivateKeyInfo)
         || (o instanceof PrivateKeyInfo))) {
       // System.out.printf("found %s\n", o.getClass().getName());
       throw new IllegalStateException("Didn't find OpenSSL key. Found: " + o.getClass().getName());
@@ -420,14 +421,16 @@ public class Sign extends WssecCalloutBase implements Execution {
       return (RSAPrivateKey) converter.getPrivateKey(privateKeyInfo);
     }
 
+    if (o instanceof PEMEncryptedKeyPair) {
+      PEMDecryptorProvider decProv =
+          new JcePEMDecryptorProviderBuilder().setProvider("BC").build(password.toCharArray());
+      KeyPair keyPair = converter.getKeyPair(((PEMEncryptedKeyPair) o).decryptKeyPair(decProv));
+      return (RSAPrivateKey) keyPair.getPrivate();
+    }
+
     throw new IllegalStateException("unknown PEM object");
-    // if (o instanceof PEMEncryptedKeyPair) {
-    //   PEMDecryptorProvider decProv =
-    //       new JcePEMDecryptorProviderBuilder().setProvider("BC").build(password.toCharArray());
-    //   return converter.getKeyPair(((PEMEncryptedKeyPair) o).decryptKeyPair(decProv));
-    // }
-    //
     // return converter.getKeyPair((PEMKeyPair) o);
+
   }
 
   private RSAPrivateKey getPrivateKey(MessageContext msgCtxt) throws Exception {

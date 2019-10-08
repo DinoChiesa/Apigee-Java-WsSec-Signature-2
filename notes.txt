@@ -104,7 +104,7 @@ todo:
 
  x       provide certificate + private key for signing
 
-         rework all tests to provide cert
+ x       rework all tests to provide cert (generate keys + certs in various formats)
 
          non-wellformed XML.
             undefined namespace prefixes

@@ -96,153 +96,181 @@ public class TestWssecSignCallout {
         }.getMockInstance();
   }
 
-  private static final String privateKey1 =
-      "-----BEGIN ENCRYPTED PRIVATE KEY-----\n"
-          + "MIIFHzBJBgkqhkiG9w0BBQ0wPDAbBgkqhkiG9w0BBQwwDgQIe1dDIKI2EhwCAggA\n"
-          + "MB0GCWCGSAFlAwQBAgQQijMNrkSU3jGJLHP90tc81ASCBNATKUMZxgfrCN67P3V6\n"
-          + "/5iqKfoPcvmV+V1XJT9f/Y3YezMOvE9pAUtLv30N7HBcwadwbqsmfqYh7lVDOvpB\n"
-          + "nyAayr5U0zZtfHS66XinZdtBc8UbMu2pb6DQ0pzrhG/tmo09QD7JDqs2Lq0Z88a4\n"
-          + "2H5LbgAJMgpFwGVLPR/ZMmRe5zrsOjfmmVnt10hTarKVnjM/pc0S34TpnLlMKSjR\n"
-          + "fIsqLFNAg9vZP2WHUChmGUNe9YaNZfe1r6S1TiPc5M0y62H996rYIR8FKxys6lxb\n"
-          + "s0bFoYd0YWA50hDcXltmwyQPYBBRwUbRjLeQTUcR0W75bh34Ee/K9pqfYtQTf5Tw\n"
-          + "+DiVv9FgDW9bIi30q1iovh7lboBUSWS2X4dfN1f/CDOFdeEm0Mi6yE/qqGDpjVrF\n"
-          + "88xpmLnCy4WvKu97f4CLiL5fsVQu3yP9T6aldP+NOq4qXg96kpjwBjQDjCYRMpCi\n"
-          + "Z8OHhoWa10EzRM8p5e4DiXco5YzVd5CpdxshKxT/sCvpHmWpVjzruANTXNQXXy6N\n"
-          + "kWO+5PT9nSpb7+GOHruWrImkyytt6Yq53Rli6FCf22cgLxHaIN6mCbQuxb6InVxh\n"
-          + "h1a7ccvbR2d7rk9FVbrfLSQ5vEWJnYFpoxWvrQGwKQHaYHbYfqH/oouaiN1vDrzu\n"
-          + "NW0+y+lSYrMy+Rxv+vPD5EBt7aY1tj9sgrcWcHlSpkoyAttmWgmoF5TGF4A8M76r\n"
-          + "+dzAdkkxqxGUP6prdkGvleWCwRnrmEXyKYILc2MtJxG45bD/XpSQKitkyRnXFF+J\n"
-          + "MpdYCZES0NgFauPxVgnl4xkKjcpdV6e3HaJHatWY1/D6M1vIH0n/RT8uQhu/YpzF\n"
-          + "hvsUsc+E6/jCN/P4mN6FlCugBzEouIseRhdXIL9qzQdSE1MmVzERlFNkNeqD+j+I\n"
-          + "LvktK2s/VhBZxAf2yU9t4a92wQRaQyLPlsB/KFJ8tbGQGpgu1OqiJ4BcKlFBp2Jq\n"
-          + "p4ivjcD+S4aKzMyQI9fMEyxOrHN0sfAHq2VBDS2QkcYWhe6qlckkDQJ7tWRhqzmi\n"
-          + "k6LFGnjbA6RPnABJ9N2/JX4bEzlOeODiMXD81FLeHTlNUBgSNx8Itwm3DU6Jnv49\n"
-          + "PqWICTMHWmXUkAwLbjydRBO6MVUQUNVpcM/dl5M/x0KPsghX7gXoXiPKIe9xrq6w\n"
-          + "FcXZa2hED/9EJLLz6WvMtqX1BcrxA+wbueiTN8y+1GI6UkvTg42Iw//2t4qKwMv+\n"
-          + "Q/jadrmxIgcyTe5GVxGUWmC336vW3bz2Vc7IEWDUcX0x+XLaw4ByKbKx2bti1mcN\n"
-          + "zz/r2GZw1BtdWVCFQw2NfF4rLM5GCbrjF4XG5RB0Lbp1Q2XqXXRKJXR6kZuTgDgU\n"
-          + "dFwGqhP1mwCGs9/Pg0AfGvqn+jcGipVevx/OFEiu+eK6VNYz4vAt5gU3sLyUwcpC\n"
-          + "2vUN8Kh4TY4J4oJNeDibWU//qu35c+SoQQPC1L850ZCFsXoGg9TCGuhG97KlZxNw\n"
-          + "i+CJHKTOWpPwLiPrVPtIp+Q6X8sRibLBdetXhq0P6Nh4mRew6iUg1DzClkK5/jFP\n"
-          + "Tt5sUjnIV974hjP7F2e64scWXAIoEDYPdhhP/uLbxUmy0Cr9Jt8uUEGb+H7nWOUe\n"
-          + "1MYSgvlF9eUm6e21FySl6H1kgw==\n"
-          + "-----END ENCRYPTED PRIVATE KEY-----\n";
+  static class KeyCertPair {
+    public String privateKey;
+    public String password;
+    public String certificate;
 
-  private static final String privateKey2 =
-      "-----BEGIN RSA PRIVATE KEY-----\n"
-          + "Proc-Type: 4,ENCRYPTED\n"
-          + "DEK-Info: DES-EDE3-CBC,63802B11A1FDFA29\n"
-          + "\n"
-          + "tGf3pCDVH00UpEmIB6YZxoJ7WcEwM1YIesjXMEpAmZUzwE9R6qu9J9c2idfMIy5z\n"
-          + "0vlQnV3dU3DUuTXeaJZT/Gijs9jc8X1yTNDEKhNVX3NI/kDbC9xC+T20FS/LdSK7\n"
-          + "kz18o3s9YutwSqc3RZeYb0ECR5uNv0ZQRv9GPQBVeJbfFS9GyXeE6UHgg4e9c0hW\n"
-          + "3Ru9Z7XTtsPhhBdoV1rg8HvCsUADQMhOFTzlCaAD/bO6yhTeaeFIwXcAjK8Bdg72\n"
-          + "mMUTgjZwfOyhrCB36Rfuv64MaZZfPqITM54Ha5exWbqjGbU+B5FkKppTV54eHen7\n"
-          + "2mkCCUckGT9VLfMrXjZmBlmUSSgLNJguBwH5rIbEze2NcMJwX6oNoXVIC6j/Qt9D\n"
-          + "VL7t1js5y4Xg/L2DbOfOrN4FAX1bOaaulS1wFmcyGTR5bYOTFRYqA8gfGP36wWdi\n"
-          + "o4mEEgpdGuRsGvkI7svnQHFgKMvRgCG+aWg9PGeacpBHtjmv2A+KNiL0Am1x2bOM\n"
-          + "B55kZCcHd/81/4lz/iKLG2dEpN2fqw5qxP0/UMqeehemUHBiX2sxPV1yIStAppno\n"
-          + "dkZG9G0prnfCEHz47msj1gN4J4fyX2WxWyRKIUP+hNwuw5Sh9slc4HGyV/StfRsJ\n"
-          + "4fjJaMmxDAc112JCbRCoxyxWVIcEEo35wBOTSEzlYF2zj179XnzD2519vc+QGpqc\n"
-          + "q7/j/9dr0VLt78rrjCnH2DCA+K24zQluyKI2bkkNVeS+dqfHrK2b11guQiPAhLWd\n"
-          + "4MAtt+zz0VxMyE3MExZwwFAs8Wxb5kG9Wam6FXdZiRNAFtNZ9Ab4fuDBLObHXlbU\n"
-          + "rHXRHZmUbmCoW8B7cd6NlMrJQCsxSPyN9rhuyjEueB2UuMX4IXOZcghT8Ej0KMP+\n"
-          + "OF4gYdL9loznsAmQspLG3NJESYQ6tZax6XayibWQGdVj2QwT3YZ7j2fRMVv8OQy6\n"
-          + "TWMVMRXqVySAhB9KYNqfEYA+jw2aFWnwkKkcmHSadsVNs74GKwpvXwT48tmBjBAb\n"
-          + "xbycgSV7ZBIzbXUMbBpZ/59h8eVLMmKVB9UmV6nQK2sYnhJ6wz0h3WjyQR0YJ9yJ\n"
-          + "1OJTiAnvVAMJcs0Nju9Bf6qYOMvm8KWResVAmqfdENyiU9fuFR4FwbSVbPuebC/u\n"
-          + "Y82c1hlNg/3gl5b7aUqNuoH1UeNuBf/C4HrLu7yhKuyVWAK7egRh+LhcYRYZWCWg\n"
-          + "EPV89Rez36j6np4Lt4xNiyF92mHkld7+uG5Uw7+EGJWM9R/E7vY1w3A/i7BsIjNt\n"
-          + "qBWFJP9Bq89kdl0wCKrKCbKHPkGb+8yy8ivu3Y9q+DtcnZXmOxxg4C43biyUeFVw\n"
-          + "PWvdQwjEmliRzlsZEh65EDu9Od+VHPmKSU9bxTWYjHzpMjadEV/yQA312vdtdiSU\n"
-          + "KA2BDCmNQFiTbcFsulxRhGxgHcexuYvuoLQNGfS6Qd85Leu0LJyn258eE0oRPxgi\n"
-          + "77vm5V4RuEKiGr0+7cBcswZ4mDd+OJQYCYHGoDbpYFO4Rgy7WakCLI6I32E373BX\n"
-          + "WoAnf4VfajzL/IDHUQV8TuM8YB0X2WdyxxobXb8BepqgDe3Aq83JZheE0HxoPEmR\n"
-          + "-----END RSA PRIVATE KEY-----\n";
+    public KeyCertPair(String privateKey, String password, String certificate) {
+      this.privateKey = privateKey;
+      this.certificate = certificate;
+      this.password = password;
+    }
+  }
 
-  private static final String privateKey3 =
-"-----BEGIN PRIVATE KEY-----\n"
-+"MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCokDY3Bd6pdpVo\n"
-+"c7SaQoOlN2E8KH/zSAfY66fgMk5iNiC90xEnzfEHofCbzT1Pn3euRf0/A6NQNDuQ\n"
-+"m8fRotqrFv4WutMNMVxdlclnrl1xr2VgBHGAQDBqw8iS8F2vSc/ZbZVCA8q2TBK1\n"
-+"mKcyImH8lKVcLPtQsMZWpbwXKSUZpUiTGteEeyMf6GEnwqn7OMWx92xOQZtqpeP+\n"
-+"p7F4dQFwXoZsd7vGFouiP8/bgPuYUcHe5fHi83eiE/5mJPXLlfx8ItW7lJIL68MU\n"
-+"dHZnkjbrJOVw1HAq3biU3KkawTMzkpkgsmUSvcGcADWqRxJfvBlAMendc4ckdpHq\n"
-+"XFqu9iWZAgMBAAECggEBAICZXTNHQCOLe9svgxa5LhRLFty9jTg+uPXue6oY1yIo\n"
-+"Z3xK3ei/PmbzTkyfHWp0n+sOLHH5xYu3/cWKg7zVAPzMUtdmewOyp+QiFYELTvEf\n"
-+"vjityyXsUsPxUEGCLgdASdl4uAmgOPQxP4jZyJ0ADD+V7D5Rdv6NjxOl58THuC1C\n"
-+"ZUq5wyJpm9U+MeUWCYJHWTh3Nj5BVdokYA4G0SeAMuQsGAWXQTR1VTrFEPEouX8a\n"
-+"mCTMYHQP5mfrPD+gAYKGPrjwVyZZI8CnqfxlNhkSt3etuXbHjHHzPb6mPNjOJKgU\n"
-+"5xS5I737wKR1kF0NM14WTeCvSzFNAgo9E9yfVTxIXjECgYEA3rgIgUoA3lk8lsJ/\n"
-+"uOjYRMyDgiYVJ3GMyZ7ll+LqkWRWhEx69NiNeMED32oqKMxBvvM+Q/wgoC5rHJTM\n"
-+"Nd1jbzlqGscJqlW66x8r5bXY9iwhJhiNpNlj+FIPaXktivVG741qTLWnsM5Rrv8L\n"
-+"7leZjEsWNJWAw90FhJTaZ7A3dp0CgYEAwcB+LqjNQQdmNSyBaLTb6Shr6IgOCf/1\n"
-+"NHlqatFsdmy8F2+5+ePExpb7HCbiY5Gi96JBczZ5qEK/yzAIC8WWCLxvtPn/x/vE\n"
-+"ByO7ZXa4dN80KENta0sWWdV3mNFoqU1TR8Cno5a8a3A705CFjI6kSLDxhOSeBfuF\n"
-+"JzErU/oXvC0CgYAF6AeBtj6zptYugVX1x2cE3A+Ywf3Jn/9F0YrxLjleRbTtqUGR\n"
-+"gLSvwR6jLCOWFWSg9b5u+x66YMDCb0fDHe3nIzSnJSQiekeMuLTnUJ1CWgU/B2Oq\n"
-+"PYGjMjnqaCZHCx4oeC2bfy3FSJNt+qGMXpJZ4BvkpRpXF2NwEqqAGXI/GQKBgDam\n"
-+"y3Dx4GO1aJkbIq2cRmOwKTAAIKWlc08H6IKU7BlDdpLNyxG3s6uortA0D6uyStu7\n"
-+"AucyuIJDwcHYnIxlgXqZXJEZ65JHa/XvmE54fHNK+nVY/6ZCGd3hHskWWIVY8GLO\n"
-+"7vpv7FoJ4HY+z8zj92chsh6gNgrN9bMmZWhcpRFJAoGAMih1rmZx8PBwrnkMvwVB\n"
-+"05Ar+LdS/CqG9egQJxtRSIzfdyc9CrZ6b7Sj+VWjieT/o78ODalbXQETia6bYv5b\n"
-+"KWHu/XSeFDzGfCsZiGWECY0rpEKjvI8OBYljTKmB/14Iz51m8jgZRvTaoauUUpZi\n"
-+"w+4PGMrpoKCGFBE4ucT7AvY=\n"
-    +"-----END PRIVATE KEY-----\n";
-
-  private static final String certificate3 =
-"-----BEGIN CERTIFICATE-----\n"
-+"MIIDpDCCAowCCQDsXkZg2rbAwTANBgkqhkiG9w0BAQUFADCBkzELMAkGA1UEBhMC\n"
-+"VVMxEzARBgNVBAgMCldhc2hpbmd0b24xETAPBgNVBAcMCEtpcmtsYW5kMQ8wDQYD\n"
-+"VQQKDAZHb29nbGUxDzANBgNVBAsMBkFwaWdlZTEaMBgGA1UEAwwRYXBpZ2VlLmdv\n"
-+"b2dsZS5jb20xHjAcBgkqhkiG9w0BCQEWD2Rpbm9AYXBpZ2VlLmNvbTAeFw0xOTEw\n"
-+"MDgxMTExMjBaFw0yOTEwMDUxMTExMjBaMIGTMQswCQYDVQQGEwJVUzETMBEGA1UE\n"
-+"CAwKV2FzaGluZ3RvbjERMA8GA1UEBwwIS2lya2xhbmQxDzANBgNVBAoMBkdvb2ds\n"
-+"ZTEPMA0GA1UECwwGQXBpZ2VlMRowGAYDVQQDDBFhcGlnZWUuZ29vZ2xlLmNvbTEe\n"
-+"MBwGCSqGSIb3DQEJARYPZGlub0BhcGlnZWUuY29tMIIBIjANBgkqhkiG9w0BAQEF\n"
-+"AAOCAQ8AMIIBCgKCAQEAqJA2NwXeqXaVaHO0mkKDpTdhPCh/80gH2Oun4DJOYjYg\n"
-+"vdMRJ83xB6Hwm809T593rkX9PwOjUDQ7kJvH0aLaqxb+FrrTDTFcXZXJZ65dca9l\n"
-+"YARxgEAwasPIkvBdr0nP2W2VQgPKtkwStZinMiJh/JSlXCz7ULDGVqW8FyklGaVI\n"
-+"kxrXhHsjH+hhJ8Kp+zjFsfdsTkGbaqXj/qexeHUBcF6GbHe7xhaLoj/P24D7mFHB\n"
-+"3uXx4vN3ohP+ZiT1y5X8fCLVu5SSC+vDFHR2Z5I26yTlcNRwKt24lNypGsEzM5KZ\n"
-+"ILJlEr3BnAA1qkcSX7wZQDHp3XOHJHaR6lxarvYlmQIDAQABMA0GCSqGSIb3DQEB\n"
-+"BQUAA4IBAQBD+S4bF8b07955E7HshWFez5Q4/7cXhGPjFaiNw9lH9Ny1iIcblRl3\n"
-+"6iiVda4Lemy1Kxa5xGJ+I5NZ8k1MyxZ1x5K9bPX5LiI8ThLGRxBNUNLgaoQ+7FZL\n"
-+"klpZARoIuQ3Gg90V0qUqkm2eipgZxzdtEGj+lqoX10A2B+wimO6nzUv6vYoJARMB\n"
-+"tqsYmQKz5GRBoajGdMn60UF9Ry5B32k31JVpat4qm7+Ig1YMwv2nfY6bgHzsI4Wj\n"
-+"ETOLvFCYgBDJzIEy+0jA1FUe5Ec5Fs5nmiG8F7FRJ/9aYb1e+cbQVRZyc1wKlmIR\n"
-+"eK/LgG8FjdDjeqFZTg0AjInG8/oOz5ib\n"
-    +"-----END CERTIFICATE-----\n";
-
-  private static final String privateKey4 =
-      "-----BEGIN PRIVATE KEY-----\n"
-          + "MIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQC6fOeMaBe11Axe\n"
-          + "4L6i0dTpkh+1ueBUYdgihFUyYPkYGOa4vaeuZSYe6EGhEO+DSksydfi7CCUuk4d9\n"
-          + "nFGeDsb01PWeA95ZCEZMfbU0b1USZlRyKdcAR8j4wewP9d5N0e+5GDzA+KnmXKXH\n"
-          + "FKNhSJqH5onAQUFolwQ0zy+dDWVMdh3m7mnQemTIofOBPU2IeTXsaYczwA3vZqPk\n"
-          + "i8/iYP1/6AuoNyx2yhOgmvUr9friVInm7hKKFRhnP04KIRUC+wEmroIet4Naf+XC\n"
-          + "5CCcVGU2nzS6fjjLeE7PTaCCv+XVGMmTREkvOF35kqy1xRov4dWFekilraRQzQRR\n"
-          + "l/Tnt/dNAgMBAAECggEARyiH9fR2L6R0//MD6v7kHifqv53ocmpPXYRfOfT0t3Qw\n"
-          + "/Ycop4vjCuIWwM3EhrVfkiafvUYzYd1bUtvF7Oi4lA16l0vkmNZmdKN29EYTEQ1I\n"
-          + "5bL/XhUGI51jZQetRsZ3kYolDIEV21e4zgka+nEIvhiCsYB04+LT8Q6pnWTSJWU5\n"
-          + "wrMKCJldDlsM65R4gWSvfU6YawX7R9N/gWDFDothJ5wPaIjd9u6m0LPgqJjJJQAw\n"
-          + "F/hSkQe2owQRA7ZcibhQMTD+GkPWY8J/3x7PzhupCChVrQ7ISzhN0N+LWfoXUlOh\n"
-          + "1yh4TtadP+n2yexvArWJRPphSEkTE1pc+kkHHR9xYQKBgQDkodIcOLW3cR742yH0\n"
-          + "wIsVfpPy7O6AcjcMj+wY1/J+sFrTfyC/lMD94p7FDRBi5AoL90efupj5TkoZqFjG\n"
-          + "XJH9VapDn+1IwfMuoJIHZMWpJP/4aedfvoCn9/ey66U0FEB5ExZQuQSOM+F47MS+\n"
-          + "Y3j1vEDPbOmCMYJP0gle7YzYhQKBgQDQz577m3rz62Vr8m5Owp160BGnTRb/kDgQ\n"
-          + "aAp5PwaKU9/njrV0Ptlpxm8TXBcC0et66iDMFb1LYteedh6qRYRrrWEU6M5rXqZK\n"
-          + "n9TJWQSag2yqdlwNad+dVDw4aHrWpMZ1jRCgS99lMsGlayKFRIQv4ucflB5hUmlc\n"
-          + "pZPf1itCKQKBgQCcBwcxtU3l27AsWreopUIFsDVdgm4dgFSrIQkZxz25UbcaQNbj\n"
-          + "h6vRV7fMeGbnZgKpOd9KVXiSIuiU6/txm7kRr0WcEudHUP0ZpAEkRJRUI2kAaZ26\n"
-          + "DHMWrjX/h6tdiDibp/gBrNI8DZHhCYwW9iGVahy8sfIFpK3utUMp4mnNVQKBgQCk\n"
-          + "KDUyVL9Kd2rafFKf9Hvdiyn1vrMv4u9QZpqlSxkXMm06G4UniClf8LJuI92rR+C6\n"
-          + "VsnF5+lTFLeySeY9sj0ycbF6wLNW0aglzpV4XVUzK9MIB9jCatNzWj+lkO3RROUI\n"
-          + "kQfbHQrZAhgetaUD5COPifBtcQKZPDK8tScVt8d2UQKBgQC2+kFWAfL/WPvOpNV6\n"
-          + "3wbcgoDh4PZPNgdnAqWiKRmFhHA02xvJZAmrRp3xo13w7zwHOxpMrOgTiyxTRm9a\n"
-          + "O0nD18snZqHQfGudOw/OP/Ow9oCXg3ohytwce65MYC5ZstbaxUdk9+qhEOdX35ZP\n"
-          + "qVEgJrIayuijmHBXXYZG3NjV1w==\n"
-          + "-----END PRIVATE KEY-----\n";
+  KeyCertPair[] pairs =
+      new KeyCertPair[] {
+        new KeyCertPair(
+            "-----BEGIN ENCRYPTED PRIVATE KEY-----\n"
+                + "MIIFHzBJBgkqhkiG9w0BBQ0wPDAbBgkqhkiG9w0BBQwwDgQIekZWpLB7vfoCAggA\n"
+                + "MB0GCWCGSAFlAwQBAgQQj5BPR5/Fy0guLNGP0ALaugSCBNBLe7qE0cimL7hn7AAv\n"
+                + "Ll12m9frCQ0iOofYaP6coNYN6AzW1HXOyWXR4GDbUVRWAistT+2qEc1siiXje/Fh\n"
+                + "lcXarvflF1FZlfSFk/Jqsz8EPhr/qBjXp20LzR9Sp6Ze3/zO3tCnadrvu0DJScYm\n"
+                + "dCgGV7L12OAd0mrWuQ0qpJzu2xQr+LBSoevGrycTK4TYDy2nNjJItuVZbscf6wND\n"
+                + "r00KErrDlDTUBkE5akgmPNmXFqDzPw2SPz08FzsT5Srnom1y1mBCSYT2YhSsucUW\n"
+                + "hMQFEdgpE8H6exu/DElkjj2ziMH2Pbn5uLpQpDHx50rCSiMCJKm79OWAerLUiPXG\n"
+                + "d3R/3mzSHVjTVIfqe3dns5QHx7DZ5QgjWKs4IBrdu9+3azdgpq6n8sfCpTFd1T5i\n"
+                + "EXjLjSauiZ+rEmrKZ8Fbv6Xl3yWKT27+pP58AmZGTtOOph4f+Oiuggja/cJfm+Up\n"
+                + "tDM9c3E7EJVTPsZBjDtZJrvnvAWsED6DbRQ2J1wPyLIjFST70YZbdoMOvx603tnh\n"
+                + "NuOOouFvgQorbejec5X7a5mfCJY4oV8QRV/k2pKjXkKrB+APvfyYikTlVivJNew1\n"
+                + "WOL6bL+o3AOCIzKUtBRbJWTaSJpP7JoS9mnef2vh3qE6q9zuhogD8igphUxBwUbW\n"
+                + "AcOsFvS1yyJ4SdHebJplh7rR+IVOn5ytRLQ7+6copqU+m6tmyhP59swAwyhemgpm\n"
+                + "QiOpTHi/F7eWTXZ/Ct/qKpSu7ZOmTGaLoixzkEdH4uUoVmYLnSB+UmN2S2K0T50e\n"
+                + "mD6W8950VkhCup2/KX7vXIXTHDwIWWbT/oOwvkzaoaJGD+R823+UNreX23HbYKy/\n"
+                + "xsZVB5nb04udX7yoYdhd9cMaE+oDMfCTHYQe8FqNt6akLLaCfj5TCQQTiWhq4raw\n"
+                + "U8poQiFUWCSNCSLHidRDvzI07SxZJMsGtA4cBRFRNHbfSwRbg6cBdmXn3R3zYHyG\n"
+                + "Vptr66VaGdoYRiLrhxrnDOgGHHmSjqCTjcJj3JwT2nAtXgRg2ZZ/uWZCk1DkSh1u\n"
+                + "eH9kG5PLc+xG1NmWtR8oKCzkCY/p+ZekAuvzT+Hhn00Ww7h5chcy6ZDDIbfGK/Is\n"
+                + "blOPy0CYlpB7fKS3LWoVRI+nfYmS7lDsdKH/EhhtNN1QaIuHdlTtN2Bk6rUV9QD2\n"
+                + "La4Pq5WvFV5pKp59Dse5rDHyKQIwMyHcj/kMyEaC8Upp6JEmNr9iKuprpB5Ty5u/\n"
+                + "3MMxDr6Rl0SJjbddJYYWEhtlB6pLAImJJkKCL5p4kg6WZBytYRiIK8qs9NtlR/d1\n"
+                + "iDyBqTinEPy7EOCxe9vLM0zAStVsM2QD+VDgG1G5G/EQf/v41Ojdp+INsiF7tKM2\n"
+                + "4Ta6ib5PUkXZsn18DcqhD4+/TY47N4FcqIEswFanQ0keCmr0vRzzznIgJEuhHM/x\n"
+                + "hZB8fZw2zWQu9CiHjKuMqwZA6K4peMaQigZDEuMipAx5k8lERnm9qrGNHDCQCWmc\n"
+                + "c596ZSySS4xCkpVNWr9xsfx2bGYayNFtaflmEZFSk/yKrqPkzUWCKW3nythlstNC\n"
+                + "Wi58YrP475R6va0mfe3XdNjxv9FPG/GgMMJ2Djo+DZl717I8+OAVrzWlntb0JHK1\n"
+                + "Jl2+bIFwj5N2I9OmJv/xNUE5XA==\n"
+                + "-----END ENCRYPTED PRIVATE KEY-----\n",
+            "Secret123",
+            "-----BEGIN CERTIFICATE-----\n"
+                + "MIIDrjCCApYCCQCCUoSwpL/QFzANBgkqhkiG9w0BAQUFADCBmDELMAkGA1UEBhMC\n"
+                + "VVMxEzARBgNVBAgMCldhc2hpbmd0b24xDzANBgNVBAcMBkF1YnVybjEPMA0GA1UE\n"
+                + "CgwGR29vZ2xlMQ8wDQYDVQQLDAZBcGlnZWUxITAfBgNVBAMMGGF1YnVybi5hcGln\n"
+                + "ZWUuZ29vZ2xlLmNvbTEeMBwGCSqGSIb3DQEJARYPZGlub0BhcGlnZWUuY29tMB4X\n"
+                + "DTE5MTAwODE2MzY1MVoXDTI5MTAwNTE2MzY1MVowgZgxCzAJBgNVBAYTAlVTMRMw\n"
+                + "EQYDVQQIDApXYXNoaW5ndG9uMQ8wDQYDVQQHDAZBdWJ1cm4xDzANBgNVBAoMBkdv\n"
+                + "b2dsZTEPMA0GA1UECwwGQXBpZ2VlMSEwHwYDVQQDDBhhdWJ1cm4uYXBpZ2VlLmdv\n"
+                + "b2dsZS5jb20xHjAcBgkqhkiG9w0BCQEWD2Rpbm9AYXBpZ2VlLmNvbTCCASIwDQYJ\n"
+                + "KoZIhvcNAQEBBQADggEPADCCAQoCggEBALN70y1o8/ArttO7E1RvaZg6RZZJ9PM4\n"
+                + "iM2g0F4B6DAoSFP86Yd+v/OXYpXDA/3vEfqUQ6FSqBS4997OXAJfAoSptJwIAXkX\n"
+                + "WK3ywmbxVfSaYEo3oNCDIHosGKUwd9xcuRGrIgtas2T5algElCg7GTc1d5Kz2FXG\n"
+                + "TZDfcgzigBh68nSIWeuqQuNwwXtGDJtXoLBXugn2ln+IBDprFczPPk0xdmwlNc/Z\n"
+                + "6KuwOEdjdcBGFTtg14bw/4gReSCsXa/J8JKS/BZJb0Y8skugHfYkIOk9ka677PYT\n"
+                + "x6XiOrpSdn9efHyBad5J7Bkdl2FnNCXDaB55UPyRqwxZx5V90aRHw68CAwEAATAN\n"
+                + "BgkqhkiG9w0BAQUFAAOCAQEAmqCfZGJAyhr4ZUvMOeilxXB7rupHtKODnOhQAULq\n"
+                + "wXDFVgSVcnRET65mX1BGu9bbVuBB9nNLRa1Y2dkonm/dkSjHNKOOeDIPV/pLaRq6\n"
+                + "dF5Ykojt6/A7JjZcX9xmBryZToxWCS/Jc2LURI7lhdq6EYkNx4CkqaiBLAXUOTAK\n"
+                + "ioTcVIp3R//odmiED7/69g4TorHmWhsLLDbOUV5BLsUExLvjIDE+nLNA9cpVxRGp\n"
+                + "IPvGEtT4k7i/Z3Tb3Iie/7buuTiw9zk99q0SDzX+YIcFRAPgIPn70G9eECMDH1QR\n"
+                + "RpA9oUg0EWTbKG8dw+PgMIrg6jm9Vj8VbWsr4SPsOZi5LA==\n"
+                + "-----END CERTIFICATE-----\n"),
+        new KeyCertPair(
+            "-----BEGIN RSA PRIVATE KEY-----\n"
+                + "Proc-Type: 4,ENCRYPTED\n"
+                + "DEK-Info: DES-EDE3-CBC,0C1C2CD76485906E\n"
+                + "\n"
+                + "0mMQfL7TljeaVR2oVSNZNSFR74+7Cw8fniiWjkIV4DkTN0kgz+cCBHz6axIwraOU\n"
+                + "P+1B9W/LUbM9SjvxgqZvX2tSVEc/18dKE/QCgo+MDYxs5aqjFdJErEC8oANMy7SL\n"
+                + "fqr3TyyYIA+/LSJirAylIeJAwLG6chrxBAUYCAXT2yXg8bbdGQSJH8mRT9hHgO78\n"
+                + "wQ0laFn0Ds3FYHSuCA9Q2InogybIPzYihK0i2vhjD/b2npvYYEA6mVWMEG+4K/JP\n"
+                + "YHPoOWJZLDcKHrKno0s5m5AP+Smh2wQJHGebNyhNukOLx5okcRaxRbg6s+l/Bu2i\n"
+                + "Xzbi3QSePX8Ke6GW2iMkHcunguVnyR8BcZc54RAiTvEnuabsvHU5U6LjTR1OLev8\n"
+                + "cVJuIeUNifraehjtepgGPmkvB5M0DnLnQtpHUQhyO/eNuTYW2shmdSH1p5paohKZ\n"
+                + "lSFkCIxroTqcJWnu8QSA3O6BHTDAkVh2rNbjegaJINsbt0PFR7SQMOdE0hgbfb41\n"
+                + "gStWSkjinAu7DBDqTUoFoXFUDMxNKWVKOtHAGLBiWbMayEXTuH8+zVn3n4nuMBZg\n"
+                + "NfurwOsWPiJQ5ZTQkIb/JO+7FtwCPsucq9FBZwGuq+RT0Dl1WjNHZ9YNzwQWCYCx\n"
+                + "pkTrchD5Gdh8wGMwaUW+Vg7irmGmIjNSfcnVpFXfSUtFmrd069I7n8Y4avz5uXK+\n"
+                + "JY0z4DSO9DLM62K1Gp4kTdjxMdxK/QOtKO4eLSocY01N65f/pkWGbGJy3kIVahh5\n"
+                + "hOiS3m4fAeVXYoety3p2QIsky1ykX3wAOwnoZHfvfP6bboRhttr5BnYd3OZ0n/OJ\n"
+                + "+2Yd3nc0G67sCGQOzCQRoqn6+cuTKqB6ICBGNe2hVNoElzfUHOXI6IeKG40Z79vY\n"
+                + "I0SuPrzAbSfdsQqJPplR8un8cKwGwx8GKCV2T+sQSj+rT8BNKt69dhwdT10FqCVi\n"
+                + "5Cle5PSjUTc43IFZX6aqpytNzzavdXerZAOTKwRmeEM0HuhWWvE8YETIGfnaFXHE\n"
+                + "uYQyg3AMgKDTV4z9gH6lBpWFmFBTfgwbEMSWy8bsQxai3MYbLl08EWL3wbUhUKER\n"
+                + "WSCYigSyfSasDSlbyqcwV7FLupbWiSQH3sJExg3RKQgiHJ6QMsG0jXLMjtSfAY9L\n"
+                + "r3rX6Fvub4eN91Ld4tbqItz1FiFZQtyy5o3wNC+1PRzInvQ9/d5fsIQ9NzSmogG7\n"
+                + "TPSmvMSevbAZWxVmqv+XCIXaXA5QctUHbluXoN8EbF3N7pipwMlHrkUQuwMUduZj\n"
+                + "nPnnBsQU0Hv/+TWwsMcMrv6nZEzGmy9+yNWBRqSVI2zDgyVRVbsGKGKOOI9Gmuqf\n"
+                + "JcQUbpo1OmRz9v7deriHYInWB2Gxx82N14QROHDhGccx17BbzGJIXpUzePDXk7Bc\n"
+                + "BJhoKW+AIjvSgv5BOBVZGEJ0HDBL5zAVkZU8/YlRzeO2tKtDulP56D6tMGsc+lGi\n"
+                + "/Yb1+cruEMtyQInHJ29dBt8GM9M8y9VhspSq6sTedWKoBNpanmrH3QGfcgFLQ1Yy\n"
+                + "h59VJWhfbf4UrghV4zCYAP8r4/dQSb/GqBC56IIMbQYl6R3Q08tOle1ufFIqiJAv\n"
+                + "-----END RSA PRIVATE KEY-----\n",
+            "Secret123",
+            "-----BEGIN CERTIFICATE-----\n"
+                + "MIIDpjCCAo4CCQCCCFpZuM87ujANBgkqhkiG9w0BAQUFADCBlDELMAkGA1UEBhMC\n"
+                + "VVMxEzARBgNVBAgMCldhc2hpbmd0b24xDTALBgNVBAcMBEtlbnQxDzANBgNVBAoM\n"
+                + "Bkdvb2dsZTEPMA0GA1UECwwGQXBpZ2VlMR8wHQYDVQQDDBZrZW50LmFwaWdlZS5n\n"
+                + "b29nbGUuY29tMR4wHAYJKoZIhvcNAQkBFg9kaW5vQGFwaWdlZS5jb20wHhcNMTkx\n"
+                + "MDA4MTYzMzI2WhcNMjkxMDA1MTYzMzI2WjCBlDELMAkGA1UEBhMCVVMxEzARBgNV\n"
+                + "BAgMCldhc2hpbmd0b24xDTALBgNVBAcMBEtlbnQxDzANBgNVBAoMBkdvb2dsZTEP\n"
+                + "MA0GA1UECwwGQXBpZ2VlMR8wHQYDVQQDDBZrZW50LmFwaWdlZS5nb29nbGUuY29t\n"
+                + "MR4wHAYJKoZIhvcNAQkBFg9kaW5vQGFwaWdlZS5jb20wggEiMA0GCSqGSIb3DQEB\n"
+                + "AQUAA4IBDwAwggEKAoIBAQDCAN92+xe9jMUASg3qOregR7h38BaHotmckmWQ0JRQ\n"
+                + "wZLfch8aywOY/UMQkHPBKMugAgulVR0jsx2+Tn38hWdQIaneFFKXye4xHndbDSWo\n"
+                + "sBjEyNrNJYY4x+mCwbHvgIAQhrP8w9iaQVaATWhA+ltpql4VUO2PjLkKzO/oUfY6\n"
+                + "4wNuEvYDtaWokvvM0iOrjoSSEVhDMw6iY+mQNIXX5nYWzNUOHF+4K9zTMQWYy2mc\n"
+                + "1AnnoE+1r2QFSL88rEKzpR9/IWSO3hXYhk2AUA+FraABUiXx1hAFTzXO4gELDzyQ\n"
+                + "fRnsaaZCSRmueF4lRIuSB2vc7kkrRNbSct9it+C3a/TRAgMBAAEwDQYJKoZIhvcN\n"
+                + "AQEFBQADggEBADkNjGpJ3l8PvUJgxkZJN6XzXP4l1iOQPOSoJx0K5IGPrroW7syl\n"
+                + "rf7Py5ZjhiWrbl4YK+8/dm65m0Cuou6WC9kNgbdCDnijvtsVYH0sLJdputg30PHC\n"
+                + "6bnaCf3Rb9b1aPTcqATHPGSjvHtbH5WPM9HXJusQHJ3JlWBQX2ARYIP3zp/4Jziq\n"
+                + "0ilwFLXwwOFEvPpriAGVPNBL7NEpWOKnuT20UuR1y+YH8I/RQpL7z3x7wa0Qaeef\n"
+                + "TUBlHaSiomLDFP0RP3pM8JNQfU24zoZn2XFlBNRdk0ct50KaH5p6Y/eEls1spP1J\n"
+                + "hAHIUq6UU664nfE/LZjtL2rgHLqlD1g/aAI=\n"
+                + "-----END CERTIFICATE-----\n"),
+        new KeyCertPair(
+            "-----BEGIN PRIVATE KEY-----\n"
+                + "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCokDY3Bd6pdpVo\n"
+                + "c7SaQoOlN2E8KH/zSAfY66fgMk5iNiC90xEnzfEHofCbzT1Pn3euRf0/A6NQNDuQ\n"
+                + "m8fRotqrFv4WutMNMVxdlclnrl1xr2VgBHGAQDBqw8iS8F2vSc/ZbZVCA8q2TBK1\n"
+                + "mKcyImH8lKVcLPtQsMZWpbwXKSUZpUiTGteEeyMf6GEnwqn7OMWx92xOQZtqpeP+\n"
+                + "p7F4dQFwXoZsd7vGFouiP8/bgPuYUcHe5fHi83eiE/5mJPXLlfx8ItW7lJIL68MU\n"
+                + "dHZnkjbrJOVw1HAq3biU3KkawTMzkpkgsmUSvcGcADWqRxJfvBlAMendc4ckdpHq\n"
+                + "XFqu9iWZAgMBAAECggEBAICZXTNHQCOLe9svgxa5LhRLFty9jTg+uPXue6oY1yIo\n"
+                + "Z3xK3ei/PmbzTkyfHWp0n+sOLHH5xYu3/cWKg7zVAPzMUtdmewOyp+QiFYELTvEf\n"
+                + "vjityyXsUsPxUEGCLgdASdl4uAmgOPQxP4jZyJ0ADD+V7D5Rdv6NjxOl58THuC1C\n"
+                + "ZUq5wyJpm9U+MeUWCYJHWTh3Nj5BVdokYA4G0SeAMuQsGAWXQTR1VTrFEPEouX8a\n"
+                + "mCTMYHQP5mfrPD+gAYKGPrjwVyZZI8CnqfxlNhkSt3etuXbHjHHzPb6mPNjOJKgU\n"
+                + "5xS5I737wKR1kF0NM14WTeCvSzFNAgo9E9yfVTxIXjECgYEA3rgIgUoA3lk8lsJ/\n"
+                + "uOjYRMyDgiYVJ3GMyZ7ll+LqkWRWhEx69NiNeMED32oqKMxBvvM+Q/wgoC5rHJTM\n"
+                + "Nd1jbzlqGscJqlW66x8r5bXY9iwhJhiNpNlj+FIPaXktivVG741qTLWnsM5Rrv8L\n"
+                + "7leZjEsWNJWAw90FhJTaZ7A3dp0CgYEAwcB+LqjNQQdmNSyBaLTb6Shr6IgOCf/1\n"
+                + "NHlqatFsdmy8F2+5+ePExpb7HCbiY5Gi96JBczZ5qEK/yzAIC8WWCLxvtPn/x/vE\n"
+                + "ByO7ZXa4dN80KENta0sWWdV3mNFoqU1TR8Cno5a8a3A705CFjI6kSLDxhOSeBfuF\n"
+                + "JzErU/oXvC0CgYAF6AeBtj6zptYugVX1x2cE3A+Ywf3Jn/9F0YrxLjleRbTtqUGR\n"
+                + "gLSvwR6jLCOWFWSg9b5u+x66YMDCb0fDHe3nIzSnJSQiekeMuLTnUJ1CWgU/B2Oq\n"
+                + "PYGjMjnqaCZHCx4oeC2bfy3FSJNt+qGMXpJZ4BvkpRpXF2NwEqqAGXI/GQKBgDam\n"
+                + "y3Dx4GO1aJkbIq2cRmOwKTAAIKWlc08H6IKU7BlDdpLNyxG3s6uortA0D6uyStu7\n"
+                + "AucyuIJDwcHYnIxlgXqZXJEZ65JHa/XvmE54fHNK+nVY/6ZCGd3hHskWWIVY8GLO\n"
+                + "7vpv7FoJ4HY+z8zj92chsh6gNgrN9bMmZWhcpRFJAoGAMih1rmZx8PBwrnkMvwVB\n"
+                + "05Ar+LdS/CqG9egQJxtRSIzfdyc9CrZ6b7Sj+VWjieT/o78ODalbXQETia6bYv5b\n"
+                + "KWHu/XSeFDzGfCsZiGWECY0rpEKjvI8OBYljTKmB/14Iz51m8jgZRvTaoauUUpZi\n"
+                + "w+4PGMrpoKCGFBE4ucT7AvY=\n"
+                + "-----END PRIVATE KEY-----\n",
+            null, // no password for private key
+            "-----BEGIN CERTIFICATE-----\n"
+                + "MIIDpDCCAowCCQDsXkZg2rbAwTANBgkqhkiG9w0BAQUFADCBkzELMAkGA1UEBhMC\n"
+                + "VVMxEzARBgNVBAgMCldhc2hpbmd0b24xETAPBgNVBAcMCEtpcmtsYW5kMQ8wDQYD\n"
+                + "VQQKDAZHb29nbGUxDzANBgNVBAsMBkFwaWdlZTEaMBgGA1UEAwwRYXBpZ2VlLmdv\n"
+                + "b2dsZS5jb20xHjAcBgkqhkiG9w0BCQEWD2Rpbm9AYXBpZ2VlLmNvbTAeFw0xOTEw\n"
+                + "MDgxMTExMjBaFw0yOTEwMDUxMTExMjBaMIGTMQswCQYDVQQGEwJVUzETMBEGA1UE\n"
+                + "CAwKV2FzaGluZ3RvbjERMA8GA1UEBwwIS2lya2xhbmQxDzANBgNVBAoMBkdvb2ds\n"
+                + "ZTEPMA0GA1UECwwGQXBpZ2VlMRowGAYDVQQDDBFhcGlnZWUuZ29vZ2xlLmNvbTEe\n"
+                + "MBwGCSqGSIb3DQEJARYPZGlub0BhcGlnZWUuY29tMIIBIjANBgkqhkiG9w0BAQEF\n"
+                + "AAOCAQ8AMIIBCgKCAQEAqJA2NwXeqXaVaHO0mkKDpTdhPCh/80gH2Oun4DJOYjYg\n"
+                + "vdMRJ83xB6Hwm809T593rkX9PwOjUDQ7kJvH0aLaqxb+FrrTDTFcXZXJZ65dca9l\n"
+                + "YARxgEAwasPIkvBdr0nP2W2VQgPKtkwStZinMiJh/JSlXCz7ULDGVqW8FyklGaVI\n"
+                + "kxrXhHsjH+hhJ8Kp+zjFsfdsTkGbaqXj/qexeHUBcF6GbHe7xhaLoj/P24D7mFHB\n"
+                + "3uXx4vN3ohP+ZiT1y5X8fCLVu5SSC+vDFHR2Z5I26yTlcNRwKt24lNypGsEzM5KZ\n"
+                + "ILJlEr3BnAA1qkcSX7wZQDHp3XOHJHaR6lxarvYlmQIDAQABMA0GCSqGSIb3DQEB\n"
+                + "BQUAA4IBAQBD+S4bF8b07955E7HshWFez5Q4/7cXhGPjFaiNw9lH9Ny1iIcblRl3\n"
+                + "6iiVda4Lemy1Kxa5xGJ+I5NZ8k1MyxZ1x5K9bPX5LiI8ThLGRxBNUNLgaoQ+7FZL\n"
+                + "klpZARoIuQ3Gg90V0qUqkm2eipgZxzdtEGj+lqoX10A2B+wimO6nzUv6vYoJARMB\n"
+                + "tqsYmQKz5GRBoajGdMn60UF9Ry5B32k31JVpat4qm7+Ig1YMwv2nfY6bgHzsI4Wj\n"
+                + "ETOLvFCYgBDJzIEy+0jA1FUe5Ec5Fs5nmiG8F7FRJ/9aYb1e+cbQVRZyc1wKlmIR\n"
+                + "eK/LgG8FjdDjeqFZTg0AjInG8/oOz5ib\n"
+                + "-----END CERTIFICATE-----\n")
+      };
 
   private static final String simpleSoap1 =
       "<soapenv:Envelope xmlns:ns1='http://ws.example.com/' xmlns:soapenv='http://schemas.xmlsoap.org/soap/envelope/'>"
@@ -281,7 +309,6 @@ public class TestWssecSignCallout {
     Assert.assertEquals(errorOutput, expectedError, "error not as expected");
     Object stacktrace = msgCtxt.getVariable("wssec_stacktrace");
     Assert.assertNull(stacktrace, method + "stacktrace");
-    System.out.println("=========================================================");
   }
 
   @Test
@@ -307,20 +334,48 @@ public class TestWssecSignCallout {
     Assert.assertEquals(errorOutput, expectedError, "error not as expected");
     Object stacktrace = msgCtxt.getVariable("wssec_stacktrace");
     Assert.assertNull(stacktrace, method + "stacktrace");
-    System.out.println("=========================================================");
   }
 
   @Test
-  public void validResult1() throws Exception {
-    String method = "validResult1() ";
+  public void missingCertificate() throws Exception {
+    String method = "missingCertificate() ";
+    String expectedError = "certificate resolves to an empty string";
     msgCtxt.setVariable("message.content", simpleSoap1);
-    msgCtxt.setVariable("my-private-key", privateKey1);
+    msgCtxt.setVariable("my-private-key", pairs[0].privateKey);
+
+    Map<String, String> props = new HashMap<String, String>();
+    //props.put("debug", "true");
+    props.put("source", "message.content");
+    props.put("private-key", "{my-private-key}");
+    props.put("private-key-password", "Secret123");
+    props.put("output-variable", "output");
+
+    Sign callout = new Sign(props);
+
+    // execute and retrieve output
+    ExecutionResult actualResult = callout.execute(msgCtxt, exeCtxt);
+    Assert.assertEquals(actualResult, ExecutionResult.ABORT, "result not as expected");
+    Object exception = msgCtxt.getVariable("wssec_exception");
+    Assert.assertNotNull(exception, method + "exception");
+    Object errorOutput = msgCtxt.getVariable("wssec_error");
+    Assert.assertNotNull(errorOutput, "errorOutput");
+    Assert.assertEquals(errorOutput, expectedError, "error not as expected");
+    Object stacktrace = msgCtxt.getVariable("wssec_stacktrace");
+    Assert.assertNull(stacktrace, method + "stacktrace");
+  }
+
+  @Test
+  public void validResult() throws Exception {
+    String method = "validResult() ";
+    msgCtxt.setVariable("message.content", simpleSoap1);
+    msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
+    msgCtxt.setVariable("my-certificate", pairs[2].certificate);
 
     Map<String, String> props = new HashMap<String, String>();
     props.put("debug", "true");
     props.put("source", "message.content");
     props.put("private-key", "{my-private-key}");
-    props.put("private-key-password", "Secret123");
+    props.put("certificate", "{my-certificate}");
     props.put("output-variable", "output");
 
     Sign callout = new Sign(props);
@@ -376,22 +431,21 @@ public class TestWssecSignCallout {
     // SignatureValue
     nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "SignatureValue");
     Assert.assertEquals(nl.getLength(), 1, method + "SignatureValue element");
-
-    System.out.println("=========================================================");
   }
 
   @Test
   public void signSha256() throws Exception {
     String method = "validResult1() ";
     msgCtxt.setVariable("message.content", simpleSoap1);
-    msgCtxt.setVariable("my-private-key", privateKey1);
+    msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
+    msgCtxt.setVariable("my-certificate", pairs[2].certificate);
 
     Map<String, String> props = new HashMap<String, String>();
     props.put("debug", "true");
     props.put("source", "message.content");
     props.put("signing-method", "rsa-sha256");
     props.put("private-key", "{my-private-key}");
-    props.put("private-key-password", "Secret123");
+    props.put("certificate", "{my-certificate}");
     props.put("output-variable", "output");
 
     Sign callout = new Sign(props);
@@ -448,22 +502,21 @@ public class TestWssecSignCallout {
     // SignatureValue
     nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "SignatureValue");
     Assert.assertEquals(nl.getLength(), 1, method + "SignatureValue element");
-
-    System.out.println("=========================================================");
   }
 
   @Test
   public void digestSha256() throws Exception {
     String method = "validResult1() ";
     msgCtxt.setVariable("message.content", simpleSoap1);
-    msgCtxt.setVariable("my-private-key", privateKey1);
+    msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
+    msgCtxt.setVariable("my-cert", pairs[2].certificate);
 
     Map<String, String> props = new HashMap<String, String>();
     props.put("debug", "true");
     props.put("source", "message.content");
     props.put("digest-method", "sha256");
     props.put("private-key", "{my-private-key}");
-    props.put("private-key-password", "Secret123");
+    props.put("certificate", "{my-cert}");
     props.put("output-variable", "output");
 
     Sign callout = new Sign(props);
@@ -519,22 +572,21 @@ public class TestWssecSignCallout {
     // SignatureValue
     nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "SignatureValue");
     Assert.assertEquals(nl.getLength(), 1, method + "SignatureValue element");
-
-    System.out.println("=========================================================");
   }
 
   @Test
   public void signOnlyTimestamp() throws Exception {
     String method = "signOnlyTimestamp() ";
     msgCtxt.setVariable("message.content", simpleSoap1);
-    msgCtxt.setVariable("my-private-key", privateKey1);
+    msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
+    msgCtxt.setVariable("my-certificate", pairs[2].certificate);
 
     Map<String, String> props = new HashMap<String, String>();
     props.put("debug", "true");
     props.put("source", "message.content");
     props.put("elements-to-sign", "timestamp");
     props.put("private-key", "{my-private-key}");
-    props.put("private-key-password", "Secret123");
+    props.put("certificate", "{my-certificate}");
     props.put("output-variable", "output");
 
     Sign callout = new Sign(props);
@@ -575,22 +627,21 @@ public class TestWssecSignCallout {
     // SignatureValue
     nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "SignatureValue");
     Assert.assertEquals(nl.getLength(), 1, method + "SignatureValue element");
-
-    System.out.println("=========================================================");
   }
 
   @Test
   public void signOnlyBody() throws Exception {
     String method = "signOnlyBody() ";
     msgCtxt.setVariable("message.content", simpleSoap1);
-    msgCtxt.setVariable("my-private-key", privateKey1);
+    msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
+    msgCtxt.setVariable("my-certificate", pairs[2].certificate);
 
     Map<String, String> props = new HashMap<String, String>();
     props.put("debug", "true");
     props.put("source", "message.content");
     props.put("elements-to-sign", "body");
     props.put("private-key", "{my-private-key}");
-    props.put("private-key-password", "Secret123");
+    props.put("certificate", "{my-certificate}");
     props.put("output-variable", "output");
 
     Sign callout = new Sign(props);
@@ -631,23 +682,22 @@ public class TestWssecSignCallout {
     // SignatureValue
     nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "SignatureValue");
     Assert.assertEquals(nl.getLength(), 1, method + "SignatureValue element");
-
-    System.out.println("=========================================================");
   }
 
   @Test
-  public void test_ValidWithExpiry() throws Exception {
+  public void withExpiry() throws Exception {
     String method = "test_ValidWithExpiry() ";
     int minutesExpiry = 15;
     msgCtxt.setVariable("message.content", simpleSoap1);
-    msgCtxt.setVariable("my-private-key", privateKey1);
+    msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
+    msgCtxt.setVariable("my-cert", pairs[2].certificate);
 
     Map<String, String> props = new HashMap<String, String>();
     props.put("debug", "true");
     props.put("source", "message.content");
     props.put("expiry", minutesExpiry + "m");
     props.put("private-key", "{my-private-key}");
-    props.put("private-key-password", "Secret123");
+    props.put("certificate", "{my-cert}");
     props.put("output-variable", "output");
 
     Sign callout = new Sign(props);
@@ -686,21 +736,21 @@ public class TestWssecSignCallout {
     Instant now = Instant.now();
     long minutesTilExpiry = now.until(expiry, ChronoUnit.MINUTES);
     Assert.assertEquals(minutesTilExpiry, (long) (minutesExpiry - 1)); // rounding down
-
-    System.out.println("=========================================================");
   }
 
   @Test
   public void oldFormatPrivateKeyEncrypted() throws Exception {
     String method = "oldFormatPrivateKeyEncrypted() ";
     msgCtxt.setVariable("message.content", simpleSoap1);
-    msgCtxt.setVariable("my-private-key", privateKey2);
+    msgCtxt.setVariable("my-private-key", pairs[1].privateKey);
+    msgCtxt.setVariable("my-certificate", pairs[1].certificate);
 
     Map<String, String> props = new HashMap<String, String>();
     props.put("debug", "true");
     props.put("source", "message.content");
     props.put("private-key", "{my-private-key}");
-    props.put("private-key-password", "Secret123");
+    props.put("private-key-password", pairs[1].password);
+    props.put("certificate", "{my-certificate}");
     props.put("output-variable", "output");
 
     Sign callout = new Sign(props);
@@ -719,20 +769,22 @@ public class TestWssecSignCallout {
     Document doc = docFromStream(new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8)));
     NodeList nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "Signature");
     Assert.assertEquals(nl.getLength(), 1, method + "Signature element");
-    System.out.println("=========================================================");
   }
 
   @Test
   public void oldFormatPrivateKeyEncryptedNoPassword() throws Exception {
     String method = "oldFormatPrivateKeyEncrypted() ";
-    String expectedException = "org.bouncycastle.openssl.PEMException: exception processing key pair: password empty";
+    String expectedException =
+        "org.bouncycastle.openssl.PEMException: exception processing key pair: password empty";
     msgCtxt.setVariable("message.content", simpleSoap1);
-    msgCtxt.setVariable("my-private-key", privateKey2);
+    msgCtxt.setVariable("my-private-key", pairs[1].privateKey);
+    msgCtxt.setVariable("my-certificate", pairs[1].certificate);
 
     Map<String, String> props = new HashMap<String, String>();
-    props.put("debug", "true");
+    //props.put("debug", "true");
     props.put("source", "message.content");
     props.put("private-key", "{my-private-key}");
+    props.put("certificate", "{my-certificate}");
     // props.put("private-key-password", "Secret123");
     props.put("output-variable", "output");
 
@@ -745,56 +797,20 @@ public class TestWssecSignCallout {
     Assert.assertEquals(exception, expectedException, method + "exception");
     Object errorOutput = msgCtxt.getVariable("wssec_error");
     Assert.assertEquals(errorOutput, "password empty", "errorOutput");
-    System.out.println("=========================================================");
   }
 
   @Test
-  public void withCertificate() throws Exception {
-    String method = "withCertificate() ";
-    msgCtxt.setVariable("message.content", simpleSoap1);
-    msgCtxt.setVariable("my-private-key", privateKey3);
-    msgCtxt.setVariable("my-certificate", certificate3);
-
-    Map<String, String> props = new HashMap<String, String>();
-    props.put("debug", "true");
-    props.put("source", "message.content");
-    props.put("private-key", "{my-private-key}");
-    props.put("certificate", "{my-certificate}");
-    // props.put("private-key-password", "");
-    props.put("output-variable", "output");
-
-    Sign callout = new Sign(props);
-
-    // execute and retrieve output
-    ExecutionResult actualResult = callout.execute(msgCtxt, exeCtxt);
-    Assert.assertEquals(actualResult, ExecutionResult.SUCCESS, "result not as expected");
-    Object exception = msgCtxt.getVariable("wssec_exception");
-    Assert.assertNull(exception, method + "exception");
-    Object errorOutput = msgCtxt.getVariable("wssec_error");
-    Assert.assertNull(errorOutput, "errorOutput");
-    Object stacktrace = msgCtxt.getVariable("wssec_stacktrace");
-    Assert.assertNull(stacktrace, method + "stacktrace");
-
-    String output = (String) msgCtxt.getVariable("output");
-    System.out.printf("** Output:\n" + output + "\n");
-
-    Document doc = docFromStream(new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8)));
-    NodeList nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "Signature");
-    Assert.assertEquals(nl.getLength(), 1, method + "Signature element");
-    System.out.println("=========================================================");
-  }
-
-  @Test
-  public void withCertificateMismatch() throws Exception {
+  public void mismatchedKeyAndCertificate() throws Exception {
     String method = "withCertificateMismatch() ";
-    String expectedError = "public key mismatch. The public key contained in the certificate does not match the private key.";
-      String expectedException = "java.security.KeyException: " + expectedError;
+    String expectedError =
+        "public key mismatch. The public key contained in the certificate does not match the private key.";
+    String expectedException = "java.security.KeyException: " + expectedError;
     msgCtxt.setVariable("message.content", simpleSoap1);
-    msgCtxt.setVariable("my-private-key", privateKey4);
-    msgCtxt.setVariable("my-certificate", certificate3);
+    msgCtxt.setVariable("my-private-key", pairs[2].privateKey); // mismatch
+    msgCtxt.setVariable("my-certificate", pairs[1].certificate);
 
     Map<String, String> props = new HashMap<String, String>();
-    props.put("debug", "true");
+    //props.put("debug", "true");
     props.put("source", "message.content");
     props.put("private-key", "{my-private-key}");
     props.put("certificate", "{my-certificate}");
@@ -809,6 +825,5 @@ public class TestWssecSignCallout {
     Assert.assertEquals(exception, expectedException, method + "exception");
     Object errorOutput = msgCtxt.getVariable("wssec_error");
     Assert.assertEquals(errorOutput, expectedError, "errorOutput");
-    System.out.println("=========================================================");
   }
 }
