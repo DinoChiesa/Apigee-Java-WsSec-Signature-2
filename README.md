@@ -203,15 +203,25 @@ do it with openssl.
    ```
    The output of the above should indicate that the message is expired.
 
-* Validating with parameterized Common Name
+* Validating with parameterized Thumbprint
 
    ```
-   curl -i https://${ORG}-${ENV}.apigee.net/wssec/validate2?cn=abc.example.com \
+   curl -i https://${ORG}-${ENV}.apigee.net/wssec/validate2?thumbprint=xxxyyyyzzz \
        -H content-type:application/xml \
        --data-binary @./sample-data/signed-request.xml
    ```
    The output of the above should indicate that the signature on the document is
-   not valid, because the common name is not acceptable.
+   not valid, because the thumbprint provided does not match the thumbprint on
+   the cert used to sign the document.
+
+   ```
+   curl -i https://${ORG}-${ENV}.apigee.net/wssec/validate2?thumbprint=ada3a946669ad4e6e2c9f81360c3249e49a57a7d \
+       -H content-type:application/xml \
+       --data-binary @./sample-data/signed-request.xml
+   ```
+   The output of the above should indicate that the signature on the document is
+   valid, because the thumbproint provided matches the thumbprint on the cert
+   that was used to sign the document.
 
 
 ### Example of Signed Output

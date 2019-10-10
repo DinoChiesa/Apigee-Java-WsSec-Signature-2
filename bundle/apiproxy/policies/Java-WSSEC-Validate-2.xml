@@ -1,9 +1,10 @@
 <JavaCallout name='Java-WSSEC-Validate-2'>
   <Properties>
     <Property name='source'>message.content</Property>
+    <Property name='require-expiry'>false</Property>
     <Property name='throw-fault-on-invalid'>false</Property>
-    <!-- specify the acceptable CN in a query param -->
-    <Property name='common-names'>{request.queryparam.cn}</Property>
+    <!-- specify the acceptable thumbproint in a query param -->
+    <Property name='accept-thumbprints'>{request.queryparam.thumbprint}</Property>
   </Properties>
   <ClassName>com.google.apigee.edgecallouts.wssecdsig.Validate</ClassName>
   <ResourceURL>java://edge-wssecdsig-20191008.jar</ResourceURL>

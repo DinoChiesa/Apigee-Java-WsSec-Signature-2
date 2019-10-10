@@ -5,9 +5,13 @@
   <Set>
     <Payload contentType='application/xml'>
 <result>
-    <valid>{wssec_valid}</valid>
-    <cn>{wssec_cert_0_cn}</cn>
-    <error>{wssec_error}</error>
+  <valid>{wssec_valid}</valid>
+  <signing-cert>
+    <thumbprint>{wssec_cert_0_thumbprint}</thumbprint>
+    <subject-cn>{wssec_cert_0_subject_cn}</subject-cn>
+    <issuer-cn>{wssec_cert_0_issuer_cn}</issuer-cn>
+  </signing-cert>
+  <error>{wssec_error}</error>
 </result>
 </Payload>
     <StatusCode>200</StatusCode>

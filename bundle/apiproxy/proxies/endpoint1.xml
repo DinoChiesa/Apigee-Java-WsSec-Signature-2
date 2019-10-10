@@ -72,8 +72,8 @@
           <Name>RF-InvalidRequest</Name>
         </Step>
         <Step>
-          <Condition>request.queryparam.cn = null</Condition>
-          <Name>RF-MissingCommonName</Name>
+          <Condition>request.queryparam.thumbprint = null</Condition>
+          <Name>RF-MissingThumbprint</Name>
         </Step>
       </Request>
       <Response>
