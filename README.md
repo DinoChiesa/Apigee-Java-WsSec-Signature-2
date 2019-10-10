@@ -116,9 +116,9 @@ The properties are:
 | name            | description |
 | --------------- | ------------------------------------------------------------------------------------------------------------------ |
 | source          | optional. the variable name in which to obtain the source signed document to validate. Defaults to message.content |
-| common-names    | optional. a comma-separated list of common names (CNs) which are acceptable signers.                               |
+| common-names    | required. a comma-separated list of common names (CNs) which are acceptable signers. If any signature is from a CN other than that specified, the verification fails. |
 | require-expiry  | optional. true or false, defaults true. Whether to require an expiry in the timestamp.  |
-| required-signed-elements | optional. a Comma-separated list of elements that must be signed. Defaults to "body,timestamp" .   |
+| required-signed-elements | optional. a comma-separated list of elements that must be signed. Defaults to "body,timestamp" . To validate a message that signs only the Timestamp and not the body, set this to "timestamp". (You probably don't want to do this.) |
 | ignore-expiry   | optional. true or false. defaults false. When true, tells the validator to ignore the Timestamp/Expires field when evaluating validity.    |
 | throw-fault-on-invalid | optional. true or false, defaults to false. Whether to throw a fault when the signature is invalid. |
 

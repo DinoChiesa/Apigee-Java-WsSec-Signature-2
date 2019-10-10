@@ -49,6 +49,26 @@ public class TestWssecValidateCallout extends CalloutTestBase {
   }
 
   @Test
+  public void missingCommonNames() throws Exception {
+    msgCtxt.setVariable("message.content", signedSoap1);
+
+    Map<String, String> props = new HashMap<String, String>();
+    props.put("debug", "true");
+    props.put("require-expiry", "false");
+    //props.put("common-names", "apigee.google.com");
+    props.put("source", "message.content");
+
+    Validate callout = new Validate(props);
+
+    // execute and retrieve output
+    ExecutionResult actualResult = callout.execute(msgCtxt, exeCtxt);
+    Assert.assertEquals(actualResult, ExecutionResult.ABORT, "result not as expected");
+    Object errorOutput = msgCtxt.getVariable("wssec_error");
+    Assert.assertNotNull(errorOutput, "errorOutput");
+    Assert.assertEquals(errorOutput, "common-names resolves to an empty string");
+  }
+
+  @Test
   public void validResult() throws Exception {
     String method = "validResult() ";
     msgCtxt.setVariable("message.content", signedSoap1);
@@ -56,6 +76,7 @@ public class TestWssecValidateCallout extends CalloutTestBase {
     Map<String, String> props = new HashMap<String, String>();
     props.put("debug", "true");
     props.put("require-expiry", "false");
+    props.put("common-names", "apigee.google.com");
     props.put("source", "message.content");
 
     Validate callout = new Validate(props);
@@ -81,6 +102,7 @@ public class TestWssecValidateCallout extends CalloutTestBase {
 
     Map<String, String> props = new HashMap<String, String>();
     // props.put("debug", "true");
+    props.put("common-names", "apigee.google.com");
     props.put("source", "message.content");
 
     Validate callout = new Validate(props);

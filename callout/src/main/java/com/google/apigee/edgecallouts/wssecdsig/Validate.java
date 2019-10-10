@@ -399,13 +399,10 @@ public class Validate extends WssecCalloutBase implements Execution {
   }
 
   private List<String> getCommonNames(MessageContext msgCtxt) throws Exception {
-    String nameList = getSimpleOptionalProperty("common-names", msgCtxt);
-    if (nameList == null) return null;
-    List<String> names =
-        Arrays.asList(nameList.split(",[ ]*")).stream()
+    String nameList = getSimpleRequiredProperty("common-names", msgCtxt);
+    return Arrays.asList(nameList.split(",[ ]*")).stream()
             .map(String::toLowerCase)
             .collect(Collectors.toList());
-    return names;
   }
 
   private List<String> getRequiredSignedElements(MessageContext msgCtxt) throws Exception {
@@ -421,6 +418,7 @@ public class Validate extends WssecCalloutBase implements Execution {
     try {
       msgCtxt.setVariable(varName("valid"), false);
       Document document = getDocument(msgCtxt);
+      List<String> acceptableCommonNames = getCommonNames(msgCtxt);
       List<String> requiredElements = getRequiredSignedElements(msgCtxt);
       ValidationResult validationResult = validate_RSA(document, requiredElements, msgCtxt);
       boolean isValid = validationResult.isValid();
@@ -450,7 +448,6 @@ public class Validate extends WssecCalloutBase implements Execution {
 
       if (isValid) {
         // check CNs of certs
-      List<String> acceptableCommonNames = getCommonNames(msgCtxt);
         List<X509Certificate> certs = validationResult.getCertificates();
         for (int i = 0; i < certs.size(); i++) {
           X500Principal principal = certs.get(i).getSubjectX500Principal();
