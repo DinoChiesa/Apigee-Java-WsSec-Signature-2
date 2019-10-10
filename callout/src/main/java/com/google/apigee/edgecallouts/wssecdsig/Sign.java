@@ -62,6 +62,8 @@ import javax.xml.crypto.dsig.keyinfo.KeyInfo;
 import javax.xml.crypto.dsig.keyinfo.KeyInfoFactory;
 import javax.xml.crypto.dsig.spec.C14NMethodParameterSpec;
 import javax.xml.crypto.dsig.spec.TransformParameterSpec;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
@@ -326,9 +328,10 @@ public class Sign extends WssecCalloutBase implements Execution {
 
     // emit the resulting document
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    TransformerFactory.newInstance()
-        .newTransformer()
-        .transform(new DOMSource(doc), new StreamResult(baos));
+    Transformer transformer = TransformerFactory.newInstance()
+      .newTransformer();
+    transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+    transformer.transform(new DOMSource(doc), new StreamResult(baos));
     return baos.toByteArray();
   }
 
