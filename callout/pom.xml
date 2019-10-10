@@ -21,16 +21,8 @@
 
   <dependencies>
 
-    <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
+
 <!--
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-      <version>3.7</version>
-    </dependency>
-
--->
-
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
@@ -43,6 +35,7 @@
       <version>${slf4j.version}</version>
       <scope>test</scope>
     </dependency>
+-->
 
     <dependency>
       <groupId>org.bouncycastle</groupId>
@@ -170,6 +163,8 @@ do it manually by running these commands:
                     <include name="lib/*.jar"/>
                     <exclude name="lib/message-flow-1.0.0.jar"/>
                     <exclude name="lib/expressions-1.0.0.jar"/>
+                    <exclude name="lib/bcpkix-jdk15on-1.60.jar"/>
+                    <exclude name="lib/bcprov-jdk15on-1.60.jar"/>
                   </fileset>
                   <mapper type="flatten"/>
                 </copy>

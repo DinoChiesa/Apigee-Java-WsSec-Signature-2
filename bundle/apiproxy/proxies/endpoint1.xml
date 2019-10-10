@@ -29,8 +29,8 @@
         </Step>
       </Request>
       <Response>
-        <Step><Name>AM-PrivateKey1</Name></Step>
-        <Step><Name>Java-WSSEC-Sign</Name></Step>
+        <Step><Name>AM-KeyAndCert</Name></Step>
+        <Step><Name>Java-WSSEC-Sign-1</Name></Step>
         <Step><Name>AM-SignatureResponse</Name></Step>
       </Response>
       <Condition>(proxy.pathsuffix ~ "/sign1") and (request.verb = "POST")</Condition>
@@ -44,8 +44,8 @@
         </Step>
       </Request>
       <Response>
-        <Step><Name>AM-PrivateKey2</Name></Step>
-        <Step><Name>Java-WSSEC-Sign</Name></Step>
+        <Step><Name>AM-KeyAndCert</Name></Step>
+        <Step><Name>Java-WSSEC-Sign-2</Name></Step>
         <Step><Name>AM-SignatureResponse</Name></Step>
       </Response>
       <Condition>(proxy.pathsuffix ~ "/sign2") and (request.verb = "POST")</Condition>
@@ -59,8 +59,7 @@
         </Step>
       </Request>
       <Response>
-        <Step><Name>AM-PublicKey1</Name></Step>
-        <Step><Name>Java-WSSEC-Validate</Name></Step>
+        <Step><Name>Java-WSSEC-Validate-1</Name></Step>
         <Step><Name>AM-ValidationResponse</Name></Step>
       </Response>
       <Condition>(proxy.pathsuffix ~ "/validate1") and (request.verb = "POST")</Condition>
@@ -72,10 +71,13 @@
           <Condition>NOT((request.header.content-type =| "text/xml") OR (request.header.content-type =| "application/xml" ))</Condition>
           <Name>RF-InvalidRequest</Name>
         </Step>
+        <Step>
+          <Condition>request.queryparam.cn = null</Condition>
+          <Name>RF-MissingCommonName</Name>
+        </Step>
       </Request>
       <Response>
-        <Step><Name>AM-PublicKey2</Name></Step>
-        <Step><Name>Java-WSSEC-Validate</Name></Step>
+        <Step><Name>Java-WSSEC-Validate-2</Name></Step>
         <Step><Name>AM-ValidationResponse</Name></Step>
       </Response>
       <Condition>(proxy.pathsuffix ~ "/validate2") and (request.verb = "POST")</Condition>
@@ -88,7 +90,7 @@
       -->
       <Description>Unknown request</Description>
       <Request>
-        <Step><Name>RaiseFault-UnknownRequest</Name></Step>
+        <Step><Name>RF-UnknownRequest</Name></Step>
       </Request>
       <Response/>
     </Flow>

@@ -49,7 +49,7 @@ public class CalloutTestBase {
             if (variables == null) {
               variables = new HashMap();
             }
-            //System.out.printf("setVariable(%s, %s)\n", name, value.toString());
+            System.out.printf("setVariable(%s, %s)\n", name, value.toString());
             variables.put(name, value);
             return true;
           }

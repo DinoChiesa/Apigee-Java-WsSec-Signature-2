@@ -1,0 +1,8 @@
+<JavaCallout name='Java-WSSEC-Validate-1'>
+  <Properties>
+    <Property name='source'>message.content</Property>
+    <Property name='common-names'>apigee.google.com</Property>
+  </Properties>
+  <ClassName>com.google.apigee.edgecallouts.wssecdsig.Validate</ClassName>
+  <ResourceURL>java://edge-wssecdsig-20191008.jar</ResourceURL>
+</JavaCallout>

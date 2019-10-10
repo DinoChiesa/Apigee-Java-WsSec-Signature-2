@@ -1,7 +1,7 @@
 # Java Callout for WS-Security Digital Signature
 
 This directory contains the Java source code and pom.xml file required
-to compile a simple Java callout for Apigee Edge, that creates or validates 
+to compile a simple Java callout for Apigee Edge, that creates or validates
 a digital signature that complies with WS-Security standard, using an x509v3
 Binary Security Token.
 
@@ -84,7 +84,7 @@ Configure the policy this way:
 <JavaCallout name='Java-WSSEC-Validate'>
   <Properties>
     <Property name='source'>message.content</Property>
-    <Property name='common-names>host.example.com</Property>
+    <Property name='common-names'>host.example.com</Property>
   </Properties>
   <ClassName>com.google.apigee.edgecallouts.wssecdsig.Validate</ClassName>
   <ResourceURL>java://edge-wssecdsig-20191008.jar</ResourceURL>
@@ -94,16 +94,18 @@ Configure the policy this way:
 The properties are:
 
 | name            | description |
-| --------------- | ------------ |
+| --------------- | ------------------------------------------------------------------------------------------------------------------ |
 | source          | optional. the variable name in which to obtain the source signed document to validate. Defaults to message.content |
-| common-names    | optional. a comma-separated list of common names (CNs) which are acceptable signers |
-| ignore-timestamp| optional. true or false. When true, tells the validator to ignore the timestamp field when evaluating validity. |
+| common-names    | optional. a comma-separated list of common names (CNs) which are acceptable signers.                               |
+| ignore-timestamp| optional. true or false. defaults false. When true, tells the validator to ignore the timestamp field when evaluating validity.    |
+| throw-fault-on-invalid | optional. true or false, defaults to false. Whether to throw a fault when the signature is invalid. |
+
 
 The result of the Validate callout is to set a single variable: xmldsig_valid.
 It takes a true value if the signature was valid; false otherwise. You can use a
 Condition in your Proxy flow to examine that result.  If the document is
-invalid, then the policy will also throw a fault. 
-
+invalid, then the policy will also throw a fault if the throw-fault-on-invalid
+property is true.
 
 See [the example API proxy included here](./bundle) for a working example of these policy configurations.
 
@@ -112,75 +114,65 @@ See [the example API proxy included here](./bundle) for a working example of the
 
 Deploy the API Proxy to an organization and environment using a tool like [importAndDeploy.js](https://github.com/DinoChiesa/apigee-edge-js/blob/master/examples/importAndDeploy.js)
 
-There are some sample documents included in this repo that you can use for demonstrations.
+There are some sample SOAP request documents included in this repo that you can use for demonstrations.
 
-There are two distinct private keys embedded in the API Proxy. Both are RSA keys. Key 1 was generated this way:
+There is a private RSA key and a corresponding certificate embedded in the API
+Proxy. You should not use those for your own purposes. Create your own. You can
+do it with openssl.
+
 
 ```
- openssl genpkey -aes-128-cbc -algorithm rsa \
-     -pkeyopt rsa_keygen_bits:2048 \
-     -out encrypted-genpkey-aes-128-cbc.pem
-```
+ openssl genpkey  -algorithm rsa -pkeyopt  rsa_keygen_bits:2048 -out privatekey.pem
+ openssl req \
+        -key privatekey.pem \
+        -new -out domain.csr
 
-Key 2 generated with the "older" openssl syntax, this way:
+ openssl x509 -req -days 3650 -in domain.csr -signkey privatekey.pem -out domain.cert
 ```
-openssl genrsa -des3 -out private-encrypted-DES-EDE3-CBC.pem 2048
-```
-
-Either form of PEM-encoded key works.
 
 ### Invoking the Example proxy:
 
-* Signing with key 1
+* Signing with Timestamp but no expiry
 
    ```
    ORG=myorgname
    ENV=myenv
-   curl -i https://${ORG}-${ENV}.apigee.net/xmldsig/sign1  -H content-type:application/xml \
-       --data-binary @./sample-data/order.xml
+   curl -i https://${ORG}-${ENV}.apigee.net/wssec/sign1  -H content-type:application/xml \
+       --data-binary @./sample-data/request1.xml
    ```
 
-* Signing with key 2
+* Signing with Timestamp that includes an expiry
 
    ```
-   curl -i https://${ORG}-${ENV}.apigee.net/xmldsig/sign2  -H content-type:application/xml \
-       --data-binary @./sample-data/order.xml
+   curl -i https://${ORG}-${ENV}.apigee.net/wssec/sign2  -H content-type:application/xml \
+       --data-binary @./sample-data/request1.xml
    ```
-* Validating with key 1
+* Validating with hardcoded Common Name
 
    ```
-   curl -i https://${ORG}-${ENV}.apigee.net/xmldsig/validate1  -H content-type:application/xml \
-       --data-binary @./sample-data/order-signed1.xml
+   curl -i https://${ORG}-${ENV}.apigee.net/wssec/validate1  -H content-type:application/xml \
+       --data-binary @./sample-data/signed-request.xml
    ```
-   The output of the above is "true", meaning "The signature on the document is valid."
+   The output of the above should indicate that the signature on the document is
+   valid.
 
-* Validating with key 2
-
-   ```
-   curl -i https://${ORG}-${ENV}.apigee.net/xmldsig/validate2  -H content-type:application/xml \
-       --data-binary @./sample-data/order-signed2.xml
-   ```
-   The output of the above is "true", meaning "The signature on the document is valid."
-
-* Validation fails with incorrect key
+* Validating with hardcoded Common Name, and a message with an expiry
 
    ```
-   curl -i https://${ORG}-${ENV}.apigee.net/xmldsig/validate2  -H content-type:application/xml \
-      --data-binary @./sample-data/order-signed1.xml
+   curl -i https://${ORG}-${ENV}.apigee.net/wssec/validate1  -H content-type:application/xml \
+       --data-binary @./sample-data/signed-expiring-request.xml
    ```
-   Because order-signed1 was signed with private key 1, validating it against public key 2 (via /validate2) will return "false", meaning "The signature on the document is not valid."  This is expected.
+   The output of the above should indicate that the message is expired.
 
-* Validation fails with incorrect key, case 2
+* Validating with parameterized Common Name
 
    ```
-   curl -i https://${ORG}-${ENV}.apigee.net/xmldsig/validate1  -H content-type:application/xml \
-       --data-binary @./sample-data/order-signed2.xml
+   curl -i https://${ORG}-${ENV}.apigee.net/wssec/validate2?cn=abc.example.com \
+       -H content-type:application/xml \
+       --data-binary @./sample-data/signed-request.xml
    ```
-
-   Because order-signed1 was signed with private key 2, validating it
-   against public key 1 (via /validate1) will return "false", meaning
-   "The signature on the document is not valid."  This is expected.
-
+   The output of the above should indicate that the signature on the document is
+   not valid, because the common name is not acceptable.
 
 
 ### Example of Signed Output
@@ -188,94 +180,70 @@ Either form of PEM-encoded key works.
 Supposing the input XML looks like this:
 
 ```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<order>
-  <customer customerNumber="0815A4711">
-    <name>Michael Sonntag</name>
-    <address>
-      <street>Altenbergerstr. 69</street>
-      <ZIP>4040</ZIP>
-      <city>Linz</city>
-    </address>
-  </customer>
-  <articles>
-    <line>
-      <quantity unit="piece">30</quantity>
-      <product productNumber="9907">XML editing widget</product>
-      <price currency="EUR">0.10</price>
-    </line>
-    <line>
-      <quantity unit="litre">5</quantity>
-      <product productNumber="007">Super juice</product>
-      <price currency="HUF">500</price>
-    </line>
-  </articles>
-  <delivery>
-    <deliveryaddress>
-      <name>Michael Sonntag</name>
-      <address>
-        <street>Auf der Wies 18</street>
-      </address>
-    </deliveryaddress>
-  </delivery>
-  <payment type="CC">
-    <creditcard issuer="Mastercard">
-      <nameOnCard>Mag. Dipl.-Ing. Dr. Michael Sonntag</nameOnCard>
-      <number>5201 2345 6789 0123</number>
-      <expiryDate>2006-04-30</expiryDate>
-    </creditcard>
-  </payment>
-</order>
+<soapenv:Envelope
+    xmlns:ns1='http://ws.example.com/'
+    xmlns:soapenv='http://schemas.xmlsoap.org/soap/envelope/'>
+  <soapenv:Body>
+    <ns1:sumResponse>
+      <ns1:return>9</ns1:return>
+    </ns1:sumResponse>
+  </soapenv:Body>
+</soapenv:Envelope>
 ```
 
 ...the signed payload looks like this:
 
 ```
-<?xml version="1.0" encoding="UTF-8" standalone="no"?><order>
-  <customer customerNumber="0815A4711">
-    <name>Michael Sonntag</name>
-    <address>
-      <street>Altenbergerstr. 69</street>
-      <ZIP>4040</ZIP>
-      <city>Linz</city>
-    </address>
-  </customer>
-  <articles>
-    <line>
-      <quantity unit="piece">30</quantity>
-      <product productNumber="9907">XML editing widget</product>
-      <price currency="EUR">0.10</price>
-    </line>
-    <line>
-      <quantity unit="litre">5</quantity>
-      <product productNumber="007">Super juice</product>
-      <price currency="HUF">500</price>
-    </line>
-  </articles>
-  <delivery>
-    <deliveryaddress>
-      <name>Michael Sonntag</name>
-      <address>
-        <street>Auf der Wies 18</street>
-      </address>
-    </deliveryaddress>
-  </delivery>
-  <payment type="CC">
-    <creditcard issuer="Mastercard">
-      <nameOnCard>Mag. Dipl.-Ing. Dr. Michael Sonntag</nameOnCard>
-      <number>5201 2345 6789 0123</number>
-      <expiryDate>2006-04-30</expiryDate>
-    </creditcard>
-  </payment>
-<Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/><SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/><Reference URI=""><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/></Transforms><DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/><DigestValue>Rtv+iAkC0p7hJbs3741vK/V7eV92EuEk+hb6IUXVhME=</DigestValue></Reference></SignedInfo><SignatureValue>w9Fqn9Dx22xh++HgU4YeyZ0ndYcWj17IHrV2eZ17dj2U5o3de2IAmvg2jdLJxs99GLstOonhv/cK
-b7mzpI6tGyUTfGwhS5l1Ok8DFooxDT7KvJ6RXBuWFuuNYa+iN+fLbxBOg5D8gAOVC1qsOCas7bs8
-CSkzVWRZRxl6JJuaOpyJ6xM3nIdkSAqGYnChljQuGI6UXgru/KKc4mASCjkyzknzoJa4fv9C2enY
-9E7LZ4z+KqdtyK5xjifLXxfIIDAF+9hQUzIe+Wm4otZ0p7pQX6LEYVifkLoJbaLdsw8KTHYcF+XS
-8d6qUENo/WnHp0dCLxzFZISnumCAt6DHHah3/A==</SignatureValue><KeyInfo><KeyValue><RSAKeyValue><Modulus>B6PenDyGOg0P5vb5DfJ13DmjJi82KdPT58LjZlG6LYD27IFCh1yO+4ygJAxfIB00muiIuB8YyQ3T
-JKgkJdEWcVTGL1aomN0PuHTHP67FfBPHgmCM1+wEtm6tn+uoxyvQhLkB1/4Ke0VA7wJx4LB5Nxoo
-/4GCYZp+m/1DAqTvDy99hRuSTWt+VJacgPvfDMA2akFJAwUVSJwh/SyFZf2yqonzfnkHEK/hnC81
-vACs6usAj4wR04yj5yElXW+pQ5Vk4RUwR6Q0E8nKWLfYFrXygeYUbTSQEj0f44DGVHOdMdT+BoGV
-5SJ1ITs+peOCYjhVZvdngyCP9YNDtsLZftMLoQ==</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue></KeyInfo></Signature></order>
+<soapenv:Envelope
+    xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+    xmlns:ns1="http://ws.example.com/"
+    xmlns:wssec="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd"
+    xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
+  <soapenv:Header>
+    <wssec:Security soapenv:mustUnderstand="1">
+      <wsu:Timestamp wsu:Id="Timestamp-57cd5229-1827-4fb7-a3fd-e9fd98dcd243">
+        <wsu:Created>2019-10-08T10:25:57Z</wsu:Created>
+      </wsu:Timestamp>
+      <wssec:BinarySecurityToken EncodingType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary" ValueType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3" wsu:Id="SecurityToken-24acaa0b-6643-40ef-be10-b5b65195bc12">MIIDpDCCAowCCQCVwuB4ec2igTANBgkqhkiG9w0BAQUFADCBkzELMAkGA1UEBhMCVVMxEzARBgNVBAgMCldhc2hpbmd0b24xETAPBgNVBAcMCEtpcmtsYW5kMQ8wDQYDVQQKDAZHb29nbGUxDzANBgNVBAsMBkFwaWdlZTEaMBgGA1UEAwwRYXBpZ2VlLmdvb2dsZS5jb20xHjAcBgkqhkiG9w0BCQEWD2Rpbm9AYXBpZ2VlLmNvbTAeFw0xOTEwMDgxMDE0MTlaFw0yOTEwMDUxMDE0MTlaMIGTMQswCQYDVQQGEwJVUzETMBEGA1UECAwKV2FzaGluZ3RvbjERMA8GA1UEBwwIS2lya2xhbmQxDzANBgNVBAoMBkdvb2dsZTEPMA0GA1UECwwGQXBpZ2VlMRowGAYDVQQDDBFhcGlnZWUuZ29vZ2xlLmNvbTEeMBwGCSqGSIb3DQEJARYPZGlub0BhcGlnZWUuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApTEZRbMzhzl29R9SQ6mpo4Bz5DlvxbupLzelu6xPvi1K8JAd5GdKlvImUobDYznNUlvSxSQgJb8FNYFQ9Ty6jDle2+nOo8jIWf/FRByzRz+q7dGVNk2ngYteAfnjM62pFzb+asrxMNexP6atJukdcq3RpBac4FTTreHr68rvYlXs0/GpHj6sDXiguf+921aMb7ox0BGiuh4ydzPMofXXL4IF8HJQoUkXvJ7FGEGqK5R78/FcOvOzMim2TOKuO2TraUFtezFvUG0waTOGexhUfFI4AKD8lHuR0SlAThniVYs9P+X+ySmv/G/aYJPeYq4Lh3Ox1fUkE8EcSPvqqfzD1wIDAQABMA0GCSqGSIb3DQEBBQUAA4IBAQAjsv6qkiUjoOOKMVMxkUtfNzbRKbpv4wDL4PR4mavPxRfJC9X9b5hozSkyOaxqkJ4XUwqXS9PwI3/D47P5kuLS5Q7sWHbphKFgJf5r8RAX5c3LjImodwPebrRXfouvQXn55LUDBFMEVp8fZOL10FRP0RIT22C7tAhU9eL8khSW0mPv+CNC410mDlxDat9N7RPC/EOxfroFk8Wv29rTRSR5boSdSFaPQkm8LjNW8VimdMu1qEg4sRlcEJlfQFE2ZojdhJGfftSXCOm+rin8MSzG6SE2fDrq44evnamzC321CebW16KoTcrFf4W/jCXdZx5iWLlvgK5XOhz9BmNo8Fal</wssec:BinarySecurityToken>
+      <Signature
+          xmlns="http://www.w3.org/2000/09/xmldsig#">
+        <SignedInfo>
+          <CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+          <SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/>
+          <Reference URI="#Body-97d94bd5-96d8-46e6-ad55-a3f1e12a413b">
+            <Transforms>
+              <Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+            </Transforms>
+            <DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
+            <DigestValue>l3Wd6rPSvwISidh/HI6YH8iXwdw=</DigestValue>
+          </Reference>
+          <Reference URI="#Timestamp-57cd5229-1827-4fb7-a3fd-e9fd98dcd243">
+            <Transforms>
+              <Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+            </Transforms>
+            <DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
+            <DigestValue>TM7h1jcO4sRjxufRJ2cToXFvdnQ=</DigestValue>
+          </Reference>
+        </SignedInfo>
+        <SignatureValue>CWaL/zScIG5Yb70mpCreSmEQQihemDJbmkQlGQ5m+xlMUW53oY1ReUg8iCQg2YEsa5QwKqHEj0yJ
+        3X3FF1uJIjlQoAT8n+f0lLcDDRYOp239fwIzY6fFhLdwzsD/hKHzzDnV7Q/fEviywGsR4Gknxtrt
+        tIoMiXIeMLWEWeiyteaefhhJcyNrE8nxbtPDcJFHm+gE8buFYAf7U2290lt7vfu8UKHTYBDrvGfb
+        CIIyZUJeEX99e3o+fC4CUtiA4UEnHtDI3Z4ifPhkhJ+DYdTWQfejMKj8R5HiW9Pq5JZyUVYCK3bc
+        Na9z4UZsLsVglRjzUIBzciuQ09Yw6f9yg3dBlA==</SignatureValue>
+        <KeyInfo>
+          <wssec:SecurityTokenReference>
+            <wssec:Reference URI="#SecurityToken-24acaa0b-6643-40ef-be10-b5b65195bc12" ValueType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3"/>
+          </wssec:SecurityTokenReference>
+        </KeyInfo>
+      </Signature>
+    </wssec:Security>
+  </soapenv:Header>
+  <soapenv:Body wsu:Id="Body-97d94bd5-96d8-46e6-ad55-a3f1e12a413b">
+    <ns1:sumResponse>
+      <ns1:return>9</ns1:return>
+    </ns1:sumResponse>
+  </soapenv:Body>
+</soapenv:Envelope>
 ```
 
 ## Bugs

@@ -1,0 +1,9 @@
+<soapenv:Envelope
+    xmlns:ns1='http://ws.example.com/'
+    xmlns:soapenv='http://schemas.xmlsoap.org/soap/envelope/'>
+  <soapenv:Body>
+    <ns1:sumResponse>
+      <ns1:return>9</ns1:return>
+    </ns1:sumResponse>
+  </soapenv:Body>
+</soapenv:Envelope>

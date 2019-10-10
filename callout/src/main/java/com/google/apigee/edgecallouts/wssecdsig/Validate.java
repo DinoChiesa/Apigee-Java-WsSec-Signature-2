@@ -62,7 +62,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
 public class Validate extends WssecCalloutBase implements Execution {
-  private final static int PEM_LINE_LENGTH=64;
+  private static final int PEM_LINE_LENGTH = 64;
 
   public Validate(Map properties) {
     super(properties);
@@ -126,8 +126,8 @@ public class Validate extends WssecCalloutBase implements Execution {
     while (sIndex < len) {
       sb.append(s.substring(sIndex, eIndex));
       sb.append("\n");
-      sIndex+=PEM_LINE_LENGTH;
-      eIndex+=PEM_LINE_LENGTH;
+      sIndex += PEM_LINE_LENGTH;
+      eIndex += PEM_LINE_LENGTH;
       if (eIndex > len) {
         eIndex = len;
       }
@@ -137,23 +137,25 @@ public class Validate extends WssecCalloutBase implements Execution {
     return s;
   }
 
-  private static Certificate getCertificateFromBase64String(String certificateString) throws KeyException {
+  private static Certificate getCertificateFromBase64String(String certificateString)
+      throws KeyException {
     try {
       CertificateFactory certFactory = CertificateFactory.getInstance("X.509", "BC");
       certificateString = toCertPEM(certificateString);
       Certificate certificate =
-        certFactory.generateCertificate(new ByteArrayInputStream(certificateString.getBytes(StandardCharsets.UTF_8)));
+          certFactory.generateCertificate(
+              new ByteArrayInputStream(certificateString.getBytes(StandardCharsets.UTF_8)));
       return certificate;
-    }
-    catch (Exception ex) {
+    } catch (Exception ex) {
       throw new KeyException("Cannot parse X509v3 certificate.", ex);
     }
   }
 
   private static Element getBinarySecurityToken(String id, Document doc) {
     id = id.substring(1); // chopLeft
-    NodeList nl = getSecurityElement(doc).getElementsByTagNameNS(Namespaces.WSSEC, "BinarySecurityToken");
-    for (int i=0; i < nl.getLength(); i++) {
+    NodeList nl =
+        getSecurityElement(doc).getElementsByTagNameNS(Namespaces.WSSEC, "BinarySecurityToken");
+    for (int i = 0; i < nl.getLength(); i++) {
       Element bst = (Element) nl.item(i);
       String bstId = bst.getAttributeNS(Namespaces.WSU, "Id");
       if (id.equals(bstId)) return bst;
@@ -174,23 +176,31 @@ public class Validate extends WssecCalloutBase implements Execution {
     Element reference = (Element) nl.item(0);
     String strUri = reference.getAttribute("URI");
     if (strUri == null || !strUri.startsWith("#")) {
-      throw new RuntimeException("Unsupported URI format: KeyInfo/SecurityTokenReference/Reference");
+      throw new RuntimeException(
+          "Unsupported URI format: KeyInfo/SecurityTokenReference/Reference");
     }
-    Element bst = getBinarySecurityToken(strUri, doc) ;
+    Element bst = getBinarySecurityToken(strUri, doc);
     if (bst == null) {
       throw new RuntimeException("Unresolvable reference: #" + strUri);
     }
     String bstNs = bst.getNamespaceURI();
     String tagName = bst.getLocalName();
-    if (bstNs==null || !bstNs.equals(Namespaces.WSSEC) || tagName == null || !tagName.equals("BinarySecurityToken")) {
+    if (bstNs == null
+        || !bstNs.equals(Namespaces.WSSEC)
+        || tagName == null
+        || !tagName.equals("BinarySecurityToken")) {
       throw new RuntimeException("Unsupported SecurityTokenReference type");
     }
     String encodingType = bst.getAttribute("EncodingType");
-    if (encodingType == null || !encodingType.equals("http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary")) {
+    if (encodingType == null
+        || !encodingType.equals(
+            "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary")) {
       throw new RuntimeException("Unsupported SecurityTokenReference EncodingType");
     }
     String valueType = bst.getAttribute("ValueType");
-    if (valueType == null || !valueType.equals("http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3")) {
+    if (valueType == null
+        || !valueType.equals(
+            "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3")) {
       throw new RuntimeException("Unsupported SecurityTokenReference ValueType");
     }
     String base64String = bst.getTextContent();
@@ -201,13 +211,16 @@ public class Validate extends WssecCalloutBase implements Execution {
   static class ValidationResult {
     private boolean _isValid;
     private List<X509Certificate> _certificates;
+
     public ValidationResult(boolean isValid, List<X509Certificate> certificates) {
       this._isValid = isValid;
       this._certificates = Collections.unmodifiableList(certificates);
     }
+
     public boolean isValid() {
       return _isValid;
     }
+
     public List<X509Certificate> getCertificates() {
       return _certificates;
     }
@@ -216,20 +229,21 @@ public class Validate extends WssecCalloutBase implements Execution {
   private static void markIdAttributes(Document doc) {
     NodeList nl = doc.getElementsByTagNameNS(Namespaces.SOAP10, "Body");
 
-    if (nl.getLength() == 1){
+    if (nl.getLength() == 1) {
       Element element = (Element) nl.item(0);
       element.setIdAttributeNS(Namespaces.WSU, "Id", true);
     }
     nl = doc.getElementsByTagNameNS(Namespaces.WSU, "Timestamp");
 
-    if (nl.getLength() == 1){
+    if (nl.getLength() == 1) {
       Element element = (Element) nl.item(0);
       element.setIdAttributeNS(Namespaces.WSU, "Id", true);
     }
   }
 
   private static ValidationResult validate_RSA(Document doc)
-    throws MarshalException, XMLSignatureException, KeyException, CertificateExpiredException, CertificateNotYetValidException  {
+      throws MarshalException, XMLSignatureException, KeyException, CertificateExpiredException,
+          CertificateNotYetValidException {
     NodeList nl = getSignatures(doc);
     if (nl.getLength() == 0) {
       throw new RuntimeException("No element: Signature");
@@ -240,14 +254,15 @@ public class Validate extends WssecCalloutBase implements Execution {
     boolean isValid = true;
     List<X509Certificate> certs = new ArrayList<X509Certificate>();
     XMLSignatureFactory signatureFactory = XMLSignatureFactory.getInstance("DOM");
-    for(int i=0; i < nl.getLength(); i++) {
+    for (int i = 0; i < nl.getLength(); i++) {
       if (isValid) {
         Element signatureElement = (Element) nl.item(i);
-        NodeList keyinfoList = signatureElement.getElementsByTagNameNS(XMLSignature.XMLNS, "KeyInfo");
+        NodeList keyinfoList =
+            signatureElement.getElementsByTagNameNS(XMLSignature.XMLNS, "KeyInfo");
         if (nl.getLength() == 0) {
           throw new RuntimeException("No element: Signature/KeyInfo");
         }
-        X509Certificate cert = (X509Certificate) getCertificate((Element)keyinfoList.item(0), doc);
+        X509Certificate cert = (X509Certificate) getCertificate((Element) keyinfoList.item(0), doc);
         cert.checkValidity();
         KeySelector ks = KeySelector.singletonKeySelector(cert.getPublicKey());
         DOMValidateContext vc = new DOMValidateContext(ks, signatureElement);
@@ -259,26 +274,39 @@ public class Validate extends WssecCalloutBase implements Execution {
     return new ValidationResult(isValid, certs);
   }
 
-  private static boolean isNotExpired(Document doc) {
+  private static boolean isExpired(Document doc, MessageContext msgCtxt) {
     NodeList nl = getSecurityElement(doc).getElementsByTagNameNS(Namespaces.WSU, "Timestamp");
     if (nl.getLength() == 0) {
-      return true;
+      return false;
     }
 
     Element timestamp = (Element) nl.item(0);
     nl = timestamp.getElementsByTagNameNS(Namespaces.WSU, "Expires");
     if (nl.getLength() == 0) {
-      return true;
+      return false;
     }
     Element expires = (Element) nl.item(0);
-    TemporalAccessor creationAccessor = DateTimeFormatter.ISO_INSTANT.parse(expires.getTextContent());
+    TemporalAccessor creationAccessor =
+        DateTimeFormatter.ISO_INSTANT.parse(expires.getTextContent());
     Instant expiry = Instant.from(creationAccessor);
     Instant now = Instant.now();
     long secondsTilExpiry = now.until(expiry, ChronoUnit.SECONDS);
-    return secondsTilExpiry > 0L;
+    if (secondsTilExpiry <= 0L) {
+      msgCtxt.setVariable(varName("error"), "the timestamp is expired");
+      return true;
+    }
+    return false;
   }
 
-  private boolean getWantIgnoreTimestamp(MessageContext msgCtxt) throws Exception {
+  private boolean wantFaultOnInvalid(MessageContext msgCtxt) throws Exception {
+    String wantFault = getSimpleOptionalProperty("throw-fault-on-invalid", msgCtxt);
+    if (wantFault == null) return false;
+    wantFault = wantFault.trim();
+    if (wantFault.trim().toLowerCase().equals("true")) return true;
+    return false;
+  }
+
+  private boolean wantIgnoreTimestamp(MessageContext msgCtxt) throws Exception {
     String wantIgnore = getSimpleOptionalProperty("ignore-timestamp", msgCtxt);
     if (wantIgnore == null) return false;
     wantIgnore = wantIgnore.trim();
@@ -303,26 +331,40 @@ public class Validate extends WssecCalloutBase implements Execution {
       List<String> acceptableCommonNames = getCommonNames(msgCtxt);
       ValidationResult validationResult = validate_RSA(document);
       boolean isValid = validationResult.isValid();
-      if (isValid && !getWantIgnoreTimestamp(msgCtxt)) {
-        isValid = isNotExpired(document);
+      if (!isValid) {
+        msgCtxt.setVariable(varName("error"), "signature did not verify");
       }
-      // TODO: check CNs of certs here
-      List<X509Certificate> certs = validationResult.getCertificates();
-      for(int i=0; i< certs.size(); i++) {
-        X500Principal principal = certs.get(i).getSubjectX500Principal();
-        LdapName ldapDN = new LdapName(principal.getName());
-        for(Rdn rdn: ldapDN.getRdns()) {
-          //System.out.println(rdn.getType() + " -> " + rdn.getValue());
-          if (rdn.getType().equals("CN")) {
-            msgCtxt.setVariable(varName("cert_" + i+ "_cn"), rdn.getValue());
-            if (acceptableCommonNames != null) {
-              isValid = isValid && acceptableCommonNames.contains(rdn.getValue());
+      if (isValid && !wantIgnoreTimestamp(msgCtxt)) {
+        if (isExpired(document, msgCtxt)) {
+          msgCtxt.setVariable(varName("error"), "timestamp is expired");
+          isValid = false;
+        }
+      }
+      if (isValid) {
+        // check CNs of certs
+        List<X509Certificate> certs = validationResult.getCertificates();
+        for (int i = 0; i < certs.size(); i++) {
+          X500Principal principal = certs.get(i).getSubjectX500Principal();
+          LdapName ldapDN = new LdapName(principal.getName());
+          for (Rdn rdn : ldapDN.getRdns()) {
+            // System.out.println(rdn.getType() + " -> " + rdn.getValue());
+            if (rdn.getType().equals("CN")) {
+              msgCtxt.setVariable(varName("cert_" + i + "_cn"), rdn.getValue());
+              if (acceptableCommonNames != null) {
+                if (!acceptableCommonNames.contains(rdn.getValue())) {
+                  msgCtxt.setVariable(varName("error"), "common name not accepted");
+                  isValid = false;
+                }
+              }
             }
           }
         }
       }
       msgCtxt.setVariable(varName("valid"), isValid);
-      return (isValid)? ExecutionResult.SUCCESS: ExecutionResult.ABORT;
+      if (isValid) {
+        return ExecutionResult.SUCCESS;
+      }
+      return (wantFaultOnInvalid(msgCtxt)) ? ExecutionResult.ABORT : ExecutionResult.SUCCESS;
     } catch (IllegalStateException exc1) {
       setExceptionVariables(exc1, msgCtxt);
       return ExecutionResult.ABORT;

@@ -26,22 +26,17 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyException;
-import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateFactory;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.RSAPublicKeySpec;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -66,7 +61,6 @@ import javax.xml.crypto.dsig.XMLSignatureFactory;
 import javax.xml.crypto.dsig.dom.DOMSignContext;
 import javax.xml.crypto.dsig.keyinfo.KeyInfo;
 import javax.xml.crypto.dsig.keyinfo.KeyInfoFactory;
-import javax.xml.crypto.dsig.keyinfo.KeyValue;
 import javax.xml.crypto.dsig.spec.C14NMethodParameterSpec;
 import javax.xml.crypto.dsig.spec.TransformParameterSpec;
 import javax.xml.transform.OutputKeys;
@@ -81,8 +75,6 @@ import javax.xml.xpath.XPathFactory;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.openssl.PEMDecryptorProvider;
 import org.bouncycastle.openssl.PEMEncryptedKeyPair;
-import org.bouncycastle.openssl.PEMException;
-import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.bouncycastle.openssl.jcajce.JceOpenSSLPKCS8DecryptorProviderBuilder;
@@ -91,8 +83,6 @@ import org.bouncycastle.operator.InputDecryptorProvider;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfo;
 import org.bouncycastle.pkcs.PKCSException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -100,42 +90,40 @@ import org.w3c.dom.NodeList;
 
 public class Sign extends WssecCalloutBase implements Execution {
 
-  private static final Logger logger = LoggerFactory.getLogger(Sign.class);
-
   public Sign(Map properties) {
     super(properties);
   }
 
-  public static String toPrettyString(Document document, int indent) {
-    try {
-      // Remove whitespaces outside tags
-      document.normalize();
-      XPath xPath = XPathFactory.newInstance().newXPath();
-      NodeList nodeList =
-          (NodeList)
-              xPath.evaluate("//text()[normalize-space()='']", document, XPathConstants.NODESET);
-
-      for (int i = 0; i < nodeList.getLength(); ++i) {
-        Node node = nodeList.item(i);
-        node.getParentNode().removeChild(node);
-      }
-
-      // Setup pretty print options
-      TransformerFactory transformerFactory = TransformerFactory.newInstance();
-      transformerFactory.setAttribute("indent-number", indent);
-      Transformer transformer = transformerFactory.newTransformer();
-      transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-      transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-      transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-
-      // Return pretty print xml string
-      StringWriter stringWriter = new StringWriter();
-      transformer.transform(new DOMSource(document), new StreamResult(stringWriter));
-      return stringWriter.toString();
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
+  // public static String toPrettyString(Document document, int indent) {
+  //   try {
+  //     // Remove whitespaces outside tags
+  //     document.normalize();
+  //     XPath xPath = XPathFactory.newInstance().newXPath();
+  //     NodeList nodeList =
+  //         (NodeList)
+  //             xPath.evaluate("//text()[normalize-space()='']", document, XPathConstants.NODESET);
+  //
+  //     for (int i = 0; i < nodeList.getLength(); ++i) {
+  //       Node node = nodeList.item(i);
+  //       node.getParentNode().removeChild(node);
+  //     }
+  //
+  //     // Setup pretty print options
+  //     TransformerFactory transformerFactory = TransformerFactory.newInstance();
+  //     transformerFactory.setAttribute("indent-number", indent);
+  //     Transformer transformer = transformerFactory.newTransformer();
+  //     transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+  //     transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+  //     transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+  //
+  //     // Return pretty print xml string
+  //     StringWriter stringWriter = new StringWriter();
+  //     transformer.transform(new DOMSource(document), new StreamResult(stringWriter));
+  //     return stringWriter.toString();
+  //   } catch (Exception e) {
+  //     throw new RuntimeException(e);
+  //   }
+  // }
 
   // public static Element getFirstChildElement(Element element) {
   //   for (Node currentChild = element.getFirstChild();
@@ -211,8 +199,6 @@ public class Sign extends WssecCalloutBase implements Execution {
       body.setIdAttributeNS(Namespaces.WSU, "Id", true);
     }
 
-    // System.out.printf("A:\n%s\n", toPrettyString(doc, 2));
-
     // 2. create or get the soap:Header
     Element header = null;
     nodes = doc.getElementsByTagNameNS(soapns, "Header");
@@ -222,8 +208,6 @@ public class Sign extends WssecCalloutBase implements Execution {
     } else {
       header = (Element) nodes.item(0);
     }
-
-    // System.out.printf("B:\n%s\n", toPrettyString(doc, 2));
 
     // 3. create or get the WS-Security element within the header
     Element wssecHeader = null;
@@ -236,8 +220,6 @@ public class Sign extends WssecCalloutBase implements Execution {
     } else {
       wssecHeader = (Element) nodes.item(0);
     }
-
-    // System.out.printf("C:\n%s\n", toPrettyString(doc, 2));
 
     // 4. embed a Timestamp element under the wssecHeader element
     Element timestamp = doc.createElementNS(Namespaces.WSU, wsuPrefix + ":Timestamp");
@@ -258,32 +240,32 @@ public class Sign extends WssecCalloutBase implements Execution {
       timestamp.appendChild(expires);
     }
 
-    // System.out.printf("D:\n%s\n", toPrettyString(doc, 2));
     // 6. embed the BinarySecurityToken
-      // verify that the cert signs the public key that corresponds to the private key
-      RSAPublicKey k1 = (RSAPublicKey) signConfiguration.certificate.getPublicKey();
-      final byte[] certModulus = k1.getModulus().toByteArray();
-      RSAPrivateKey k2 = (RSAPrivateKey) signConfiguration.privatekey;
-      final byte[] keyModulus = k2.getModulus().toByteArray();
-      String e1 = Base64.getEncoder().encodeToString(certModulus);
-      String e2 = Base64.getEncoder().encodeToString(keyModulus);
-      if (!e1.equals(e2)) {
-        throw new KeyException("public key mismatch. The public key contained in the certificate does not match the private key.");
-      }
+    // verify that the cert signs the public key that corresponds to the private key
+    RSAPublicKey k1 = (RSAPublicKey) signConfiguration.certificate.getPublicKey();
+    final byte[] certModulus = k1.getModulus().toByteArray();
+    RSAPrivateKey k2 = (RSAPrivateKey) signConfiguration.privatekey;
+    final byte[] keyModulus = k2.getModulus().toByteArray();
+    String e1 = Base64.getEncoder().encodeToString(certModulus);
+    String e2 = Base64.getEncoder().encodeToString(keyModulus);
+    if (!e1.equals(e2)) {
+      throw new KeyException(
+          "public key mismatch. The public key contained in the certificate does not match the private key.");
+    }
 
-      Element bst = doc.createElementNS(Namespaces.WSSEC, wssePrefix + ":BinarySecurityToken");
-      String bstId = "SecurityToken-" + java.util.UUID.randomUUID().toString();
-      bst.setAttributeNS(Namespaces.WSU, wsuPrefix + ":Id", bstId);
-      bst.setIdAttributeNS(Namespaces.WSU, "Id", true);
-      bst.setAttribute(
-          "EncodingType",
-          "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary");
-      bst.setAttribute(
-          "ValueType",
-          "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3");
-      bst.setTextContent(
-          Base64.getEncoder().encodeToString(signConfiguration.certificate.getEncoded()));
-      wssecHeader.appendChild(bst);
+    Element bst = doc.createElementNS(Namespaces.WSSEC, wssePrefix + ":BinarySecurityToken");
+    String bstId = "SecurityToken-" + java.util.UUID.randomUUID().toString();
+    bst.setAttributeNS(Namespaces.WSU, wsuPrefix + ":Id", bstId);
+    bst.setIdAttributeNS(Namespaces.WSU, "Id", true);
+    bst.setAttribute(
+        "EncodingType",
+        "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary");
+    bst.setAttribute(
+        "ValueType",
+        "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3");
+    bst.setTextContent(
+        Base64.getEncoder().encodeToString(signConfiguration.certificate.getEncoded()));
+    wssecHeader.appendChild(bst);
 
     String digestMethodUri =
         ((signConfiguration.digestMethod != null)
@@ -330,22 +312,20 @@ public class Sign extends WssecCalloutBase implements Execution {
 
     // The marshalled XMLSignature (SignatureS?) will be added as the last child element
     // of the specified parent node.
-    DOMSignContext signingContext =
-        new DOMSignContext(signConfiguration.privatekey, wssecHeader);
+    DOMSignContext signingContext = new DOMSignContext(signConfiguration.privatekey, wssecHeader);
     SignedInfo signedInfo =
         signatureFactory.newSignedInfo(canonicalizationMethod, signatureMethod, references);
     KeyInfoFactory kif = signatureFactory.getKeyInfoFactory();
-      // For embedding a Keyinfo that holds a security token reference:
-      Element secTokenRef =
-          doc.createElementNS(Namespaces.WSSEC, wssePrefix + ":SecurityTokenReference");
-      Element reference =
-          doc.createElementNS(Namespaces.WSSEC, wssePrefix + ":Reference");
-      reference.setAttribute("URI", "#" + bstId);
-      reference.setAttribute(
-          "ValueType",
-          "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3");
-      secTokenRef.appendChild(reference);
-      javax.xml.crypto.XMLStructure structure = new javax.xml.crypto.dom.DOMStructure(secTokenRef);
+    // For embedding a Keyinfo that holds a security token reference:
+    Element secTokenRef =
+        doc.createElementNS(Namespaces.WSSEC, wssePrefix + ":SecurityTokenReference");
+    Element reference = doc.createElementNS(Namespaces.WSSEC, wssePrefix + ":Reference");
+    reference.setAttribute("URI", "#" + bstId);
+    reference.setAttribute(
+        "ValueType",
+        "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3");
+    secTokenRef.appendChild(reference);
+    javax.xml.crypto.XMLStructure structure = new javax.xml.crypto.dom.DOMStructure(secTokenRef);
     KeyInfo keyInfo = kif.newKeyInfo(java.util.Collections.singletonList(structure));
 
     XMLSignature signature = signatureFactory.newXMLSignature(signedInfo, keyInfo);
@@ -358,24 +338,6 @@ public class Sign extends WssecCalloutBase implements Execution {
         .transform(new DOMSource(doc), new StreamResult(baos));
     return baos.toByteArray();
   }
-
-  // private static BigInteger getPublicExponent() {
-  //   // Currently hard-coded to always return 65537, or 0xAQAB.
-  //   // The callout could be modified to parameterize this value.
-  //   return BigInteger.valueOf(65537);
-  // }
-  //
-  // private static KeyPair getKeyPairFromPrivateKey(PrivateKey privateKey)
-  //     throws PEMException, InvalidKeySpecException, NoSuchAlgorithmException {
-  //   BigInteger publicExponent = getPublicExponent();
-  //   RSAPrivateKey rsaPrivateKey = (RSAPrivateKey) privateKey;
-  //   PublicKey publicKey =
-  //       KeyFactory.getInstance("RSA")
-  //           .generatePublic(
-  //                           new RSAPublicKeySpec(
-  //                                    rsaPrivateKey.getPrivateExponent(), publicExponent));
-  //   return new KeyPair(publicKey, privateKey);
-  // }
 
   private static RSAPrivateKey readKey(String privateKeyPemString, String password)
       throws IOException, OperatorCreationException, PKCSException, InvalidKeySpecException,
@@ -391,9 +353,8 @@ public class Sign extends WssecCalloutBase implements Execution {
     if (o == null) {
       throw new IllegalStateException("Parsed object is null.  Bad input.");
     }
-    if (!(
-          (o instanceof org.bouncycastle.openssl.PEMEncryptedKeyPair)
-          || (o instanceof PKCS8EncryptedPrivateKeyInfo)
+    if (!((o instanceof org.bouncycastle.openssl.PEMEncryptedKeyPair)
+        || (o instanceof PKCS8EncryptedPrivateKeyInfo)
         || (o instanceof PrivateKeyInfo))) {
       // System.out.printf("found %s\n", o.getClass().getName());
       throw new IllegalStateException("Didn't find OpenSSL key. Found: " + o.getClass().getName());
@@ -426,8 +387,6 @@ public class Sign extends WssecCalloutBase implements Execution {
     }
 
     throw new IllegalStateException("unknown PEM object");
-    // return converter.getKeyPair((PEMKeyPair) o);
-
   }
 
   private RSAPrivateKey getPrivateKey(MessageContext msgCtxt) throws Exception {

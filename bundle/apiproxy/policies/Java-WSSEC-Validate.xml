@@ -1,8 +1,0 @@
-<JavaCallout name='Java-XMLDSIG-Validate'>
-  <Properties>
-    <Property name='source'>message.content</Property>
-    <Property name='public-key'>{my_public_key}</Property>
-  </Properties>
-  <ClassName>com.google.apigee.edgecallouts.xmldsig.Validate</ClassName>
-  <ResourceURL>java://edge-xmldsig-1.0.1.jar</ResourceURL>
-</JavaCallout>

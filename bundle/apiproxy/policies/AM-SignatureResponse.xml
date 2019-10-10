@@ -3,7 +3,8 @@
     <Headers/>
   </Remove>
   <Set>
-    <Payload contentType='application/xml'>{output}</Payload>
+    <Payload contentType='application/xml'>
+{output}</Payload>
     <StatusCode>200</StatusCode>
     <ReasonPhrase>OK</ReasonPhrase>
   </Set>

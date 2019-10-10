@@ -3,7 +3,13 @@
     <Headers/>
   </Remove>
   <Set>
-    <Payload contentType='text/plain'>{xmldsig_valid}</Payload>
+    <Payload contentType='application/xml'>
+<result>
+    <valid>{wssec_valid}</valid>
+    <cn>{wssec_cert_0_cn}</cn>
+    <error>{wssec_error}</error>
+</result>
+</Payload>
     <StatusCode>200</StatusCode>
     <ReasonPhrase>OK</ReasonPhrase>
   </Set>
