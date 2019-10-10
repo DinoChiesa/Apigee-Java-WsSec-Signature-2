@@ -88,7 +88,7 @@ Configure the policy this way:
 <JavaCallout name='Java-WSSEC-Validate'>
   <Properties>
     <Property name='source'>message.content</Property>
-    <Property name='common-names'>host.example.com</Property>
+    <Property name='acceptable-thumbprints>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
   </Properties>
   <ClassName>com.google.apigee.edgecallouts.wssecdsig.Validate</ClassName>
   <ResourceURL>java://edge-wssecdsig-20191008.jar</ResourceURL>
@@ -104,7 +104,8 @@ To verify a signature and not require an expiry, use this:
   <Properties>
     <Property name='source'>message.content</Property>
     <Property name='require-expiry'>false</Property>
-    <Property name='common-names'>host.example.com</Property>
+    <Property name='acceptable-thumbprints>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
+    <Property name='acceptable-subject-common-names'>host.example.com</Property>
   </Properties>
   <ClassName>com.google.apigee.edgecallouts.wssecdsig.Validate</ClassName>
   <ResourceURL>java://edge-wssecdsig-20191008.jar</ResourceURL>
@@ -113,21 +114,37 @@ To verify a signature and not require an expiry, use this:
 
 The properties are:
 
-| name            | description |
-| --------------- | ------------------------------------------------------------------------------------------------------------------ |
-| source          | optional. the variable name in which to obtain the source signed document to validate. Defaults to message.content |
-| common-names    | required. a comma-separated list of common names (CNs) which are acceptable signers. If any signature is from a CN other than that specified, the verification fails. |
-| require-expiry  | optional. true or false, defaults true. Whether to require an expiry in the timestamp.  |
+| name                   | description |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| source                 | optional. the variable name in which to obtain the source signed document to validate. Defaults to message.content |
+| accept-thumbprints     | required. a comma-separated list of thumbprints of the certs which are acceptable signers. If any signature is from a cert that has a thumbprint other than that specified, the verification fails. |
+| accept-subject-cns     | optional. a comma-separated list of common names (CNs) for the subject which are acceptable signers. If any signature is from a CN other than that specified, the verification fails. |
+| require-expiry         | optional. true or false, defaults true. Whether to require an expiry in the timestamp.  |
 | required-signed-elements | optional. a comma-separated list of elements that must be signed. Defaults to "body,timestamp" . To validate a message that signs only the Timestamp and not the body, set this to "timestamp". (You probably don't want to do this.) |
-| ignore-expiry   | optional. true or false. defaults false. When true, tells the validator to ignore the Timestamp/Expires field when evaluating validity.    |
+| ignore-expiry          | optional. true or false. defaults false. When true, tells the validator to ignore the Timestamp/Expires field when evaluating validity.    |
+| max-lifetime           | optional. Takes a string like 120s, 10m, 4d, etc to imply 120 seconds, 10 minutes, 4 days.  Use this to limit the acceptable lifetime of the signed document. This requires the Timestamp to include a Created as well as an Expires element. Default: no maximum lifetime. |
 | throw-fault-on-invalid | optional. true or false, defaults to false. Whether to throw a fault when the signature is invalid. |
 
 
-The result of the Validate callout is to set a single variable: xmldsig_valid.
+The result of the Validate callout is to set a single variable: wssec_valid.
 It takes a true value if the signature was valid; false otherwise. You can use a
 Condition in your Proxy flow to examine that result.  If the document is
 invalid, then the policy will also throw a fault if the throw-fault-on-invalid
 property is true.
+
+Further comments:
+
+* Every certificate has a "thumbprint", which is just a SHA-1 hash of the
+  encoded certificate data. This thumbprint is unique among certificates.
+  The way the Validate callout checks for certificate trust is via these
+  thumbprints. You must configure `accept-thumbprints` to use the Validate
+  callout.
+
+* The maximum lifetime is computed from the asserted (and probably signed)
+  Timestamp, by computing the difference between the Created and the Expires
+  times. With this property, you can configure the policy to reject a signature
+  that has a lifetime greater, say, 5 minutes.
+
 
 See [the example API proxy included here](./bundle) for a working example of these policy configurations.
 

@@ -21,11 +21,9 @@ import com.apigee.flow.execution.spi.Execution;
 import com.apigee.flow.message.MessageContext;
 import com.google.apigee.util.TimeResolver;
 import com.google.apigee.xml.Namespaces;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringReader;
-import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyException;
@@ -33,7 +31,7 @@ import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
-import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
@@ -48,6 +46,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import javax.security.auth.x500.X500Principal;
 import javax.xml.crypto.MarshalException;
 import javax.xml.crypto.dsig.CanonicalizationMethod;
 import javax.xml.crypto.dsig.DigestMethod;
@@ -63,15 +62,10 @@ import javax.xml.crypto.dsig.keyinfo.KeyInfo;
 import javax.xml.crypto.dsig.keyinfo.KeyInfoFactory;
 import javax.xml.crypto.dsig.spec.C14NMethodParameterSpec;
 import javax.xml.crypto.dsig.spec.TransformParameterSpec;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathFactory;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.openssl.PEMDecryptorProvider;
 import org.bouncycastle.openssl.PEMEncryptedKeyPair;
@@ -85,7 +79,6 @@ import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfo;
 import org.bouncycastle.pkcs.PKCSException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 public class Sign extends WssecCalloutBase implements Execution {
@@ -453,24 +446,14 @@ public class Sign extends WssecCalloutBase implements Execution {
     return toSign;
   }
 
-  private static Certificate certificateFromPEM(String certificateString)
-      throws java.security.KeyException {
-    try {
-      CertificateFactory certFactory = CertificateFactory.getInstance("X.509", "BC");
-      certificateString = reformIndents(certificateString);
-      Certificate certificate =
-          certFactory.generateCertificate(
-              new ByteArrayInputStream(certificateString.getBytes(StandardCharsets.UTF_8)));
-      return certificate;
-    } catch (Exception ex) {
-      throw new java.security.KeyException("cannot instantiate certificate", ex);
-    }
-  }
-
   private Certificate getCertificate(MessageContext msgCtxt) throws Exception {
     String certificateString = getSimpleRequiredProperty("certificate", msgCtxt);
     certificateString = certificateString.trim();
-    return certificateFromPEM(certificateString);
+    X509Certificate certificate = (X509Certificate) certificateFromPEM(certificateString);
+    X500Principal principal = certificate.getIssuerX500Principal();
+    msgCtxt.setVariable(varName("cert_issuer_cn"), getCommonName(principal));
+    msgCtxt.setVariable(varName("cert_thumbprint"), getThumbprint(certificate));
+    return certificate;
   }
 
   static class SignConfiguration {

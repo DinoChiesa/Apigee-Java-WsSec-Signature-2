@@ -49,13 +49,13 @@ public class TestWssecValidateCallout extends CalloutTestBase {
   }
 
   @Test
-  public void missingCommonNames() throws Exception {
+  public void missingAcceptableThumbprints() throws Exception {
     msgCtxt.setVariable("message.content", signedSoap1);
 
     Map<String, String> props = new HashMap<String, String>();
     props.put("debug", "true");
     props.put("require-expiry", "false");
-    //props.put("common-names", "apigee.google.com");
+    //props.put("accept-thumbprints", "ada3a946669ad4e6e2c9f81360c3249e49a57a7d");
     props.put("source", "message.content");
 
     Validate callout = new Validate(props);
@@ -65,7 +65,7 @@ public class TestWssecValidateCallout extends CalloutTestBase {
     Assert.assertEquals(actualResult, ExecutionResult.ABORT, "result not as expected");
     Object errorOutput = msgCtxt.getVariable("wssec_error");
     Assert.assertNotNull(errorOutput, "errorOutput");
-    Assert.assertEquals(errorOutput, "common-names resolves to an empty string");
+    Assert.assertEquals(errorOutput, "accept-thumbprints resolves to an empty string");
   }
 
   @Test
@@ -76,7 +76,7 @@ public class TestWssecValidateCallout extends CalloutTestBase {
     Map<String, String> props = new HashMap<String, String>();
     props.put("debug", "true");
     props.put("require-expiry", "false");
-    props.put("common-names", "apigee.google.com");
+    props.put("accept-thumbprints", "ada3a946669ad4e6e2c9f81360c3249e49a57a7d");
     props.put("source", "message.content");
 
     Validate callout = new Validate(props);
@@ -102,7 +102,7 @@ public class TestWssecValidateCallout extends CalloutTestBase {
 
     Map<String, String> props = new HashMap<String, String>();
     // props.put("debug", "true");
-    props.put("common-names", "apigee.google.com");
+    props.put("accept-thumbprints", "ada3a946669ad4e6e2c9f81360c3249e49a57a7d");
     props.put("source", "message.content");
 
     Validate callout = new Validate(props);
@@ -123,8 +123,8 @@ public class TestWssecValidateCallout extends CalloutTestBase {
   }
 
   @Test
-  public void nameMismatch() throws Exception {
-    String method = "nameMismatch() ";
+  public void subjectNameMismatch() throws Exception {
+    String method = "subjectNameMismatch() ";
     msgCtxt.setVariable("message.content", signedSoap1);
 
     Map<String, String> props = new HashMap<String, String>();
@@ -132,7 +132,8 @@ public class TestWssecValidateCallout extends CalloutTestBase {
     props.put("require-expiry", "false");
     props.put("throw-fault-on-invalid", "true");
     props.put("source", "message.content");
-    props.put("common-names", "abc.example.com"); // name mismatch => expect invalid
+    props.put("accept-thumbprints", "ada3a946669ad4e6e2c9f81360c3249e49a57a7d"); // match
+    props.put("accept-subject-cns", "abc.example.com"); // name mismatch => expect invalid
 
     Validate callout = new Validate(props);
 
@@ -141,7 +142,36 @@ public class TestWssecValidateCallout extends CalloutTestBase {
     Assert.assertEquals(actualResult, ExecutionResult.ABORT, "result not as expected");
     Object errorOutput = msgCtxt.getVariable("wssec_error");
     Assert.assertNotNull(errorOutput, "errorOutput");
-    Assert.assertEquals(errorOutput, "common name not accepted");
+    Assert.assertEquals(errorOutput, "subject common name not accepted");
+    Object exception = msgCtxt.getVariable("wssec_exception");
+    Assert.assertNull(exception, method + "exception");
+    Object stacktrace = msgCtxt.getVariable("wssec_stacktrace");
+    Assert.assertNull(stacktrace, method + "stacktrace");
+    Boolean isValid = (Boolean) msgCtxt.getVariable("wssec_valid");
+
+    Assert.assertFalse(isValid, method + "valid");
+  }
+
+  @Test
+  public void thumbprintNotAccepted() throws Exception {
+    String method = "thumbprintNotAccepted() ";
+    msgCtxt.setVariable("message.content", signedSoap1);
+
+    Map<String, String> props = new HashMap<String, String>();
+    props.put("debug", "true");
+    props.put("require-expiry", "false");
+    props.put("throw-fault-on-invalid", "true");
+    props.put("source", "message.content");
+    props.put("accept-thumbprints", "Xxxxxxxxxxxxxxxxxx"); // mismatch
+
+    Validate callout = new Validate(props);
+
+    // execute and retrieve output
+    ExecutionResult actualResult = callout.execute(msgCtxt, exeCtxt);
+    Assert.assertEquals(actualResult, ExecutionResult.ABORT, "result not as expected");
+    Object errorOutput = msgCtxt.getVariable("wssec_error");
+    Assert.assertNotNull(errorOutput, "errorOutput");
+    Assert.assertEquals(errorOutput, "certificate thumbprint not accepted");
     Object exception = msgCtxt.getVariable("wssec_exception");
     Assert.assertNull(exception, method + "exception");
     Object stacktrace = msgCtxt.getVariable("wssec_stacktrace");

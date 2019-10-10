@@ -17,11 +17,25 @@ package com.google.apigee.edgecallouts.wssecdsig;
 
 import com.apigee.flow.message.MessageContext;
 import com.google.apigee.util.XmlUtils;
+import java.io.ByteArrayInputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
+import java.security.KeyException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.naming.InvalidNameException;
+import javax.naming.ldap.LdapName;
+import javax.naming.ldap.Rdn;
+import javax.security.auth.x500.X500Principal;
+import javax.xml.bind.DatatypeConverter;
 import org.w3c.dom.Document;
 
 public abstract class WssecCalloutBase {
@@ -123,6 +137,40 @@ public abstract class WssecCalloutBase {
     return s.trim().replaceAll("([\\r|\\n|\\r\\n] *)", "\n");
   }
 
+  protected static Certificate certificateFromPEM(String certificateString)
+      throws KeyException {
+    try {
+      CertificateFactory certFactory = CertificateFactory.getInstance("X.509", "BC");
+      certificateString = reformIndents(certificateString);
+      Certificate certificate =
+        certFactory.generateCertificate(
+              new ByteArrayInputStream(certificateString.getBytes(StandardCharsets.UTF_8)));
+      return certificate;
+    } catch (Exception ex) {
+      throw new KeyException("cannot instantiate certificate", ex);
+    }
+  }
+
+  protected static String getCommonName(X500Principal principal)
+    throws InvalidNameException {
+    LdapName ldapDN = new LdapName(principal.getName());
+    String cn = null;
+    for (Rdn rdn : ldapDN.getRdns()) {
+      // System.out.println(rdn.getType() + " -> " + rdn.getValue());
+      if (rdn.getType().equals("CN")) {
+        cn = rdn.getValue().toString();
+      }
+    }
+    return cn;
+  }
+
+  protected static String getThumbprint(X509Certificate certificate)
+    throws NoSuchAlgorithmException, CertificateEncodingException {
+    return DatatypeConverter.printHexBinary(
+        MessageDigest.getInstance("SHA-1").digest(
+                certificate.getEncoded())).toLowerCase();
+  }
+
   protected static String getStackTraceAsString(Throwable t) {
     StringWriter sw = new StringWriter();
     PrintWriter pw = new PrintWriter(sw);
@@ -133,8 +181,6 @@ public abstract class WssecCalloutBase {
   protected void setExceptionVariables(Exception exc1, MessageContext msgCtxt) {
     String error = exc1.toString();
     msgCtxt.setVariable(varName("exception"), error);
-    //System.out.printf("Exception: %s\n", error);
-    //exc1.printStackTrace(System.out);
     int ch = error.indexOf(':'); // lastIndexOf
     if (ch >= 0) {
       msgCtxt.setVariable(varName("error"), error.substring(ch + 2).trim());
