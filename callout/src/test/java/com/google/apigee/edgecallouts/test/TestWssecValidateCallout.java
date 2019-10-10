@@ -55,6 +55,7 @@ public class TestWssecValidateCallout extends CalloutTestBase {
 
     Map<String, String> props = new HashMap<String, String>();
     props.put("debug", "true");
+    props.put("require-expiry", "false");
     props.put("source", "message.content");
 
     Validate callout = new Validate(props);
@@ -106,6 +107,7 @@ public class TestWssecValidateCallout extends CalloutTestBase {
 
     Map<String, String> props = new HashMap<String, String>();
     props.put("debug", "true");
+    props.put("require-expiry", "false");
     props.put("throw-fault-on-invalid", "true");
     props.put("source", "message.content");
     props.put("common-names", "abc.example.com"); // name mismatch => expect invalid

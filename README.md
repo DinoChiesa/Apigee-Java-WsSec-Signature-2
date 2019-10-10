@@ -31,6 +31,10 @@ The Sign callout has these constraints and features:
 * uses a canonicalization method of "http://www.w3.org/2001/10/xml-exc-c14n#"
 * uses a digest mode of sha1 (default) or sha256
 
+The Verify callout has these constraints and features:
+* supports RSA algorithms - rsa-sha1 (default) or rsa-sha256
+* If a Timestamp is present in the WS-Security header, validates expiry.
+
 ## Dependencies
 
 Make sure these JARs are available as resources in the  proxy or in the environment or organization.
@@ -91,13 +95,31 @@ Configure the policy this way:
 </JavaCallout>
 ```
 
+This will verify a WS-Security signature on the specified document. It will by
+default require a Timestamp and an Expires element.
+
+To verify a signature and not require an expiry, use this:
+```xml
+<JavaCallout name='Java-WSSEC-Validate'>
+  <Properties>
+    <Property name='source'>message.content</Property>
+    <Property name='require-expiry'>false</Property>
+    <Property name='common-names'>host.example.com</Property>
+  </Properties>
+  <ClassName>com.google.apigee.edgecallouts.wssecdsig.Validate</ClassName>
+  <ResourceURL>java://edge-wssecdsig-20191008.jar</ResourceURL>
+</JavaCallout>
+```
+
 The properties are:
 
 | name            | description |
 | --------------- | ------------------------------------------------------------------------------------------------------------------ |
 | source          | optional. the variable name in which to obtain the source signed document to validate. Defaults to message.content |
 | common-names    | optional. a comma-separated list of common names (CNs) which are acceptable signers.                               |
-| ignore-timestamp| optional. true or false. defaults false. When true, tells the validator to ignore the timestamp field when evaluating validity.    |
+| require-expiry  | optional. true or false, defaults true. Whether to require an expiry in the timestamp.  |
+| required-signed-elements | optional. a Comma-separated list of elements that must be signed. Defaults to "body,timestamp" .   |
+| ignore-expiry   | optional. true or false. defaults false. When true, tells the validator to ignore the Timestamp/Expires field when evaluating validity.    |
 | throw-fault-on-invalid | optional. true or false, defaults to false. Whether to throw a fault when the signature is invalid. |
 
 

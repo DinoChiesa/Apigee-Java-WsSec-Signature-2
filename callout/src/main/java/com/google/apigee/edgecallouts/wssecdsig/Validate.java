@@ -151,14 +151,13 @@ public class Validate extends WssecCalloutBase implements Execution {
     }
   }
 
-  private static Element getBinarySecurityToken(String id, Document doc) {
+  private static Element getNamedElementWithId(String xmlns, String tagName, String id, Document doc) {
     id = id.substring(1); // chopLeft
-    NodeList nl =
-        getSecurityElement(doc).getElementsByTagNameNS(Namespaces.WSSEC, "BinarySecurityToken");
+    NodeList nl = getSecurityElement(doc).getElementsByTagNameNS(xmlns, tagName);
     for (int i = 0; i < nl.getLength(); i++) {
-      Element bst = (Element) nl.item(i);
-      String bstId = bst.getAttributeNS(Namespaces.WSU, "Id");
-      if (id.equals(bstId)) return bst;
+      Element candidate = (Element) nl.item(i);
+      String candidateId = candidate.getAttributeNS(Namespaces.WSU, "Id");
+      if (id.equals(candidateId)) return candidate;
     }
     return null;
   }
@@ -179,7 +178,7 @@ public class Validate extends WssecCalloutBase implements Execution {
       throw new RuntimeException(
           "Unsupported URI format: KeyInfo/SecurityTokenReference/Reference");
     }
-    Element bst = getBinarySecurityToken(strUri, doc);
+    Element bst = getNamedElementWithId(Namespaces.WSSEC, "BinarySecurityToken", strUri, doc);
     if (bst == null) {
       throw new RuntimeException("Unresolvable reference: #" + strUri);
     }
@@ -241,7 +240,39 @@ public class Validate extends WssecCalloutBase implements Execution {
     }
   }
 
-  private static ValidationResult validate_RSA(Document doc)
+  private static void checkCompulsoryElements(Document doc, Element signatureElement, List<String> foundTags) {
+    NodeList nl =
+      signatureElement.getElementsByTagNameNS(XMLSignature.XMLNS, "SignedInfo");
+    if (nl.getLength() == 1) {
+      Element signedInfo = (Element) nl.item(0);
+      nl = signedInfo.getElementsByTagNameNS(XMLSignature.XMLNS, "Reference");
+      if (nl.getLength() == 0) {
+        return;
+      }
+      for (int i=0; i<nl.getLength(); i++) {
+        Element reference = (Element) nl.item(i);
+        String uri = reference.getAttribute("URI");
+        if (uri != null && uri.startsWith("#")) {
+          uri = uri.substring(1);
+          Element referent = doc.getElementById(uri);
+          if (referent != null){
+            String tagName = referent.getLocalName();
+            String ns = referent.getNamespaceURI();
+            if (tagName != null && ns != null) {
+              if (tagName.equals("Timestamp") && ns.equals(Namespaces.WSU)) {
+                foundTags.add("timestamp");
+              }
+              if (tagName.equals("Body") && ns.equals(Namespaces.SOAP10)) {
+                foundTags.add("body");
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  private static ValidationResult validate_RSA(Document doc, List<String> requiredElements, MessageContext msgCtxt)
       throws MarshalException, XMLSignatureException, KeyException, CertificateExpiredException,
           CertificateNotYetValidException {
     NodeList nl = getSignatures(doc);
@@ -254,9 +285,11 @@ public class Validate extends WssecCalloutBase implements Execution {
     boolean isValid = true;
     List<X509Certificate> certs = new ArrayList<X509Certificate>();
     XMLSignatureFactory signatureFactory = XMLSignatureFactory.getInstance("DOM");
+    List<String> signedElements = new ArrayList<String>();
     for (int i = 0; i < nl.getLength(); i++) {
       if (isValid) {
         Element signatureElement = (Element) nl.item(i);
+        checkCompulsoryElements(doc, signatureElement, signedElements);
         NodeList keyinfoList =
             signatureElement.getElementsByTagNameNS(XMLSignature.XMLNS, "KeyInfo");
         if (nl.getLength() == 0) {
@@ -271,27 +304,70 @@ public class Validate extends WssecCalloutBase implements Execution {
         certs.add(cert);
       }
     }
+
+    // check for presence of signed elements
+      if (isValid && requiredElements.contains("timestamp")) {
+        if (!signedElements.contains("timestamp")) {
+          isValid = false;
+          msgCtxt.setVariable(varName("error"), "did not find signature for wsu:Timestamp");
+        }
+      }
+      if (isValid && requiredElements.contains("body")) {
+        if (!signedElements.contains("body")) {
+          isValid = false;
+          msgCtxt.setVariable(varName("error"), "did not find signature for soap:Body");
+        }
+      }
+
     return new ValidationResult(isValid, certs);
   }
 
-  private static boolean isExpired(Document doc, MessageContext msgCtxt) {
+  private static Element getTimestamp(Document doc) {
     NodeList nl = getSecurityElement(doc).getElementsByTagNameNS(Namespaces.WSU, "Timestamp");
+    if (nl.getLength() == 0) {
+      return null;
+    }
+    return (Element) nl.item(0);
+  }
+
+  private static boolean hasExpiry(Document doc) {
+    Element timestamp = getTimestamp(doc);
+    if (timestamp == null) {
+      return false;
+    }
+    NodeList nl = timestamp.getElementsByTagNameNS(Namespaces.WSU, "Expires");
     if (nl.getLength() == 0) {
       return false;
     }
+    return true;
+  }
 
-    Element timestamp = (Element) nl.item(0);
+  private static boolean isExpired(Document doc, MessageContext msgCtxt) {
+    Element timestamp = getTimestamp(doc);
+    if (timestamp == null) {
+      return false;
+    }
+    NodeList nl = timestamp.getElementsByTagNameNS(Namespaces.WSU, "Created");
+    if (nl.getLength() == 1) {
+    Element created = (Element) nl.item(0);
+    String createdString = created.getTextContent();
+    msgCtxt.setVariable(varName("created"), createdString);
+    }
+
     nl = timestamp.getElementsByTagNameNS(Namespaces.WSU, "Expires");
     if (nl.getLength() == 0) {
       return false;
     }
     Element expires = (Element) nl.item(0);
-    TemporalAccessor creationAccessor =
-        DateTimeFormatter.ISO_INSTANT.parse(expires.getTextContent());
+    String expiryString = expires.getTextContent();
+    msgCtxt.setVariable(varName("expiry"), expiryString);
+
+    TemporalAccessor creationAccessor = DateTimeFormatter.ISO_INSTANT.parse(expiryString);
     Instant expiry = Instant.from(creationAccessor);
     Instant now = Instant.now();
-    long secondsTilExpiry = now.until(expiry, ChronoUnit.SECONDS);
-    if (secondsTilExpiry <= 0L) {
+    long secondsRemaining = now.until(expiry, ChronoUnit.SECONDS);
+    msgCtxt.setVariable(varName("seconds_remaining"), Long.toString(secondsRemaining));
+    if (secondsRemaining <= 0L) {
       msgCtxt.setVariable(varName("error"), "the timestamp is expired");
       return true;
     }
@@ -306,8 +382,16 @@ public class Validate extends WssecCalloutBase implements Execution {
     return false;
   }
 
-  private boolean wantIgnoreTimestamp(MessageContext msgCtxt) throws Exception {
-    String wantIgnore = getSimpleOptionalProperty("ignore-timestamp", msgCtxt);
+  private boolean requireExpiry(MessageContext msgCtxt) throws Exception {
+    String requireExpiry = getSimpleOptionalProperty("require-expiry", msgCtxt);
+    if (requireExpiry == null) return true;
+    requireExpiry = requireExpiry.trim();
+    if (requireExpiry.trim().toLowerCase().equals("false")) return false;
+    return true;
+  }
+
+  private boolean wantIgnoreExpiry(MessageContext msgCtxt) throws Exception {
+    String wantIgnore = getSimpleOptionalProperty("ignore-expiry", msgCtxt);
     if (wantIgnore == null) return false;
     wantIgnore = wantIgnore.trim();
     if (wantIgnore.trim().toLowerCase().equals("true")) return true;
@@ -324,24 +408,49 @@ public class Validate extends WssecCalloutBase implements Execution {
     return names;
   }
 
+  private List<String> getRequiredSignedElements(MessageContext msgCtxt) throws Exception {
+    String elementList = getSimpleOptionalProperty("required-signed-elements", msgCtxt);
+    if (elementList == null) elementList = "body,timestamp";
+
+    return Arrays.asList(elementList.split(",[ ]*")).stream()
+      .map(String::toLowerCase)
+      .collect(Collectors.toList());
+  }
+
   public ExecutionResult execute(final MessageContext msgCtxt, final ExecutionContext execContext) {
     try {
       msgCtxt.setVariable(varName("valid"), false);
       Document document = getDocument(msgCtxt);
-      List<String> acceptableCommonNames = getCommonNames(msgCtxt);
-      ValidationResult validationResult = validate_RSA(document);
+      List<String> requiredElements = getRequiredSignedElements(msgCtxt);
+      ValidationResult validationResult = validate_RSA(document, requiredElements, msgCtxt);
       boolean isValid = validationResult.isValid();
       if (!isValid) {
         msgCtxt.setVariable(varName("error"), "signature did not verify");
       }
-      if (isValid && !wantIgnoreTimestamp(msgCtxt)) {
-        if (isExpired(document, msgCtxt)) {
-          msgCtxt.setVariable(varName("error"), "timestamp is expired");
+
+      if (requireExpiry(msgCtxt)) {
+        if (!hasExpiry(document)) {
+          msgCtxt.setVariable(varName("error"), "required element Timestamp/Expires is missing");
           isValid = false;
         }
       }
+
+      if (isValid) {
+        boolean expired = isExpired(document, msgCtxt);
+        if (expired) {
+          if (wantIgnoreExpiry(msgCtxt)) {
+            msgCtxt.setVariable(varName("notice"), "Timestamp/Expires is past");
+          }
+          else {
+            msgCtxt.setVariable(varName("error"), "Timestamp/Expires is past");
+            isValid = false;
+          }
+        }
+      }
+
       if (isValid) {
         // check CNs of certs
+      List<String> acceptableCommonNames = getCommonNames(msgCtxt);
         List<X509Certificate> certs = validationResult.getCertificates();
         for (int i = 0; i < certs.size(); i++) {
           X500Principal principal = certs.get(i).getSubjectX500Principal();
