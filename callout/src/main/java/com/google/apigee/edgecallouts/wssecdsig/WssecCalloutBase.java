@@ -119,6 +119,10 @@ public abstract class WssecCalloutBase {
     return sb.toString();
   }
 
+  protected static String reformIndents(String s) {
+    return s.trim().replaceAll("([\\r|\\n|\\r\\n] *)", "\n");
+  }
+
   protected static String getStackTraceAsString(Throwable t) {
     StringWriter sw = new StringWriter();
     PrintWriter pw = new PrintWriter(sw);
@@ -131,7 +135,7 @@ public abstract class WssecCalloutBase {
     msgCtxt.setVariable(varName("exception"), error);
     //System.out.printf("Exception: %s\n", error);
     //exc1.printStackTrace(System.out);
-    int ch = error.lastIndexOf(':');
+    int ch = error.indexOf(':'); // lastIndexOf
     if (ch >= 0) {
       msgCtxt.setVariable(varName("error"), error.substring(ch + 2).trim());
     } else {

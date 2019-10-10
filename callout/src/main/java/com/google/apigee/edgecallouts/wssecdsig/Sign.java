@@ -268,7 +268,7 @@ public class Sign extends WssecCalloutBase implements Execution {
       String e1 = Base64.getEncoder().encodeToString(certModulus);
       String e2 = Base64.getEncoder().encodeToString(keyModulus);
       if (!e1.equals(e2)) {
-        throw new java.security.KeyException("public key mismatch. The public key contained in the certificate does not match the private key.");
+        throw new KeyException("public key mismatch. The public key contained in the certificate does not match the private key.");
       }
 
       Element bst = doc.createElementNS(Namespaces.WSSEC, wssePrefix + ":BinarySecurityToken");
@@ -494,10 +494,6 @@ public class Sign extends WssecCalloutBase implements Execution {
     return toSign;
   }
 
-  private static String reformIndents(String s) {
-    return s.trim().replaceAll("([\\r|\\n|\\r\\n] *)", "\n");
-  }
-
   private static Certificate certificateFromPEM(String certificateString)
       throws java.security.KeyException {
     try {
@@ -580,12 +576,11 @@ public class Sign extends WssecCalloutBase implements Execution {
       setExceptionVariables(exc1, msgCtxt);
       return ExecutionResult.ABORT;
     } catch (Exception e) {
-      String stacktrace = getStackTraceAsString(e);
       if (getDebug()) {
-        System.out.println(stacktrace);
+        String stacktrace = getStackTraceAsString(e);
+        msgCtxt.setVariable(varName("stacktrace"), stacktrace);
       }
       setExceptionVariables(e, msgCtxt);
-      msgCtxt.setVariable(varName("stacktrace"), stacktrace);
       return ExecutionResult.ABORT;
     }
   }

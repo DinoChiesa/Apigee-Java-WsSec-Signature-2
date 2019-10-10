@@ -1,9 +1,6 @@
 package com.google.apigee.edgecallouts.test;
 
-import com.apigee.flow.execution.ExecutionContext;
 import com.apigee.flow.execution.ExecutionResult;
-import com.apigee.flow.message.Message;
-import com.apigee.flow.message.MessageContext;
 import com.google.apigee.edgecallouts.wssecdsig.Sign;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -18,83 +15,14 @@ import java.util.Map;
 import javax.xml.crypto.dsig.XMLSignature;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import mockit.Mock;
-import mockit.MockUp;
 import org.testng.Assert;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-public class TestWssecSignCallout {
-
-  static {
-    java.security.Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
-  }
-
-  MessageContext msgCtxt;
-  InputStream messageContentStream;
-  Message message;
-  ExecutionContext exeCtxt;
-
-  @BeforeMethod()
-  public void beforeMethod() {
-
-    msgCtxt =
-        new MockUp<MessageContext>() {
-          private Map variables;
-
-          public void $init() {
-            variables = new HashMap();
-          }
-
-          @Mock()
-          public <T> T getVariable(final String name) {
-            if (variables == null) {
-              variables = new HashMap();
-            }
-            return (T) variables.get(name);
-          }
-
-          @Mock()
-          public boolean setVariable(final String name, final Object value) {
-            if (variables == null) {
-              variables = new HashMap();
-            }
-            variables.put(name, value);
-            return true;
-          }
-
-          @Mock()
-          public boolean removeVariable(final String name) {
-            if (variables == null) {
-              variables = new HashMap();
-            }
-            if (variables.containsKey(name)) {
-              variables.remove(name);
-            }
-            return true;
-          }
-
-          @Mock()
-          public Message getMessage() {
-            return message;
-          }
-        }.getMockInstance();
-
-    exeCtxt = new MockUp<ExecutionContext>() {}.getMockInstance();
-
-    message =
-        new MockUp<Message>() {
-          @Mock()
-          public InputStream getContentAsStream() {
-            // new ByteArrayInputStream(messageContent.getBytes(StandardCharsets.UTF_8));
-            return messageContentStream;
-          }
-        }.getMockInstance();
-  }
+public class TestWssecSignCallout extends CalloutTestBase {
 
   static class KeyCertPair {
     public String privateKey;
@@ -344,7 +272,7 @@ public class TestWssecSignCallout {
     msgCtxt.setVariable("my-private-key", pairs[0].privateKey);
 
     Map<String, String> props = new HashMap<String, String>();
-    //props.put("debug", "true");
+    // props.put("debug", "true");
     props.put("source", "message.content");
     props.put("private-key", "{my-private-key}");
     props.put("private-key-password", "Secret123");
@@ -781,7 +709,7 @@ public class TestWssecSignCallout {
     msgCtxt.setVariable("my-certificate", pairs[1].certificate);
 
     Map<String, String> props = new HashMap<String, String>();
-    //props.put("debug", "true");
+    // props.put("debug", "true");
     props.put("source", "message.content");
     props.put("private-key", "{my-private-key}");
     props.put("certificate", "{my-certificate}");
@@ -796,7 +724,7 @@ public class TestWssecSignCallout {
     Object exception = msgCtxt.getVariable("wssec_exception");
     Assert.assertEquals(exception, expectedException, method + "exception");
     Object errorOutput = msgCtxt.getVariable("wssec_error");
-    Assert.assertEquals(errorOutput, "password empty", "errorOutput");
+    Assert.assertEquals(errorOutput, "exception processing key pair: password empty", "errorOutput");
   }
 
   @Test
@@ -810,7 +738,7 @@ public class TestWssecSignCallout {
     msgCtxt.setVariable("my-certificate", pairs[1].certificate);
 
     Map<String, String> props = new HashMap<String, String>();
-    //props.put("debug", "true");
+    // props.put("debug", "true");
     props.put("source", "message.content");
     props.put("private-key", "{my-private-key}");
     props.put("certificate", "{my-certificate}");

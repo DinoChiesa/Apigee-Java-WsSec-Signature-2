@@ -81,13 +81,13 @@ This policy will sign the entire document and embed a Signature element as a chi
 Configure the policy this way:
 
 ```xml
-<JavaCallout name='Java-XMLDSIG-Validate'>
+<JavaCallout name='Java-WSSEC-Validate'>
   <Properties>
     <Property name='source'>message.content</Property>
-    <Property name='public-key'>{my_public_key}</Property>
+    <Property name='common-names>host.example.com</Property>
   </Properties>
-  <ClassName>com.google.apigee.edgecallouts.xmldsig.Validate</ClassName>
-  <ResourceURL>java://edge-xmldsig-1.0.1.jar</ResourceURL>
+  <ClassName>com.google.apigee.edgecallouts.wssecdsig.Validate</ClassName>
+  <ResourceURL>java://edge-wssecdsig-20191008.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -96,9 +96,13 @@ The properties are:
 | name            | description |
 | --------------- | ------------ |
 | source          | optional. the variable name in which to obtain the source signed document to validate. Defaults to message.content |
-| public-key      | required. the PEM-encoded RSA public key. You can use a variable reference here as shown above. |
+| common-names    | optional. a comma-separated list of common names (CNs) which are acceptable signers |
+| ignore-timestamp| optional. true or false. When true, tells the validator to ignore the timestamp field when evaluating validity. |
 
-The result of the Validate callout is to set a single variable: xmldsig_valid.  It takes a true value if the signature was valid; false otherwise. You can use a Condition in your Proxy flow to examine that result.
+The result of the Validate callout is to set a single variable: xmldsig_valid.
+It takes a true value if the signature was valid; false otherwise. You can use a
+Condition in your Proxy flow to examine that result.  If the document is
+invalid, then the policy will also throw a fault. 
 
 
 See [the example API proxy included here](./bundle) for a working example of these policy configurations.
