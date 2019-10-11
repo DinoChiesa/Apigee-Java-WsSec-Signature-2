@@ -45,6 +45,9 @@ public abstract class WssecCalloutBase {
   private static final Pattern variableReferencePattern =
       Pattern.compile(variableReferencePatternString);
 
+  private static final String commonError = "^(.+?)[:;] (.+)$";
+  private static final Pattern commonErrorPattern = Pattern.compile(commonError);
+
   public WssecCalloutBase(Map properties) {
     this.properties = properties;
   }
@@ -181,11 +184,19 @@ public abstract class WssecCalloutBase {
   protected void setExceptionVariables(Exception exc1, MessageContext msgCtxt) {
     String error = exc1.toString();
     msgCtxt.setVariable(varName("exception"), error);
-    int ch = error.indexOf(':'); // lastIndexOf
-    if (ch >= 0) {
-      msgCtxt.setVariable(varName("error"), error.substring(ch + 2).trim());
-    } else {
+    Matcher matcher = commonErrorPattern.matcher(error);
+    if (matcher.matches()) {
+      msgCtxt.setVariable(varName("error"), matcher.group(2));
+    }
+    else {
       msgCtxt.setVariable(varName("error"), error);
     }
+
+    // int ch = error.indexOf(':'); // lastIndexOf
+    // if (ch >= 0) {
+    //   msgCtxt.setVariable(varName("error"), error.substring(ch + 2).trim());
+    // } else {
+    //   msgCtxt.setVariable(varName("error"), error);
+    // }
   }
 }

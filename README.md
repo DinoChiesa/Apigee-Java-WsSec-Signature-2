@@ -120,7 +120,7 @@ The properties are:
 | accept-thumbprints     | required. a comma-separated list of thumbprints of the certs which are acceptable signers. If any signature is from a cert that has a thumbprint other than that specified, the verification fails. |
 | accept-subject-cns     | optional. a comma-separated list of common names (CNs) for the subject which are acceptable signers. If any signature is from a CN other than that specified, the verification fails. |
 | require-expiry         | optional. true or false, defaults true. Whether to require an expiry in the timestamp.  |
-| required-signed-elements | optional. a comma-separated list of elements that must be signed. Defaults to "body,timestamp" . To require only a signature on the Timestamp and not the Body when validating, set this to "timestamp". (You probably don't want to do this.) To require only a signature on the Body and not the Timestamp when validating, set this to "body". (You probably don't want to do this, either.) Probably you want to just leave this element out of your configuration and accept the defaults. |
+| required-signed-elements | optional. a comma-separated list of elements that must be signed. Defaults to "body,timestamp" . To require only a signature on the Timestamp and not the Body when validating, set this to "timestamp". (You probably don't want to do this.) To require only a signature on the Body and not the Timestamp when validating, set this to "body". (You probably don't want to do this, either.) Probably you want to just leave this element out of your configuration and accept the default. |
 | ignore-expiry          | optional. true or false. defaults false. When true, tells the validator to ignore the Timestamp/Expires field when evaluating validity.    |
 | max-lifetime           | optional. Takes a string like 120s, 10m, 4d, etc to imply 120 seconds, 10 minutes, 4 days.  Use this to limit the acceptable lifetime of the signed document. This requires the Timestamp to include a Created as well as an Expires element. Default: no maximum lifetime. |
 | throw-fault-on-invalid | optional. true or false, defaults to false. Whether to throw a fault when the signature is invalid, or when validation fails for another reason (wrong elements signed, lifetime exceeds max, etc). |
@@ -144,6 +144,12 @@ Further comments:
   Timestamp, by computing the difference between the Created and the Expires
   times. With this property, you can configure the policy to reject a signature
   that has a lifetime greater, say, 5 minutes.
+
+* it is possible to configure the policy with require-expiry = true and
+  ignore-expiry = true.  While this seems nonsensical, it can be useful in
+  testing scenarios. It tells the policy to check that an Expires element is
+  present, but do not evaluate the value of the element. This will be needed
+  rarely if ever, in a production situation.
 
 * There is a wssec_error variable that gets set when the validation check fails.
   It will give you some additional information about the validation failure.

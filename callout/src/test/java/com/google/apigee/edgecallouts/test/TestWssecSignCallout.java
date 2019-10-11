@@ -641,7 +641,7 @@ public class TestWssecSignCallout extends CalloutTestBase {
     Assert.assertNull(stacktrace, method + "stacktrace");
 
     String output = (String) msgCtxt.getVariable("output");
-    // System.out.printf("** Output:\n" + output + "\n");
+    //System.out.printf("** Output:\n" + output + "\n");
 
     Document doc = docFromStream(new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8)));
     NodeList nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "Signature");

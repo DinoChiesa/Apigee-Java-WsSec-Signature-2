@@ -218,12 +218,28 @@ public class Validate extends WssecCalloutBase implements Execution {
     }
   }
 
+  private static void checkSignatureMethod(Element signature, MessageContext msgCtxt) {
+    NodeList nl = signature.getElementsByTagNameNS(XMLSignature.XMLNS, "SignedInfo");
+    if (nl.getLength() == 0)
+      throw new RuntimeException("No element: SignedInfo");
+
+    Element signedInfo = (Element) nl.item(0);
+    nl = signedInfo.getElementsByTagNameNS(XMLSignature.XMLNS, "SignatureMethod");
+    if (nl.getLength() == 0)
+      throw new RuntimeException("No element: SignatureMethod");
+
+    Element signatureMethod = (Element) nl.item(0);
+    String algorithm = signatureMethod.getAttribute("Algorithm");
+    if (algorithm != null)
+      msgCtxt.setVariable(varName("signaturemethod"), algorithm);
+  }
+
   private static ValidationResult validate_RSA(
       Document doc, List<String> requiredElements, MessageContext msgCtxt)
       throws MarshalException, XMLSignatureException, KeyException, CertificateExpiredException,
           CertificateNotYetValidException {
-    NodeList nl = getSignatures(doc);
-    if (nl.getLength() == 0) {
+    NodeList signatures = getSignatures(doc);
+    if (signatures.getLength() == 0) {
       throw new RuntimeException("No element: Signature");
     }
 
@@ -233,13 +249,14 @@ public class Validate extends WssecCalloutBase implements Execution {
     List<X509Certificate> certs = new ArrayList<X509Certificate>();
     XMLSignatureFactory signatureFactory = XMLSignatureFactory.getInstance("DOM");
     List<String> signedElements = new ArrayList<String>();
-    for (int i = 0; i < nl.getLength(); i++) {
+    for (int i = 0; i < signatures.getLength(); i++) {
       if (isValid) {
-        Element signatureElement = (Element) nl.item(i);
+        Element signatureElement = (Element) signatures.item(i);
         checkCompulsoryElements(doc, signatureElement, signedElements);
+        checkSignatureMethod(signatureElement, msgCtxt);
         NodeList keyinfoList =
             signatureElement.getElementsByTagNameNS(XMLSignature.XMLNS, "KeyInfo");
-        if (nl.getLength() == 0) {
+        if (keyinfoList.getLength() == 0) {
           throw new RuntimeException("No element: Signature/KeyInfo");
         }
         X509Certificate cert = (X509Certificate) getCertificate((Element) keyinfoList.item(0), doc);
@@ -283,10 +300,7 @@ public class Validate extends WssecCalloutBase implements Execution {
       return false;
     }
     NodeList nl = timestamp.getElementsByTagNameNS(Namespaces.WSU, "Expires");
-    if (nl.getLength() == 0) {
-      return false;
-    }
-    return true;
+    return (nl.getLength() > 0);
   }
 
   private static int getDocumentLifetime(MessageContext msgCtxt) {
@@ -315,6 +329,8 @@ public class Validate extends WssecCalloutBase implements Execution {
       Element created = (Element) nl.item(0);
       String createdString = created.getTextContent();
       msgCtxt.setVariable(varName("created"), createdString);
+      TemporalAccessor creationAccessor = DateTimeFormatter.ISO_INSTANT.parse(createdString);
+      msgCtxt.setVariable(varName("created_seconds"), Long.toString(Instant.from(creationAccessor).getEpochSecond()));
     }
 
     nl = timestamp.getElementsByTagNameNS(Namespaces.WSU, "Expires");
@@ -323,19 +339,17 @@ public class Validate extends WssecCalloutBase implements Execution {
     }
     Element expires = (Element) nl.item(0);
     String expiryString = expires.getTextContent();
-    msgCtxt.setVariable(varName("expiry"), expiryString);
+    msgCtxt.setVariable(varName("expires"), expiryString);
 
     TemporalAccessor expiryAccessor = DateTimeFormatter.ISO_INSTANT.parse(expiryString);
     Instant expiry = Instant.from(expiryAccessor);
+    msgCtxt.setVariable(varName("expires_seconds"), Long.toString(expiry.getEpochSecond()));
+
     Instant now = Instant.now();
     long secondsRemaining = now.until(expiry, ChronoUnit.SECONDS);
     msgCtxt.setVariable(varName("seconds_remaining"), Long.toString(secondsRemaining));
 
-    if (secondsRemaining <= 0L) {
-      msgCtxt.setVariable(varName("error"), "the timestamp is expired");
-      return true;
-    }
-    return false;
+    return (secondsRemaining <= 0L);
   }
 
   private boolean wantFaultOnInvalid(MessageContext msgCtxt) throws Exception {
@@ -466,6 +480,7 @@ public class Validate extends WssecCalloutBase implements Execution {
             }
           }
         }
+        msgCtxt.setVariable(varName("cert_count"), Integer.toString(certs.size()));
       }
 
       msgCtxt.setVariable(varName("valid"), isValid);
