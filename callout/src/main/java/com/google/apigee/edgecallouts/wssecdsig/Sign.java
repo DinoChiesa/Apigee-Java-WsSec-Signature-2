@@ -436,6 +436,8 @@ public class Sign extends WssecCalloutBase implements Execution {
     List<String> toSign =
         Arrays.asList(elementList.split(",[ ]*")).stream()
             .map(String::toLowerCase)
+            .filter(c -> c.equals("body") || c.equals("timestamp"))
+            .distinct()
             .collect(Collectors.toList());
 
     if (!toSign.contains("timestamp") && !toSign.contains("body")) {

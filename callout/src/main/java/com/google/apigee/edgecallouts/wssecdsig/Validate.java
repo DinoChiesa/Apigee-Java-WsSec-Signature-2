@@ -392,6 +392,8 @@ public class Validate extends WssecCalloutBase implements Execution {
 
     return Arrays.asList(elementList.split(",[ ]*")).stream()
         .map(String::toLowerCase)
+        .filter(c -> c.equals("body") || c.equals("timestamp"))
+        .distinct()
         .collect(Collectors.toList());
   }
 
@@ -409,7 +411,7 @@ public class Validate extends WssecCalloutBase implements Execution {
         msgCtxt.setVariable(varName("error"), "signature did not verify");
       }
 
-      if (requireExpiry(msgCtxt)) {
+      if (isValid && requireExpiry(msgCtxt)) {
         if (!hasExpiry(document)) {
           msgCtxt.setVariable(varName("error"), "required element Timestamp/Expires is missing");
           isValid = false;
@@ -419,7 +421,7 @@ public class Validate extends WssecCalloutBase implements Execution {
       if (isValid && maxLifetime > 0) {
         int documentLifetime = getDocumentLifetime(msgCtxt);
         if (documentLifetime < 0 || documentLifetime > maxLifetime) {
-          msgCtxt.setVariable(varName("error"), "Lifetime of the document exceeds maximum");
+          msgCtxt.setVariable(varName("error"), "Lifetime of the document exceeds configured maximum");
           isValid = false;
         }
       }

@@ -88,7 +88,7 @@ Configure the policy this way:
 <JavaCallout name='Java-WSSEC-Validate'>
   <Properties>
     <Property name='source'>message.content</Property>
-    <Property name='acceptable-thumbprints>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
+    <Property name='acceptable-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
   </Properties>
   <ClassName>com.google.apigee.edgecallouts.wssecdsig.Validate</ClassName>
   <ResourceURL>java://edge-wssecdsig-20191008.jar</ResourceURL>
@@ -104,7 +104,7 @@ To verify a signature and not require an expiry, use this:
   <Properties>
     <Property name='source'>message.content</Property>
     <Property name='require-expiry'>false</Property>
-    <Property name='acceptable-thumbprints>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
+    <Property name='acceptable-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
     <Property name='acceptable-subject-common-names'>host.example.com</Property>
   </Properties>
   <ClassName>com.google.apigee.edgecallouts.wssecdsig.Validate</ClassName>
