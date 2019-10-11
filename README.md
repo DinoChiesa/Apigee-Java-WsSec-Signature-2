@@ -120,10 +120,10 @@ The properties are:
 | accept-thumbprints     | required. a comma-separated list of thumbprints of the certs which are acceptable signers. If any signature is from a cert that has a thumbprint other than that specified, the verification fails. |
 | accept-subject-cns     | optional. a comma-separated list of common names (CNs) for the subject which are acceptable signers. If any signature is from a CN other than that specified, the verification fails. |
 | require-expiry         | optional. true or false, defaults true. Whether to require an expiry in the timestamp.  |
-| required-signed-elements | optional. a comma-separated list of elements that must be signed. Defaults to "body,timestamp" . To validate a message that signs only the Timestamp and not the body, set this to "timestamp". (You probably don't want to do this.) |
+| required-signed-elements | optional. a comma-separated list of elements that must be signed. Defaults to "body,timestamp" . To require only a signature on the Timestamp and not the Body when validating, set this to "timestamp". (You probably don't want to do this.) To require only a signature on the Body and not the Timestamp when validating, set this to "body". (You probably don't want to do this, either.) Probably you want to just leave this element out of your configuration and accept the defaults. |
 | ignore-expiry          | optional. true or false. defaults false. When true, tells the validator to ignore the Timestamp/Expires field when evaluating validity.    |
 | max-lifetime           | optional. Takes a string like 120s, 10m, 4d, etc to imply 120 seconds, 10 minutes, 4 days.  Use this to limit the acceptable lifetime of the signed document. This requires the Timestamp to include a Created as well as an Expires element. Default: no maximum lifetime. |
-| throw-fault-on-invalid | optional. true or false, defaults to false. Whether to throw a fault when the signature is invalid. |
+| throw-fault-on-invalid | optional. true or false, defaults to false. Whether to throw a fault when the signature is invalid, or when validation fails for another reason (wrong elements signed, lifetime exceeds max, etc). |
 
 
 The result of the Validate callout is to set a single variable: wssec_valid.
@@ -137,13 +137,16 @@ Further comments:
 * Every certificate has a "thumbprint", which is just a SHA-1 hash of the
   encoded certificate data. This thumbprint is unique among certificates.
   The way the Validate callout checks for certificate trust is via these
-  thumbprints. You must configure `accept-thumbprints` to use the Validate
+  thumbprints. `accept-thumbprints` is required; You must configure it when using the Validate
   callout.
 
 * The maximum lifetime is computed from the asserted (and probably signed)
   Timestamp, by computing the difference between the Created and the Expires
   times. With this property, you can configure the policy to reject a signature
   that has a lifetime greater, say, 5 minutes.
+
+* There is a wssec_error variable that gets set when the validation check fails.
+  It will give you some additional information about the validation failure.
 
 
 See [the example API proxy included here](./bundle) for a working example of these policy configurations.
