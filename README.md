@@ -158,20 +158,6 @@ Deploy the API Proxy to an organization and environment using a tool like [impor
 
 There are some sample SOAP request documents included in this repo that you can use for demonstrations.
 
-There is a private RSA key and a corresponding certificate embedded in the API
-Proxy. You should not use those for your own purposes. Create your own. You can
-do it with openssl.
-
-
-```
- openssl genpkey  -algorithm rsa -pkeyopt  rsa_keygen_bits:2048 -out privatekey.pem
- openssl req \
-        -key privatekey.pem \
-        -new -out domain.csr
-
- openssl x509 -req -days 3650 -in domain.csr -signkey privatekey.pem -out domain.cert
-```
-
 ### Invoking the Example proxy:
 
 * Signing with Timestamp but no expiry
@@ -297,6 +283,21 @@ Supposing the input XML looks like this:
   </soapenv:Body>
 </soapenv:Envelope>
 ```
+
+## About Keys
+
+There is a private RSA key and a corresponding certificate embedded in the API
+Proxy. You should not use those for your own purposes. Create your
+own. Self-signed is fine. You can
+do it with openssl. Creating a privatekey, a Certificate signing request, and a
+certificate, is as easy as 1,2,3:
+
+```
+ openssl genpkey  -algorithm rsa -pkeyopt  rsa_keygen_bits:2048 -out privatekey.pem
+ openssl req -key privatekey.pem -new -out domain.csr
+ openssl x509 -req -days 3650 -in domain.csr -signkey privatekey.pem -out domain.cert
+```
+
 
 ## Bugs
 
