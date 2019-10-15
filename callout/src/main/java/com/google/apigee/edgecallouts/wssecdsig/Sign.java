@@ -71,6 +71,7 @@ import javax.xml.transform.stream.StreamResult;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.openssl.PEMDecryptorProvider;
 import org.bouncycastle.openssl.PEMEncryptedKeyPair;
+import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.bouncycastle.openssl.jcajce.JceOpenSSLPKCS8DecryptorProviderBuilder;
@@ -337,51 +338,65 @@ public class Sign extends WssecCalloutBase implements Execution {
 
   private static RSAPrivateKey readKey(String privateKeyPemString, String password)
       throws IOException, OperatorCreationException, PKCSException, InvalidKeySpecException,
-          NoSuchAlgorithmException {
+             NoSuchAlgorithmException {
     if (privateKeyPemString == null) {
       throw new IllegalStateException("PEM String is null");
     }
     if (password == null) password = "";
 
-    PEMParser pr = new PEMParser(new StringReader(privateKeyPemString));
-    Object o = pr.readObject();
+    PEMParser pr = null;
+    try {
+      pr = new PEMParser(new StringReader(privateKeyPemString));
+      Object o = pr.readObject();
 
-    if (o == null) {
-      throw new IllegalStateException("Parsed object is null.  Bad input.");
-    }
-    if (!((o instanceof org.bouncycastle.openssl.PEMEncryptedKeyPair)
-        || (o instanceof PKCS8EncryptedPrivateKeyInfo)
-        || (o instanceof PrivateKeyInfo))) {
-      // System.out.printf("found %s\n", o.getClass().getName());
-      throw new IllegalStateException("Didn't find OpenSSL key. Found: " + o.getClass().getName());
-    }
+      if (o == null) {
+        throw new IllegalStateException("Parsed object is null.  Bad input.");
+      }
+      if (!((o instanceof org.bouncycastle.openssl.PEMEncryptedKeyPair)
+            || (o instanceof PKCS8EncryptedPrivateKeyInfo)
+            || (o instanceof PEMKeyPair)
+            || (o instanceof PrivateKeyInfo))) {
+        // System.out.printf("found %s\n", o.getClass().getName());
+        throw new IllegalStateException("Didn't find OpenSSL key. Found: " + o.getClass().getName());
+      }
 
-    JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
+      JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
 
-    if (o instanceof PrivateKeyInfo) {
-      return (RSAPrivateKey) converter.getPrivateKey((PrivateKeyInfo) o);
-    }
+      if (o instanceof PEMKeyPair) {
+        // eg, "openssl genrsa -out keypair-rsa-2048-unencrypted.pem 2048"
+        return (RSAPrivateKey) converter.getPrivateKey(((PEMKeyPair) o).getPrivateKeyInfo());
+      }
 
-    if (o instanceof PKCS8EncryptedPrivateKeyInfo) {
-      // produced by "openssl genpkey" or the series of commands reqd to sign an ec key
-      // logger.info("decodePrivateKey, encrypted PrivateKeyInfo");
-      PKCS8EncryptedPrivateKeyInfo pkcs8EncryptedPrivateKeyInfo = (PKCS8EncryptedPrivateKeyInfo) o;
-      JceOpenSSLPKCS8DecryptorProviderBuilder decryptorProviderBuilder =
+      if (o instanceof PrivateKeyInfo) {
+        // produced by "openssl genpkey" without the encryption
+        return (RSAPrivateKey) converter.getPrivateKey((PrivateKeyInfo) o);
+      }
+
+      if (o instanceof PKCS8EncryptedPrivateKeyInfo) {
+        // produced by "openssl genpkey" or the series of commands reqd to sign an ec key
+        // logger.info("decodePrivateKey, encrypted PrivateKeyInfo");
+        PKCS8EncryptedPrivateKeyInfo pkcs8EncryptedPrivateKeyInfo = (PKCS8EncryptedPrivateKeyInfo) o;
+        JceOpenSSLPKCS8DecryptorProviderBuilder decryptorProviderBuilder =
           new JceOpenSSLPKCS8DecryptorProviderBuilder();
-      InputDecryptorProvider decryptorProvider =
+        InputDecryptorProvider decryptorProvider =
           decryptorProviderBuilder.build(password.toCharArray());
-      PrivateKeyInfo privateKeyInfo =
+        PrivateKeyInfo privateKeyInfo =
           pkcs8EncryptedPrivateKeyInfo.decryptPrivateKeyInfo(decryptorProvider);
-      return (RSAPrivateKey) converter.getPrivateKey(privateKeyInfo);
-    }
+        return (RSAPrivateKey) converter.getPrivateKey(privateKeyInfo);
+      }
 
-    if (o instanceof PEMEncryptedKeyPair) {
-      PEMDecryptorProvider decProv =
+      if (o instanceof PEMEncryptedKeyPair) {
+        PEMDecryptorProvider decProv =
           new JcePEMDecryptorProviderBuilder().setProvider("BC").build(password.toCharArray());
-      KeyPair keyPair = converter.getKeyPair(((PEMEncryptedKeyPair) o).decryptKeyPair(decProv));
-      return (RSAPrivateKey) keyPair.getPrivate();
+        KeyPair keyPair = converter.getKeyPair(((PEMEncryptedKeyPair) o).decryptKeyPair(decProv));
+        return (RSAPrivateKey) keyPair.getPrivate();
+      }
     }
-
+    finally {
+      if (pr != null) {
+        pr.close();
+      }
+    }
     throw new IllegalStateException("unknown PEM object");
   }
 

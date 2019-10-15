@@ -25,9 +25,23 @@ and is licensed under the Apache 2.0 license. See the [LICENSE](LICENSE) file.
 
 This code is open source but you don't need to compile it in order to use it.
 
+## Building
+
+Use maven to build and package the jar. You need maven v3.5 at a minimum.
+
+```
+mvn clean package
+```
+
+The 'package' goal will copy the jar to the resources/java directory for the
+example proxy bundle. If you want to use this in your own API Proxy, you need
+to drop this JAR into the appropriate API Proxy bundle. Or include the jar as an
+environment-wide or organization-wide jar via the Apigee administrative API.
+
+
 ## Details
 
-There are two callout classes,
+There is a single jar, edge-wssecdsig-20191015.jar . Within that jar, there are two callout classes,
 
 * com.google.apigee.edgecallouts.wssecdsig.Sign - signs the input SOAP document.
 * com.google.apigee.edgecallouts.wssecdsig.Validate - validates the signed SOAP document
@@ -69,7 +83,7 @@ Configure the policy this way:
     <Property name='certificate'>{my_certificate}</Property>
   </Properties>
   <ClassName>com.google.apigee.edgecallouts.wssecdsig.Sign</ClassName>
-  <ResourceURL>java://edge-wssecdsig-20191008.jar</ResourceURL>
+  <ResourceURL>java://edge-wssecdsig-20191015.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -100,7 +114,7 @@ Configure the policy this way:
     <Property name='acceptable-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
   </Properties>
   <ClassName>com.google.apigee.edgecallouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://edge-wssecdsig-20191008.jar</ResourceURL>
+  <ResourceURL>java://edge-wssecdsig-20191015.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -117,7 +131,7 @@ To verify a signature and not require an expiry, use this:
     <Property name='acceptable-subject-common-names'>host.example.com</Property>
   </Properties>
   <ClassName>com.google.apigee.edgecallouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://edge-wssecdsig-20191008.jar</ResourceURL>
+  <ResourceURL>java://edge-wssecdsig-20191015.jar</ResourceURL>
 </JavaCallout>
 ```
 

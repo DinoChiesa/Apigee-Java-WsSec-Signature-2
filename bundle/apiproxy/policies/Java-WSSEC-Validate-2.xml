@@ -7,5 +7,5 @@
     <Property name='accept-thumbprints'>{request.queryparam.thumbprint}</Property>
   </Properties>
   <ClassName>com.google.apigee.edgecallouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://edge-wssecdsig-20191008.jar</ResourceURL>
+  <ResourceURL>java://edge-wssecdsig-20191015.jar</ResourceURL>
 </JavaCallout>

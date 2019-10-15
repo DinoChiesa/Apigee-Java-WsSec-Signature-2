@@ -38,6 +38,10 @@ public class TestWssecSignCallout extends CalloutTestBase {
 
   KeyCertPair[] pairs =
       new KeyCertPair[] {
+        // generated in this way:
+        // openssl genpkey  -algorithm rsa  -aes-128-cbc  -pkeyopt rsa_keygen_bits:2048 -out
+        // private-encrypted-genpkey-aes-128-cbc.pem
+
         new KeyCertPair(
             "-----BEGIN ENCRYPTED PRIVATE KEY-----\n"
                 + "MIIFHzBJBgkqhkiG9w0BBQ0wPDAbBgkqhkiG9w0BBQwwDgQIekZWpLB7vfoCAggA\n"
@@ -92,6 +96,8 @@ public class TestWssecSignCallout extends CalloutTestBase {
                 + "IPvGEtT4k7i/Z3Tb3Iie/7buuTiw9zk99q0SDzX+YIcFRAPgIPn70G9eECMDH1QR\n"
                 + "RpA9oUg0EWTbKG8dw+PgMIrg6jm9Vj8VbWsr4SPsOZi5LA==\n"
                 + "-----END CERTIFICATE-----\n"),
+
+        //
         new KeyCertPair(
             "-----BEGIN RSA PRIVATE KEY-----\n"
                 + "Proc-Type: 4,ENCRYPTED\n"
@@ -146,6 +152,9 @@ public class TestWssecSignCallout extends CalloutTestBase {
                 + "TUBlHaSiomLDFP0RP3pM8JNQfU24zoZn2XFlBNRdk0ct50KaH5p6Y/eEls1spP1J\n"
                 + "hAHIUq6UU664nfE/LZjtL2rgHLqlD1g/aAI=\n"
                 + "-----END CERTIFICATE-----\n"),
+
+        // generate an RSA key in new format without encryption
+        // openssl genpkey  -algorithm rsa -pkeyopt rsa_keygen_bits:2048 -out keypair.pem
         new KeyCertPair(
             "-----BEGIN PRIVATE KEY-----\n"
                 + "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCokDY3Bd6pdpVo\n"
@@ -197,6 +206,60 @@ public class TestWssecSignCallout extends CalloutTestBase {
                 + "tqsYmQKz5GRBoajGdMn60UF9Ry5B32k31JVpat4qm7+Ig1YMwv2nfY6bgHzsI4Wj\n"
                 + "ETOLvFCYgBDJzIEy+0jA1FUe5Ec5Fs5nmiG8F7FRJ/9aYb1e+cbQVRZyc1wKlmIR\n"
                 + "eK/LgG8FjdDjeqFZTg0AjInG8/oOz5ib\n"
+                + "-----END CERTIFICATE-----\n"),
+
+        // generate an unencrypted RSA key in the old format:
+        // openssl genrsa -out keypair-rsa-2048-unencrypted.pem 2048
+        new KeyCertPair(
+            "-----BEGIN RSA PRIVATE KEY-----\n"
+                + "MIIEpQIBAAKCAQEA3/Kz9Ft3OGzVKc6XztaZPcjVD8eVCqvFc4ezZ3e9DC5s59c3\n"
+                + "In0XNiarxYu5Djn5DMzcLM4Zw7oLiwYLfHCQQMLt0ujty8jKuDkrt65zvxSxQ4Cb\n"
+                + "L66v8DN/LQ3OX6TXK3S7WrRckpkbyqSw08HX2qVacVTssN0S62ZGh6pqhW/H6knk\n"
+                + "b6lvrnGd/GbTopPZseQNwXLqhGd/xNwWKwDNBfmdabS13RYQJY5qEZxCWZU0RVbF\n"
+                + "8p1SRPJh9InAXPY+Smrmo6ets6YJehmn08XNR2dZS/ZeHJcMI+ejGJuwMmRcqI8P\n"
+                + "7DYFoMXY2IIf60TVvALggJNCc/idPi2aTSO1oQIDAQABAoIBAQCyMjknEzDGYTMs\n"
+                + "1QrOtsuw8gE3USQzHYM77pq+lfSDoN1fjUx90POLTzIXOprByzd1C/2WWVj++Sb+\n"
+                + "NI0nM5pVLcZ3sIinQtqrxDIZMmM/hIOYptjVFDdC9ncXroisakocdgIupp2SuOn4\n"
+                + "URuzI+dSP4i77Ut5YDARx4wPn3arPU1R4ZlpFAFqu9+tUVPgt76qTsHml6y+XrpS\n"
+                + "14EVhJQefzFYt58s0mO5T01Pe1PnTnjqMARpaLyXZMvbMTJLfkG7QFc98kcon0VW\n"
+                + "xQpIXTByRBvyZf24Be3+ry7OLAD+DatnzygN/At8W74BQD/3qwjNWQgNMvvxTSuh\n"
+                + "3Dqsiw3BAoGBAPwyrrzW8JM2hg/BLk57JSMB9lJIiGPP9XeinVrjRvC28jfwvEMi\n"
+                + "Nk3hEDG3/vrwUz7KnhfJ4SHXr89YZUi/2yb8pOOsV6S1nmTInx0R+cRkBAghngHT\n"
+                + "urYTM4zO2I87IV2Hnj2RN9+GXu/pgt01j/mbXHRSr1BH50n8j4qxnDXdAoGBAONS\n"
+                + "/o7F1vObOFd/sCOrNt7kfQSrlwkPnrODQnZ9IQCuDYsYqzLy3pP3YrddSIL0mwxa\n"
+                + "QgExzS86dC2Pm/eZucRVIIDsJtUeR9M9v+SHIEBYGqbElGh4DHmLlRfuUj470arr\n"
+                + "oogu3obooKEeSkkNgX0a4zrNZts8QyNjMkYnWgyVAoGBAKpsmXZVDWd93eRBmEhC\n"
+                + "oVrh1ZHPIBPLEUbSJeGoWmUKS+6PiLkZIndIUsg2XWE4DBkPlPvgWXmkJlNImdEq\n"
+                + "jS7wZYDRErzkWnAivptHbXBQYgUYqozzhmXJ3fkWQnOv8qEgp0dVnds4E2muc9eG\n"
+                + "fY+gdD7LLVtj66EswddopHYlAoGBANXq+/GO60BDCToNxstKC1Ck46DJeE/miwmS\n"
+                + "s7Cc/7mMEOKcTD6dnibP3e1/swTI+j8dkI9fNh8DeuCFC9hsqQvAr92iXMigviZj\n"
+                + "LXj4T7k9L5dP1fiZP+QBHkRu2KYH1L5rD3/n2zBJKR91SaKFOx1nd/2V3PziMKvU\n"
+                + "ZTLvRSYhAoGAWEkEX3RnYrAKeyG1CtAVUM/uhyC00V5WQsI2heMyuf1t6BWJzkLq\n"
+                + "wkOmt1V6JleAoCY24Nt+NK65CXfCt6iZH9vF3CsiMr1f8D8Tprx2r4lhrUGrEh7U\n"
+                + "AliWsYfrgJ9ZcIu+prksc9zAmT+aSqPYRzMDBQ5d+sSthDSXdfTKE2g=\n"
+                + "-----END RSA PRIVATE KEY-----\n",
+            null, // no password
+            "-----BEGIN CERTIFICATE-----\n"
+                + "MIIDvDCCAqQCCQDs3rlzLqs8KjANBgkqhkiG9w0BAQUFADCBnzELMAkGA1UEBhMC\n"
+                + "VVMxEzARBgNVBAgMCkNhbGlmb3JuaWExEjAQBgNVBAcMCVN1bm55dmFsZTEPMA0G\n"
+                + "A1UECgwGR29vZ2xlMQ8wDQYDVQQLDAZBcGlnZWUxJTAjBgNVBAMMHGFwaWdlZS5z\n"
+                + "dW5ueXZhbHVlLmdvb2dsZS5jb20xHjAcBgkqhkiG9w0BCQEWD2Rpbm9AYXBpZ2Vl\n"
+                + "LmNvbTAeFw0xOTEwMTUyMTI1MzJaFw0yOTEwMTIyMTI1MzJaMIGfMQswCQYDVQQG\n"
+                + "EwJVUzETMBEGA1UECAwKQ2FsaWZvcm5pYTESMBAGA1UEBwwJU3Vubnl2YWxlMQ8w\n"
+                + "DQYDVQQKDAZHb29nbGUxDzANBgNVBAsMBkFwaWdlZTElMCMGA1UEAwwcYXBpZ2Vl\n"
+                + "LnN1bm55dmFsdWUuZ29vZ2xlLmNvbTEeMBwGCSqGSIb3DQEJARYPZGlub0BhcGln\n"
+                + "ZWUuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3/Kz9Ft3OGzV\n"
+                + "Kc6XztaZPcjVD8eVCqvFc4ezZ3e9DC5s59c3In0XNiarxYu5Djn5DMzcLM4Zw7oL\n"
+                + "iwYLfHCQQMLt0ujty8jKuDkrt65zvxSxQ4CbL66v8DN/LQ3OX6TXK3S7WrRckpkb\n"
+                + "yqSw08HX2qVacVTssN0S62ZGh6pqhW/H6knkb6lvrnGd/GbTopPZseQNwXLqhGd/\n"
+                + "xNwWKwDNBfmdabS13RYQJY5qEZxCWZU0RVbF8p1SRPJh9InAXPY+Smrmo6ets6YJ\n"
+                + "ehmn08XNR2dZS/ZeHJcMI+ejGJuwMmRcqI8P7DYFoMXY2IIf60TVvALggJNCc/id\n"
+                + "Pi2aTSO1oQIDAQABMA0GCSqGSIb3DQEBBQUAA4IBAQCbXDGIPZ/C+5nLSnZN/vlQ\n"
+                + "ndaUrrzhhZMorywyL5aZp+Em7bWg475xJy4QLDKWM5JQi66DxGdkJ7oDV/RT7cFc\n"
+                + "2lCk84bDw9agA7Q3N38qdrIck1/EfgWAQgMeGYP8hg3do+5Bc+b8f2C9WV2lVF3z\n"
+                + "QVuEom5JsLlbhIWSVsQniRE3wSj5PUXDCLMBxvoOhq5+uNvDPD21rETX13s3AT0E\n"
+                + "WB+XsRDi4B69LZvji6logh3g5Osu86TOV/nqapovLUgvNky259sLouxNZRx/1SRT\n"
+                + "EHNOScTDSZhEsysd9MnO/hphNmSjoVxz5dUvxwYz7MaHcPeUAPkI3KKJRJU5e2gh\n"
                 + "-----END CERTIFICATE-----\n")
       };
 
@@ -437,14 +500,14 @@ public class TestWssecSignCallout extends CalloutTestBase {
     String method = "validResult1() ";
     msgCtxt.setVariable("message.content", simpleSoap1);
     msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
-    msgCtxt.setVariable("my-cert", pairs[2].certificate);
+    msgCtxt.setVariable("my-certificate", pairs[2].certificate);
 
     Map<String, String> props = new HashMap<String, String>();
     props.put("debug", "true");
     props.put("source", "message.content");
     props.put("digest-method", "sha256");
     props.put("private-key", "{my-private-key}");
-    props.put("certificate", "{my-cert}");
+    props.put("certificate", "{my-certificate}");
     props.put("output-variable", "output");
 
     Sign callout = new Sign(props);
@@ -618,14 +681,14 @@ public class TestWssecSignCallout extends CalloutTestBase {
     int minutesExpiry = 15;
     msgCtxt.setVariable("message.content", simpleSoap1);
     msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
-    msgCtxt.setVariable("my-cert", pairs[2].certificate);
+    msgCtxt.setVariable("my-certificate", pairs[2].certificate);
 
     Map<String, String> props = new HashMap<String, String>();
     props.put("debug", "true");
     props.put("source", "message.content");
     props.put("expiry", minutesExpiry + "m");
     props.put("private-key", "{my-private-key}");
-    props.put("certificate", "{my-cert}");
+    props.put("certificate", "{my-certificate}");
     props.put("output-variable", "output");
 
     Sign callout = new Sign(props);
@@ -641,7 +704,7 @@ public class TestWssecSignCallout extends CalloutTestBase {
     Assert.assertNull(stacktrace, method + "stacktrace");
 
     String output = (String) msgCtxt.getVariable("output");
-    //System.out.printf("** Output:\n" + output + "\n");
+    // System.out.printf("** Output:\n" + output + "\n");
 
     Document doc = docFromStream(new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8)));
     NodeList nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "Signature");
@@ -700,6 +763,38 @@ public class TestWssecSignCallout extends CalloutTestBase {
   }
 
   @Test
+  public void oldFormatPrivateKey() throws Exception {
+    String method = "oldFormatPrivateKey() ";
+    msgCtxt.setVariable("message.content", simpleSoap1);
+    msgCtxt.setVariable("my-private-key", pairs[3].privateKey);
+    msgCtxt.setVariable("my-certificate", pairs[3].certificate);
+
+    Map<String, String> props = new HashMap<String, String>();
+    props.put("debug", "true");
+    props.put("source", "message.content");
+    props.put("private-key", "{my-private-key}");
+    props.put("certificate", "{my-certificate}");
+    props.put("output-variable", "output");
+
+    Sign callout = new Sign(props);
+
+    // execute and retrieve output
+    ExecutionResult actualResult = callout.execute(msgCtxt, exeCtxt);
+    Assert.assertEquals(actualResult, ExecutionResult.SUCCESS, "result not as expected");
+    Object exception = msgCtxt.getVariable("wssec_exception");
+    Assert.assertNull(exception, method + "exception");
+    Object errorOutput = msgCtxt.getVariable("wssec_error");
+    Assert.assertNull(errorOutput, "errorOutput");
+    Object stacktrace = msgCtxt.getVariable("wssec_stacktrace");
+    Assert.assertNull(stacktrace, method + "stacktrace");
+
+    String output = (String) msgCtxt.getVariable("output");
+    Document doc = docFromStream(new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8)));
+    NodeList nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "Signature");
+    Assert.assertEquals(nl.getLength(), 1, method + "Signature element");
+  }
+
+  @Test
   public void oldFormatPrivateKeyEncryptedNoPassword() throws Exception {
     String method = "oldFormatPrivateKeyEncrypted() ";
     String expectedException =
@@ -724,7 +819,8 @@ public class TestWssecSignCallout extends CalloutTestBase {
     Object exception = msgCtxt.getVariable("wssec_exception");
     Assert.assertEquals(exception, expectedException, method + "exception");
     Object errorOutput = msgCtxt.getVariable("wssec_error");
-    Assert.assertEquals(errorOutput, "exception processing key pair: password empty", "errorOutput");
+    Assert.assertEquals(
+        errorOutput, "exception processing key pair: password empty", "errorOutput");
   }
 
   @Test
