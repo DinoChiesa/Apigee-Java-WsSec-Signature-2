@@ -5,6 +5,15 @@ to compile a simple Java callout for Apigee Edge, that creates or validates
 a digital signature that complies with WS-Security standard, using an x509v3
 Binary Security Token.
 
+## Status
+
+This _replaces_ the previous version of the callout, which can still be found at
+[this link](https://github.com/DinoChiesa/ApigeeEdge-Java-WsSec-Signature) .
+The previous version of the callout was not parameterizable, and depended upon
+wss4j.  The latter prevented the use of the callout in Apigee cloud. This
+callout does not exhibit those limitations.
+
+
 ## Disclaimer
 
 This example is not an official Google product, nor is it part of an official Google product.
