@@ -352,10 +352,10 @@ public class Sign extends WssecCalloutBase implements Execution {
       if (o == null) {
         throw new IllegalStateException("Parsed object is null.  Bad input.");
       }
-      if (!((o instanceof org.bouncycastle.openssl.PEMEncryptedKeyPair)
+      if (!((o instanceof PEMEncryptedKeyPair)
             || (o instanceof PKCS8EncryptedPrivateKeyInfo)
-            || (o instanceof PEMKeyPair)
-            || (o instanceof PrivateKeyInfo))) {
+            || (o instanceof PrivateKeyInfo)
+            || (o instanceof PEMKeyPair))) {
         // System.out.printf("found %s\n", o.getClass().getName());
         throw new IllegalStateException("Didn't find OpenSSL key. Found: " + o.getClass().getName());
       }
@@ -368,13 +368,12 @@ public class Sign extends WssecCalloutBase implements Execution {
       }
 
       if (o instanceof PrivateKeyInfo) {
-        // produced by "openssl genpkey" without the encryption
+        // eg, "openssl genpkey  -algorithm rsa -pkeyopt rsa_keygen_bits:2048 -out keypair.pem"
         return (RSAPrivateKey) converter.getPrivateKey((PrivateKeyInfo) o);
       }
 
       if (o instanceof PKCS8EncryptedPrivateKeyInfo) {
-        // produced by "openssl genpkey" or the series of commands reqd to sign an ec key
-        // logger.info("decodePrivateKey, encrypted PrivateKeyInfo");
+        // eg, "openssl genpkey -algorithm rsa -aes-128-cbc -pkeyopt rsa_keygen_bits:2048 -out private-encrypted.pem"
         PKCS8EncryptedPrivateKeyInfo pkcs8EncryptedPrivateKeyInfo = (PKCS8EncryptedPrivateKeyInfo) o;
         JceOpenSSLPKCS8DecryptorProviderBuilder decryptorProviderBuilder =
           new JceOpenSSLPKCS8DecryptorProviderBuilder();
@@ -386,6 +385,7 @@ public class Sign extends WssecCalloutBase implements Execution {
       }
 
       if (o instanceof PEMEncryptedKeyPair) {
+        // eg, "openssl genrsa -aes256 -out private-encrypted-aes-256-cbc.pem 2048"
         PEMDecryptorProvider decProv =
           new JcePEMDecryptorProviderBuilder().setProvider("BC").build(password.toCharArray());
         KeyPair keyPair = converter.getKeyPair(((PEMEncryptedKeyPair) o).decryptKeyPair(decProv));
