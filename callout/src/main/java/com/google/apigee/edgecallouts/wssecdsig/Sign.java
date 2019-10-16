@@ -160,7 +160,7 @@ public class Sign extends WssecCalloutBase implements Execution {
     //     .format(DateTimeFormatter.ISO_INSTANT);
   }
 
-  private byte[] sign_RSA(Document doc, SignConfiguration signConfiguration)
+  private String sign_RSA(Document doc, SignConfiguration signConfiguration)
       throws InstantiationException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
           KeyException, MarshalException, XMLSignatureException, TransformerException,
           CertificateEncodingException {
@@ -333,7 +333,7 @@ public class Sign extends WssecCalloutBase implements Execution {
       .newTransformer();
     transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
     transformer.transform(new DOMSource(doc), new StreamResult(baos));
-    return baos.toByteArray();
+    return new String(baos.toByteArray(), StandardCharsets.UTF_8);
   }
 
   private static RSAPrivateKey readKey(String privateKeyPemString, String password)
@@ -530,9 +530,9 @@ public class Sign extends WssecCalloutBase implements Execution {
               .withDigestMethod(getDigestMethod(msgCtxt))
               .withElementsToSign(getElementsToSign(msgCtxt));
 
-      byte[] resultBytes = sign_RSA(document, signConfiguration);
+      String resultingXmlString = sign_RSA(document, signConfiguration);
       String outputVar = getOutputVar(msgCtxt);
-      msgCtxt.setVariable(outputVar, new String(resultBytes, StandardCharsets.UTF_8));
+      msgCtxt.setVariable(outputVar, resultingXmlString);
       return ExecutionResult.SUCCESS;
     } catch (IllegalStateException exc1) {
       setExceptionVariables(exc1, msgCtxt);
