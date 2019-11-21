@@ -53,6 +53,7 @@ The Sign callout has these constraints and features:
 * signs the SOAP Body, or the Timestamp, or both (default)
 * uses a canonicalization method of "http://www.w3.org/2001/10/xml-exc-c14n#"
 * uses a digest mode of sha1 (default) or sha256
+* has various options for embedding the KeyInfo for the certificate in the signed document
 
 The Verify callout has these constraints and features:
 * supports RSA algorithms - rsa-sha1 (default) or rsa-sha256
@@ -113,7 +114,7 @@ Regarding `key-identifier-type`, these are the options:
   that points to it.
 
   The KeyInfo element looks like this:
-  ```
+  ```xml
    <KeyInfo>
      <wssec:SecurityTokenReference>
        <wssec:Reference URI="#SecurityToken-e828bfab-bb52-4429"
@@ -124,7 +125,7 @@ Regarding `key-identifier-type`, these are the options:
 
   And there will be a child element of the wssec:Security element that looks like
   this:
-  ```
+  ```xml
       <wssec:BinarySecurityToken
           EncodingType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary"
           ValueType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3"
@@ -133,7 +134,7 @@ Regarding `key-identifier-type`, these are the options:
 
 * `thumbprint` gives you this:
 
-  ```
+  ```xml
    <KeyInfo>
      <wsse:SecurityTokenReference>
        <wsse:KeyIdentifier
@@ -144,7 +145,7 @@ Regarding `key-identifier-type`, these are the options:
 
 * `issuer_serial` (common with WCF) results in this:
 
-  ```
+  ```xml
    <KeyInfo>
      <wsse:SecurityTokenReference wsu:Id="STR-2795B41DA34FD80A771574109162615125">
        <X509Data>
@@ -160,7 +161,7 @@ Regarding `key-identifier-type`, these are the options:
   For this case, you can specify another property, `issuer-name-style`, as
   either `short` or `subject_dn`.  The former is the default. The latter results
   in something like this:
-   ```
+   ```xml
    <X509IssuerSerial>
      <X509IssuerName>C=US,ST=Washington,L=Kirkland,O=Google,OU=Apigee,CN=apigee.google.com,E=dino@apigee.com</X509IssuerName>
      <X509SerialNumber>837113432321</X509SerialNumber>
@@ -168,7 +169,7 @@ Regarding `key-identifier-type`, these are the options:
    ```
 
 * `raw` gives you this:
-  ```
+  ```xml
   <KeyInfo>
      <X509Data>
        <X509Certificate>MIICAjCCAWu....7BQnulQ=</X509Certificate>
@@ -360,7 +361,7 @@ Supposing the input XML looks like this:
 Then, given the default settings for `digest-method`, `signing-method`, and `key-identifier-type`,
 the signed payload looks like this:
 
-```
+```xml
 <soapenv:Envelope
     xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
     xmlns:ns1="http://ws.example.com/"
