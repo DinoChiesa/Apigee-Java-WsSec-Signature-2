@@ -12,6 +12,7 @@ public class Namespaces {
   public static final String SOAP10 = "http://schemas.xmlsoap.org/soap/envelope/";
   public static final String WSSEC = "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd";
   public static final String XMLNS = "http://www.w3.org/2000/xmlns/";
+  public static final String XMLDSIG = "http://www.w3.org/2000/09/xmldsig#";
 
   public static final Map<String,String> defaultPrefixes;
 
@@ -20,6 +21,7 @@ public class Namespaces {
     map1.put(WSU,"wsu");
     map1.put(SOAP10,"soap10");
     map1.put(WSSEC,"wssec");
+    map1.put(XMLDSIG,"ds");
 
     defaultPrefixes = Collections.synchronizedMap(map1);
   }

@@ -182,7 +182,7 @@ public abstract class WssecCalloutBase {
   }
 
   protected void setExceptionVariables(Exception exc1, MessageContext msgCtxt) {
-    String error = exc1.toString();
+    String error = exc1.toString().replaceAll("\n"," ");
     msgCtxt.setVariable(varName("exception"), error);
     Matcher matcher = commonErrorPattern.matcher(error);
     if (matcher.matches()) {
@@ -191,12 +191,5 @@ public abstract class WssecCalloutBase {
     else {
       msgCtxt.setVariable(varName("error"), error);
     }
-
-    // int ch = error.indexOf(':'); // lastIndexOf
-    // if (ch >= 0) {
-    //   msgCtxt.setVariable(varName("error"), error.substring(ch + 2).trim());
-    // } else {
-    //   msgCtxt.setVariable(varName("error"), error);
-    // }
   }
 }

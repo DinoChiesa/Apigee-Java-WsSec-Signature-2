@@ -2,6 +2,7 @@ package com.google.apigee.edgecallouts.test;
 
 import com.apigee.flow.execution.ExecutionResult;
 import com.google.apigee.edgecallouts.wssecdsig.Sign;
+import com.google.apigee.xml.Namespaces;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -677,7 +678,7 @@ public class TestWssecSignCallout extends CalloutTestBase {
 
   @Test
   public void withExpiry() throws Exception {
-    String method = "test_ValidWithExpiry() ";
+    String method = "withExpiry() ";
     int minutesExpiry = 15;
     msgCtxt.setVariable("message.content", simpleSoap1);
     msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
@@ -728,6 +729,160 @@ public class TestWssecSignCallout extends CalloutTestBase {
     long minutesTilExpiry = now.until(expiry, ChronoUnit.MINUTES);
     Assert.assertEquals(minutesTilExpiry, (long) (minutesExpiry - 1)); // rounding down
   }
+
+
+  @Test
+  public void thumbprint() throws Exception {
+    String method = "thumbprint() ";
+    int minutesExpiry = 15;
+    msgCtxt.setVariable("message.content", simpleSoap1);
+    msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
+    msgCtxt.setVariable("my-certificate", pairs[2].certificate);
+
+    Map<String, String> props = new HashMap<String, String>();
+    props.put("debug", "true");
+    props.put("source", "message.content");
+    props.put("expiry", minutesExpiry + "m");
+    props.put("key-identifier-type", "thumbprint");
+    props.put("private-key", "{my-private-key}");
+    props.put("certificate", "{my-certificate}");
+    props.put("output-variable", "output");
+
+    Sign callout = new Sign(props);
+
+    // execute and retrieve output
+    ExecutionResult actualResult = callout.execute(msgCtxt, exeCtxt);
+    Assert.assertEquals(actualResult, ExecutionResult.SUCCESS, "result not as expected");
+    Object exception = msgCtxt.getVariable("wssec_exception");
+    Assert.assertNull(exception, method + "exception");
+    Object errorOutput = msgCtxt.getVariable("wssec_error");
+    Assert.assertNull(errorOutput, "error not as expected");
+    Object stacktrace = msgCtxt.getVariable("wssec_stacktrace");
+    Assert.assertNull(stacktrace, method + "stacktrace");
+
+    String output = (String) msgCtxt.getVariable("output");
+    // System.out.printf("** Output:\n" + output + "\n");
+
+    Document doc = docFromStream(new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8)));
+    NodeList nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "KeyInfo");
+    Assert.assertEquals(nl.getLength(), 1, method + "KeyInfo element");
+
+    nl = ((Element)nl.item(0)).getElementsByTagNameNS(Namespaces.WSSEC, "SecurityTokenReference");
+    Assert.assertEquals(nl.getLength(), 1, method + "SecurityTokenReference element");
+
+    nl = ((Element)nl.item(0)).getElementsByTagNameNS(Namespaces.WSSEC, "KeyIdentifier");
+    Assert.assertEquals(nl.getLength(), 1, method + "KeyIdentifier element");
+    String thumbprint = nl.item(0).getTextContent();
+    Assert.assertEquals(thumbprint, "ada3a946669ad4e6e2c9f81360c3249e49a57a7d");
+  }
+
+
+  @Test
+  public void issuerSerial() throws Exception {
+    String method = "issuerSerial() ";
+    int minutesExpiry = 15;
+    msgCtxt.setVariable("message.content", simpleSoap1);
+    msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
+    msgCtxt.setVariable("my-certificate", pairs[2].certificate);
+
+    Map<String, String> props = new HashMap<String, String>();
+    props.put("debug", "true");
+    props.put("source", "message.content");
+    props.put("expiry", minutesExpiry + "m");
+    props.put("key-identifier-type", "issuer_serial");
+    props.put("private-key", "{my-private-key}");
+    props.put("certificate", "{my-certificate}");
+    props.put("output-variable", "output");
+
+    Sign callout = new Sign(props);
+
+    // execute and retrieve output
+    ExecutionResult actualResult = callout.execute(msgCtxt, exeCtxt);
+    Assert.assertEquals(actualResult, ExecutionResult.SUCCESS, "result not as expected");
+    Object exception = msgCtxt.getVariable("wssec_exception");
+    Assert.assertNull(exception, method + "exception");
+    Object errorOutput = msgCtxt.getVariable("wssec_error");
+    Assert.assertNull(errorOutput, "error not as expected");
+    Object stacktrace = msgCtxt.getVariable("wssec_stacktrace");
+    Assert.assertNull(stacktrace, method + "stacktrace");
+
+    String output = (String) msgCtxt.getVariable("output");
+    // System.out.printf("** Output:\n" + output + "\n");
+
+    Document doc = docFromStream(new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8)));
+    NodeList nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "KeyInfo");
+    Assert.assertEquals(nl.getLength(), 1, method + "KeyInfo element");
+    nl = ((Element)nl.item(0)).getElementsByTagNameNS(XMLSignature.XMLNS, "X509Data");
+    Assert.assertEquals(nl.getLength(), 1, method + "X509Data element");
+    nl = ((Element)nl.item(0)).getElementsByTagNameNS(XMLSignature.XMLNS, "X509IssuerSerial");
+    Assert.assertEquals(nl.getLength(), 1, method + "X509IssuerSerial element");
+    Element issuerSerial = (Element)(nl.item(0));
+
+    nl = issuerSerial.getElementsByTagNameNS(XMLSignature.XMLNS, "X509IssuerName");
+    Assert.assertEquals(nl.getLength(), 1, method + "X509IssuerName element");
+    String nameString = nl.item(0).getTextContent();
+    Assert.assertEquals(nameString, "CN=apigee.google.com");
+
+    nl = issuerSerial.getElementsByTagNameNS(XMLSignature.XMLNS, "X509SerialNumber");
+    Assert.assertEquals(nl.getLength(), 1, method + "X509SerialNumber element");
+    String serialString = nl.item(0).getTextContent();
+    Assert.assertEquals(serialString, "17032128222562009281");
+  }
+
+
+  @Test
+  public void issuerSerialWithLongName() throws Exception {
+    String method = "issuerSerialWithLongName() ";
+    int minutesExpiry = 15;
+    msgCtxt.setVariable("message.content", simpleSoap1);
+    msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
+    msgCtxt.setVariable("my-certificate", pairs[2].certificate);
+
+    Map<String, String> props = new HashMap<String, String>();
+    props.put("debug", "true");
+    props.put("source", "message.content");
+    props.put("expiry", minutesExpiry + "m");
+    props.put("key-identifier-type", "issuer_serial");
+    props.put("issuer-name-style", "subject_dn");
+    props.put("private-key", "{my-private-key}");
+    props.put("certificate", "{my-certificate}");
+    props.put("output-variable", "output");
+
+    Sign callout = new Sign(props);
+
+    // execute and retrieve output
+    ExecutionResult actualResult = callout.execute(msgCtxt, exeCtxt);
+    Assert.assertEquals(actualResult, ExecutionResult.SUCCESS, "result not as expected");
+    Object exception = msgCtxt.getVariable("wssec_exception");
+    Assert.assertNull(exception, method + "exception");
+    Object errorOutput = msgCtxt.getVariable("wssec_error");
+    Assert.assertNull(errorOutput, "error not as expected");
+    Object stacktrace = msgCtxt.getVariable("wssec_stacktrace");
+    Assert.assertNull(stacktrace, method + "stacktrace");
+
+    String output = (String) msgCtxt.getVariable("output");
+    // System.out.printf("** Output:\n" + output + "\n");
+
+    Document doc = docFromStream(new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8)));
+    NodeList nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "KeyInfo");
+    Assert.assertEquals(nl.getLength(), 1, method + "KeyInfo element");
+    nl = ((Element)nl.item(0)).getElementsByTagNameNS(XMLSignature.XMLNS, "X509Data");
+    Assert.assertEquals(nl.getLength(), 1, method + "X509Data element");
+    nl = ((Element)nl.item(0)).getElementsByTagNameNS(XMLSignature.XMLNS, "X509IssuerSerial");
+    Assert.assertEquals(nl.getLength(), 1, method + "X509IssuerSerial element");
+    Element issuerSerial = (Element)(nl.item(0));
+
+    nl = issuerSerial.getElementsByTagNameNS(XMLSignature.XMLNS, "X509IssuerName");
+    Assert.assertEquals(nl.getLength(), 1, method + "X509IssuerName element");
+    String nameString = nl.item(0).getTextContent();
+    Assert.assertEquals(nameString, "C=US,ST=Washington,L=Kirkland,O=Google,OU=Apigee,CN=apigee.google.com,E=dino@apigee.com");
+
+    nl = issuerSerial.getElementsByTagNameNS(XMLSignature.XMLNS, "X509SerialNumber");
+    Assert.assertEquals(nl.getLength(), 1, method + "X509SerialNumber element");
+    String serialString = nl.item(0).getTextContent();
+    Assert.assertEquals(serialString, "17032128222562009281");
+  }
+
 
   @Test
   public void oldFormatPrivateKeyEncrypted() throws Exception {

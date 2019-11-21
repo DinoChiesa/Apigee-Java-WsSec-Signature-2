@@ -41,7 +41,7 @@ environment-wide or organization-wide jar via the Apigee administrative API.
 
 ## Details
 
-There is a single jar, edge-wssecdsig-20191015.jar . Within that jar, there are two callout classes,
+There is a single jar, edge-wssecdsig-20191120.jar . Within that jar, there are two callout classes,
 
 * com.google.apigee.edgecallouts.wssecdsig.Sign - signs the input SOAP document.
 * com.google.apigee.edgecallouts.wssecdsig.Validate - validates the signed SOAP document
@@ -83,7 +83,7 @@ Configure the policy this way:
     <Property name='certificate'>{my_certificate}</Property>
   </Properties>
   <ClassName>com.google.apigee.edgecallouts.wssecdsig.Sign</ClassName>
-  <ResourceURL>java://edge-wssecdsig-20191015.jar</ResourceURL>
+  <ResourceURL>java://edge-wssecdsig-20191120.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -95,6 +95,8 @@ The properties are:
 | output-variable      | optional. the variable name in which to write the signed XML. Defaults to message.content |
 | private-key          | required. the PEM-encoded RSA private key. You can use a variable reference here as shown above. Probably you want to read this from encrypted KVM. |
 | private-key-password | optional. The password for the key, if it is encrypted. |
+| key-identifier-type  | optional. One of {`THUMBPRINT`, `BST_DIRECT_REFERENCE`, `ISSUER_SERIAL`}.  See below for details. |
+| issuer-name-style    | optional. One of {`SHORT`, `SUBJECT_DN`}.  See below for details. |
 | certificate          | required. The certificate matching the private key. In PEM form. |
 | signing-method       | optional. Takes value rsa-sha1 or rsa-sha256. Defaults to rsa-sha1. |
 | digest-method        | optional. Takes value sha1 or sha256. Defaults to sha1. |
@@ -102,6 +104,57 @@ The properties are:
 | expiry               | optional. Takes a string like 120s, 10m, 4d, etc to imply 120 seconds, 10 minutes, 4 days.  Default: no expiry. |
 
 This policy will sign the entire document and embed a Signature element as a child of the root element.
+
+Regarding `key-identifier-type`: The default behavior of the signing callout is
+to embed the certificate into the signed document using a BinarySecurityToken
+and a SecurityTokenReference that points to it.  The KeyInfo element looks like
+this:
+```
+<KeyInfo>
+  <wssec:SecurityTokenReference>
+    <wssec:Reference URI="#SecurityToken-e828bfab-bb52-4429"
+        ValueType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3"/>
+  </wssec:SecurityTokenReference>
+</KeyInfo>
+```
+
+You can optionally specify the `key-identifier-type` as `thumbprint` and get
+this:
+```
+<KeyInfo>
+  <wsse:SecurityTokenReference>
+    <wsse:KeyIdentifier
+          ValueType="http://docs.oasis-open.org/wss/oasis-wss-soap-message-security1.1#ThumbprintSHA1">9JscCwWHk5IvR/6JLTSayTY7M=</wsse:KeyIdentifier>
+  </wsse:SecurityTokenReference>
+</KeyInfo>
+```
+
+And you can specify  the `key-identifier-type` as `issuer_serial` (common with
+WCF) and get this:
+
+```
+<KeyInfo>
+  <wsse:SecurityTokenReference wsu:Id="STR-2795B41DA34FD80A771574109162615125">
+    <X509Data>
+      <X509IssuerSerial>
+        <X509IssuerName>CN=common.name.on.cert</X509IssuerName>
+        <X509SerialNumber>837113432321</X509SerialNumber>
+      </X509IssuerSerial>
+    </X509Data>
+  </wsse:SecurityTokenReference>
+</KeyInfo>
+```
+
+For the last case, you can specify another property, `issuer-name-style`, as
+either `short` or `subject_dn`.  The former is the default. The latter results
+in something like this:
+```
+<X509IssuerSerial>
+  <X509IssuerName>C=US,ST=Washington,L=Kirkland,O=Google,OU=Apigee,CN=apigee.google.com,E=dino@apigee.com</X509IssuerName>
+  <X509SerialNumber>837113432321</X509SerialNumber>
+</X509IssuerSerial>
+```
+
 
 ### Validating
 
@@ -114,7 +167,7 @@ Configure the policy this way:
     <Property name='acceptable-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
   </Properties>
   <ClassName>com.google.apigee.edgecallouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://edge-wssecdsig-20191015.jar</ResourceURL>
+  <ResourceURL>java://edge-wssecdsig-20191120.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -131,7 +184,7 @@ To verify a signature and not require an expiry, use this:
     <Property name='acceptable-subject-common-names'>host.example.com</Property>
   </Properties>
   <ClassName>com.google.apigee.edgecallouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://edge-wssecdsig-20191015.jar</ResourceURL>
+  <ResourceURL>java://edge-wssecdsig-20191120.jar</ResourceURL>
 </JavaCallout>
 ```
 

@@ -29,7 +29,6 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
-import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateKey;
@@ -46,6 +45,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import javax.naming.InvalidNameException;
 import javax.security.auth.x500.X500Principal;
 import javax.xml.crypto.MarshalException;
 import javax.xml.crypto.dsig.CanonicalizationMethod;
@@ -148,7 +148,9 @@ public class Sign extends WssecCalloutBase implements Execution {
       prefix = "ns" + nsCounter++;
     }
 
-    elt.setAttributeNS(Namespaces.XMLNS, "xmlns:" + prefix, namespaceURIToAdd);
+    if (elt != null) {
+      elt.setAttributeNS(Namespaces.XMLNS, "xmlns:" + prefix, namespaceURIToAdd);
+    }
     return prefix;
   }
 
@@ -163,7 +165,7 @@ public class Sign extends WssecCalloutBase implements Execution {
   private String sign_RSA(Document doc, SignConfiguration signConfiguration)
       throws InstantiationException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
           KeyException, MarshalException, XMLSignatureException, TransformerException,
-          CertificateEncodingException {
+          CertificateEncodingException, InvalidNameException {
     XMLSignatureFactory signatureFactory = XMLSignatureFactory.getInstance("DOM");
     String soapns = Namespaces.SOAP10;
 
@@ -236,8 +238,8 @@ public class Sign extends WssecCalloutBase implements Execution {
       timestamp.appendChild(expires);
     }
 
-    // 6. embed the BinarySecurityToken
-    // verify that the cert signs the public key that corresponds to the private key
+    // 6. maybe embed the BinarySecurityToken
+    // but first, verify that the cert signs the public key that corresponds to the private key
     RSAPublicKey k1 = (RSAPublicKey) signConfiguration.certificate.getPublicKey();
     final byte[] certModulus = k1.getModulus().toByteArray();
     RSAPrivateKey k2 = (RSAPrivateKey) signConfiguration.privatekey;
@@ -249,19 +251,22 @@ public class Sign extends WssecCalloutBase implements Execution {
           "public key mismatch. The public key contained in the certificate does not match the private key.");
     }
 
-    Element bst = doc.createElementNS(Namespaces.WSSEC, wssePrefix + ":BinarySecurityToken");
-    String bstId = "SecurityToken-" + java.util.UUID.randomUUID().toString();
-    bst.setAttributeNS(Namespaces.WSU, wsuPrefix + ":Id", bstId);
-    bst.setIdAttributeNS(Namespaces.WSU, "Id", true);
-    bst.setAttribute(
-        "EncodingType",
-        "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary");
-    bst.setAttribute(
-        "ValueType",
-        "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3");
-    bst.setTextContent(
-        Base64.getEncoder().encodeToString(signConfiguration.certificate.getEncoded()));
-    wssecHeader.appendChild(bst);
+    String bstId = "none";
+    if (signConfiguration.keyIdentifierType == KeyIdentifierType.BST_DIRECT_REFERENCE) {
+      Element bst = doc.createElementNS(Namespaces.WSSEC, wssePrefix + ":BinarySecurityToken");
+      bstId = "SecurityToken-" + java.util.UUID.randomUUID().toString();
+      bst.setAttributeNS(Namespaces.WSU, wsuPrefix + ":Id", bstId);
+      bst.setIdAttributeNS(Namespaces.WSU, "Id", true);
+      bst.setAttribute(
+          "EncodingType",
+          "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary");
+      bst.setAttribute(
+          "ValueType",
+          "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3");
+      bst.setTextContent(
+          Base64.getEncoder().encodeToString(signConfiguration.certificate.getEncoded()));
+      wssecHeader.appendChild(bst);
+    }
 
     String digestMethodUri =
         ((signConfiguration.digestMethod != null)
@@ -312,25 +317,90 @@ public class Sign extends WssecCalloutBase implements Execution {
     SignedInfo signedInfo =
         signatureFactory.newSignedInfo(canonicalizationMethod, signatureMethod, references);
     KeyInfoFactory kif = signatureFactory.getKeyInfoFactory();
-    // For embedding a Keyinfo that holds a security token reference:
-    Element secTokenRef =
-        doc.createElementNS(Namespaces.WSSEC, wssePrefix + ":SecurityTokenReference");
-    Element reference = doc.createElementNS(Namespaces.WSSEC, wssePrefix + ":Reference");
-    reference.setAttribute("URI", "#" + bstId);
-    reference.setAttribute(
-        "ValueType",
-        "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3");
-    secTokenRef.appendChild(reference);
-    javax.xml.crypto.XMLStructure structure = new javax.xml.crypto.dom.DOMStructure(secTokenRef);
-    KeyInfo keyInfo = kif.newKeyInfo(java.util.Collections.singletonList(structure));
+
+    KeyInfo keyInfo = null;
+    if (signConfiguration.keyIdentifierType == KeyIdentifierType.BST_DIRECT_REFERENCE) {
+      // <KeyInfo>
+      //   <wssec:SecurityTokenReference>
+      //     <wssec:Reference URI="#SecurityToken-e828bfab-bb52-4429"
+      //
+      // ValueType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3"/>
+      //   </wssec:SecurityTokenReference>
+      // </KeyInfo>
+
+      Element secTokenRef =
+          doc.createElementNS(Namespaces.WSSEC, wssePrefix + ":SecurityTokenReference");
+      Element reference = doc.createElementNS(Namespaces.WSSEC, wssePrefix + ":Reference");
+      reference.setAttribute("URI", "#" + bstId);
+      reference.setAttribute(
+          "ValueType",
+          "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3");
+      secTokenRef.appendChild(reference);
+      javax.xml.crypto.XMLStructure structure = new javax.xml.crypto.dom.DOMStructure(secTokenRef);
+      keyInfo = kif.newKeyInfo(java.util.Collections.singletonList(structure));
+    } else if (signConfiguration.keyIdentifierType == KeyIdentifierType.THUMBPRINT) {
+      // <KeyInfo>
+      //   <wsse:SecurityTokenReference>
+      //     <wsse:KeyIdentifier
+      // ValueType="http://docs.oasis-open.org/wss/oasis-wss-soap-message-security1.1#ThumbprintSHA1">9JscCwWHk5IvR/6JLTSayTY7M=</wsse:KeyIdentifier>
+      //   </wsse:SecurityTokenReference>
+      // </KeyInfo>
+      Element secTokenRef =
+          doc.createElementNS(Namespaces.WSSEC, wssePrefix + ":SecurityTokenReference");
+      Element keyId = doc.createElementNS(Namespaces.WSSEC, wssePrefix + ":KeyIdentifier");
+      keyId.setAttribute(
+          "ValueType",
+          "http://docs.oasis-open.org/wss/oasis-wss-soap-message-security1.1#ThumbprintSHA1");
+      keyId.setTextContent(getThumbprint(signConfiguration.certificate));
+      secTokenRef.appendChild(keyId);
+      javax.xml.crypto.XMLStructure structure = new javax.xml.crypto.dom.DOMStructure(secTokenRef);
+      keyInfo = kif.newKeyInfo(java.util.Collections.singletonList(structure));
+    } else if (signConfiguration.keyIdentifierType == KeyIdentifierType.ISSUER_SERIAL) {
+      // <KeyInfo Id="KI-2795B41DA34FD80A771574109162615124">
+      //   <wsse:SecurityTokenReference wsu:Id="STR-2795B41DA34FD80A771574109162615125">
+      //     <X509Data>
+      //       <X509IssuerSerial>
+      //         <X509IssuerName>CN=creditoexpress</X509IssuerName>
+      //         <X509SerialNumber>1323432320</X509SerialNumber>
+      //       </X509IssuerSerial>
+      //     </X509Data>
+      //   </wsse:SecurityTokenReference>
+      // </KeyInfo>
+      Element secTokenRef =
+          doc.createElementNS(Namespaces.WSSEC, wssePrefix + ":SecurityTokenReference");
+      // String xmldsigPrefix = declareXmlnsPrefix(null, knownNamespaces, Namespaces.XMLDSIG);
+      // elt.setAttributeNS(Namespaces.XMLNS, "xmlns:" + prefix, namespaceURIToAdd);
+      Element x509Data = doc.createElementNS(Namespaces.XMLDSIG, "X509Data");
+      Element x509IssuerSerial = doc.createElementNS(Namespaces.XMLDSIG, "X509IssuerSerial");
+      Element x509IssuerName = doc.createElementNS(Namespaces.XMLDSIG, "X509IssuerName");
+
+      if (signConfiguration.issuerNameStyle == IssuerNameStyle.SHORT) {
+        x509IssuerName.setTextContent(
+            "CN=" + getCommonName(signConfiguration.certificate.getSubjectX500Principal()));
+      } else {
+        // x509IssuerName.setTextContent(signConfiguration.certificate.getSubjectX500Principal().getName());
+        x509IssuerName.setTextContent(signConfiguration.certificate.getSubjectDN().getName());
+      }
+
+      Element x509SerialNumber = doc.createElementNS(Namespaces.XMLDSIG, "X509SerialNumber");
+      x509SerialNumber.setTextContent(signConfiguration.certificate.getSerialNumber().toString());
+
+      x509IssuerSerial.appendChild(x509IssuerName);
+      x509IssuerSerial.appendChild(x509SerialNumber);
+      x509Data.appendChild(x509IssuerSerial);
+      secTokenRef.appendChild(x509Data);
+
+      javax.xml.crypto.XMLStructure structure = new javax.xml.crypto.dom.DOMStructure(secTokenRef);
+      keyInfo = kif.newKeyInfo(java.util.Collections.singletonList(structure));
+      // keyInfo = keyInfoFactory.newKeyInfo(Collections.singletonList(x509Data));
+    }
 
     XMLSignature signature = signatureFactory.newXMLSignature(signedInfo, keyInfo);
     signature.sign(signingContext);
 
     // emit the resulting document
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    Transformer transformer = TransformerFactory.newInstance()
-      .newTransformer();
+    Transformer transformer = TransformerFactory.newInstance().newTransformer();
     transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
     transformer.transform(new DOMSource(doc), new StreamResult(baos));
     return new String(baos.toByteArray(), StandardCharsets.UTF_8);
@@ -338,7 +408,7 @@ public class Sign extends WssecCalloutBase implements Execution {
 
   private static RSAPrivateKey readKey(String privateKeyPemString, String password)
       throws IOException, OperatorCreationException, PKCSException, InvalidKeySpecException,
-             NoSuchAlgorithmException {
+          NoSuchAlgorithmException {
     if (privateKeyPemString == null) {
       throw new IllegalStateException("PEM String is null");
     }
@@ -353,11 +423,12 @@ public class Sign extends WssecCalloutBase implements Execution {
         throw new IllegalStateException("Parsed object is null.  Bad input.");
       }
       if (!((o instanceof PEMEncryptedKeyPair)
-            || (o instanceof PKCS8EncryptedPrivateKeyInfo)
-            || (o instanceof PrivateKeyInfo)
-            || (o instanceof PEMKeyPair))) {
+          || (o instanceof PKCS8EncryptedPrivateKeyInfo)
+          || (o instanceof PrivateKeyInfo)
+          || (o instanceof PEMKeyPair))) {
         // System.out.printf("found %s\n", o.getClass().getName());
-        throw new IllegalStateException("Didn't find OpenSSL key. Found: " + o.getClass().getName());
+        throw new IllegalStateException(
+            "Didn't find OpenSSL key. Found: " + o.getClass().getName());
       }
 
       JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
@@ -373,26 +444,27 @@ public class Sign extends WssecCalloutBase implements Execution {
       }
 
       if (o instanceof PKCS8EncryptedPrivateKeyInfo) {
-        // eg, "openssl genpkey -algorithm rsa -aes-128-cbc -pkeyopt rsa_keygen_bits:2048 -out private-encrypted.pem"
-        PKCS8EncryptedPrivateKeyInfo pkcs8EncryptedPrivateKeyInfo = (PKCS8EncryptedPrivateKeyInfo) o;
+        // eg, "openssl genpkey -algorithm rsa -aes-128-cbc -pkeyopt rsa_keygen_bits:2048 -out
+        // private-encrypted.pem"
+        PKCS8EncryptedPrivateKeyInfo pkcs8EncryptedPrivateKeyInfo =
+            (PKCS8EncryptedPrivateKeyInfo) o;
         JceOpenSSLPKCS8DecryptorProviderBuilder decryptorProviderBuilder =
-          new JceOpenSSLPKCS8DecryptorProviderBuilder();
+            new JceOpenSSLPKCS8DecryptorProviderBuilder();
         InputDecryptorProvider decryptorProvider =
-          decryptorProviderBuilder.build(password.toCharArray());
+            decryptorProviderBuilder.build(password.toCharArray());
         PrivateKeyInfo privateKeyInfo =
-          pkcs8EncryptedPrivateKeyInfo.decryptPrivateKeyInfo(decryptorProvider);
+            pkcs8EncryptedPrivateKeyInfo.decryptPrivateKeyInfo(decryptorProvider);
         return (RSAPrivateKey) converter.getPrivateKey(privateKeyInfo);
       }
 
       if (o instanceof PEMEncryptedKeyPair) {
         // eg, "openssl genrsa -aes256 -out private-encrypted-aes-256-cbc.pem 2048"
         PEMDecryptorProvider decProv =
-          new JcePEMDecryptorProviderBuilder().setProvider("BC").build(password.toCharArray());
+            new JcePEMDecryptorProviderBuilder().setProvider("BC").build(password.toCharArray());
         KeyPair keyPair = converter.getKeyPair(((PEMEncryptedKeyPair) o).decryptKeyPair(decProv));
         return (RSAPrivateKey) keyPair.getPrivate();
       }
-    }
-    finally {
+    } finally {
       if (pr != null) {
         pr.close();
       }
@@ -466,7 +538,7 @@ public class Sign extends WssecCalloutBase implements Execution {
     return toSign;
   }
 
-  private Certificate getCertificate(MessageContext msgCtxt) throws Exception {
+  private X509Certificate getCertificate(MessageContext msgCtxt) throws Exception {
     String certificateString = getSimpleRequiredProperty("certificate", msgCtxt);
     certificateString = certificateString.trim();
     X509Certificate certificate = (X509Certificate) certificateFromPEM(certificateString);
@@ -476,22 +548,70 @@ public class Sign extends WssecCalloutBase implements Execution {
     return certificate;
   }
 
+  enum KeyIdentifierType {
+    NOT_SPECIFIED,
+    THUMBPRINT,
+    BST_DIRECT_REFERENCE,
+    ISSUER_SERIAL
+  }
+
+  private KeyIdentifierType getKeyIdentifierType(MessageContext msgCtxt) throws Exception {
+    String kitString = getSimpleOptionalProperty("key-identifier-type", msgCtxt);
+    if (kitString == null) return KeyIdentifierType.BST_DIRECT_REFERENCE;
+    kitString = kitString.trim().toUpperCase();
+    if (kitString.equals("THUMBPRINT")) return KeyIdentifierType.THUMBPRINT;
+    if (kitString.equals("BST_DIRECT_REFERENCE")) return KeyIdentifierType.BST_DIRECT_REFERENCE;
+    if (kitString.equals("ISSUER_SERIAL")) return KeyIdentifierType.ISSUER_SERIAL;
+    msgCtxt.setVariable(varName("warning"), "unrecognized key-identifier-type");
+    return KeyIdentifierType.BST_DIRECT_REFERENCE;
+  }
+
+  enum IssuerNameStyle {
+    NOT_SPECIFIED,
+    SHORT,
+    SUBJECT_DN
+  }
+
+  private IssuerNameStyle getIssuerNameStyle(MessageContext msgCtxt) throws Exception {
+    String kitString = getSimpleOptionalProperty("issuer-name-style", msgCtxt);
+    if (kitString == null) return IssuerNameStyle.SHORT;
+    kitString = kitString.trim().toUpperCase();
+    if (kitString.equals("SHORT")) return IssuerNameStyle.SHORT;
+    if (kitString.equals("SUBJECT_DN")) return IssuerNameStyle.SUBJECT_DN;
+    msgCtxt.setVariable(varName("warning"), "unrecognized issuer-name-style");
+    return IssuerNameStyle.SHORT;
+  }
+
   static class SignConfiguration {
     public RSAPrivateKey privatekey; // required
-    public Certificate certificate; // required
+    public X509Certificate certificate; // required
     public int expiresInSeconds; // optional
     public String signingMethod;
     public String digestMethod;
+    public IssuerNameStyle issuerNameStyle;
+    public KeyIdentifierType keyIdentifierType;
     public List<String> elementsToSign;
 
-    public SignConfiguration() {}
+    public SignConfiguration() {
+      keyIdentifierType = KeyIdentifierType.BST_DIRECT_REFERENCE;
+    }
 
     public SignConfiguration withKey(RSAPrivateKey key) {
       this.privatekey = key;
       return this;
     }
 
-    public SignConfiguration withCertificate(Certificate certificate) {
+    public SignConfiguration withKeyIdentifierType(KeyIdentifierType kit) {
+      this.keyIdentifierType = kit;
+      return this;
+    }
+
+    public SignConfiguration withIssuerNameStyle(IssuerNameStyle ins) {
+      this.issuerNameStyle = ins;
+      return this;
+    }
+
+    public SignConfiguration withCertificate(X509Certificate certificate) {
       this.certificate = certificate;
       return this;
     }
@@ -525,6 +645,8 @@ public class Sign extends WssecCalloutBase implements Execution {
           new SignConfiguration()
               .withKey(getPrivateKey(msgCtxt))
               .withCertificate(getCertificate(msgCtxt))
+              .withKeyIdentifierType(getKeyIdentifierType(msgCtxt))
+              .withIssuerNameStyle(getIssuerNameStyle(msgCtxt))
               .withExpiresIn(getExpiresIn(msgCtxt))
               .withSigningMethod(getSigningMethod(msgCtxt))
               .withDigestMethod(getDigestMethod(msgCtxt))
