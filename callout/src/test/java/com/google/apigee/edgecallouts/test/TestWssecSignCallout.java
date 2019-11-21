@@ -776,6 +776,57 @@ public class TestWssecSignCallout extends CalloutTestBase {
     Assert.assertEquals(thumbprint, "raOpRmaa1ObiyfgTYMMknkmlen0=");
   }
 
+  @Test
+  public void rawCert() throws Exception {
+    String method = "rawCert() ";
+    int minutesExpiry = 15;
+    msgCtxt.setVariable("message.content", simpleSoap1);
+    msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
+    msgCtxt.setVariable("my-certificate", pairs[2].certificate);
+
+    Map<String, String> props = new HashMap<String, String>();
+    props.put("debug", "true");
+    props.put("source", "message.content");
+    props.put("expiry", minutesExpiry + "m");
+    props.put("key-identifier-type", "raw");
+    props.put("private-key", "{my-private-key}");
+    props.put("certificate", "{my-certificate}");
+    props.put("output-variable", "output");
+
+    Sign callout = new Sign(props);
+
+    // execute and retrieve output
+    ExecutionResult actualResult = callout.execute(msgCtxt, exeCtxt);
+    Assert.assertEquals(actualResult, ExecutionResult.SUCCESS, "result not as expected");
+    Object exception = msgCtxt.getVariable("wssec_exception");
+    Assert.assertNull(exception, method + "exception");
+    Object errorOutput = msgCtxt.getVariable("wssec_error");
+    Assert.assertNull(errorOutput, "error not as expected");
+    Object stacktrace = msgCtxt.getVariable("wssec_stacktrace");
+    Assert.assertNull(stacktrace, method + "stacktrace");
+
+    String output = (String) msgCtxt.getVariable("output");
+    // System.out.printf("** Output:\n" + output + "\n");
+
+    Document doc = docFromStream(new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8)));
+    NodeList nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "KeyInfo");
+    Assert.assertEquals(nl.getLength(), 1, method + "KeyInfo element");
+
+    Element keyInfo = (Element)(nl.item(0));
+    nl = keyInfo.getChildNodes();
+    Assert.assertEquals(nl.getLength(), 1, method + "X509Data element");
+
+    Element x509Data = (Element)(nl.item(0));
+    Assert.assertEquals(x509Data.getNodeName(),"X509Data");
+    nl = x509Data.getChildNodes();
+    Assert.assertEquals(nl.getLength(), 1, method + "X509Certificate element");
+
+    Element x509Cert = (Element)(nl.item(0));
+    Assert.assertEquals(x509Cert.getNodeName(),"X509Certificate");
+    String certText = x509Cert.getTextContent();
+    Assert.assertTrue(certText.startsWith("MIIDpDCCAowCCQDsXkZg"));
+    Assert.assertTrue(certText.endsWith("InG8/oOz5ib"));
+  }
 
   @Test
   public void issuerSerial() throws Exception {

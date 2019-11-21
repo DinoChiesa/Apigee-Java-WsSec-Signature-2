@@ -355,8 +355,21 @@ public class Sign extends WssecCalloutBase implements Execution {
       secTokenRef.appendChild(keyId);
       javax.xml.crypto.XMLStructure structure = new javax.xml.crypto.dom.DOMStructure(secTokenRef);
       keyInfo = kif.newKeyInfo(java.util.Collections.singletonList(structure));
+    } else if (signConfiguration.keyIdentifierType == KeyIdentifierType.RAW) {
+      // <KeyInfo>
+      //   <X509Data>
+      //     <X509Certificate>MIICAjCCAWugAwIBAgIQwZyW5YOCXZxHg1MBV2CpvDANBgkhkiG9w0BAQnEdD9tI7IYAAoK4O+35EOzcXbvc4Kzz7BQnulQ=</X509Certificate>
+      //   </X509Data>
+      // </KeyInfo>
+      Element x509Data = doc.createElementNS(Namespaces.XMLDSIG, "X509Data");
+      Element x509Certificate = doc.createElementNS(Namespaces.XMLDSIG, "X509Certificate");
+      x509Certificate.setTextContent(
+          Base64.getEncoder().encodeToString(signConfiguration.certificate.getEncoded()));
+      x509Data.appendChild(x509Certificate);
+      javax.xml.crypto.XMLStructure structure = new javax.xml.crypto.dom.DOMStructure(x509Data);
+      keyInfo = kif.newKeyInfo(java.util.Collections.singletonList(structure));
     } else if (signConfiguration.keyIdentifierType == KeyIdentifierType.ISSUER_SERIAL) {
-      // <KeyInfo Id="KI-2795B41DA34FD80A771574109162615124">
+      // <KeyInfo>
       //   <wsse:SecurityTokenReference wsu:Id="STR-2795B41DA34FD80A771574109162615125">
       //     <X509Data>
       //       <X509IssuerSerial>
@@ -551,19 +564,28 @@ public class Sign extends WssecCalloutBase implements Execution {
   enum KeyIdentifierType {
     NOT_SPECIFIED,
     THUMBPRINT,
+    RAW,
     BST_DIRECT_REFERENCE,
-    ISSUER_SERIAL
+    ISSUER_SERIAL;
+
+    static KeyIdentifierType fromString(String s) {
+       for (KeyIdentifierType t : KeyIdentifierType.values()) {
+         if (t.name().equals(s)) return t;
+       }
+       return KeyIdentifierType.NOT_SPECIFIED;
+    }
   }
 
   private KeyIdentifierType getKeyIdentifierType(MessageContext msgCtxt) throws Exception {
     String kitString = getSimpleOptionalProperty("key-identifier-type", msgCtxt);
     if (kitString == null) return KeyIdentifierType.BST_DIRECT_REFERENCE;
     kitString = kitString.trim().toUpperCase();
-    if (kitString.equals("THUMBPRINT")) return KeyIdentifierType.THUMBPRINT;
-    if (kitString.equals("BST_DIRECT_REFERENCE")) return KeyIdentifierType.BST_DIRECT_REFERENCE;
-    if (kitString.equals("ISSUER_SERIAL")) return KeyIdentifierType.ISSUER_SERIAL;
-    msgCtxt.setVariable(varName("warning"), "unrecognized key-identifier-type");
-    return KeyIdentifierType.BST_DIRECT_REFERENCE;
+    KeyIdentifierType t = KeyIdentifierType.fromString(kitString);
+    if (t == KeyIdentifierType.NOT_SPECIFIED) {
+      msgCtxt.setVariable(varName("warning"), "unrecognized key-identifier-type");
+      return KeyIdentifierType.BST_DIRECT_REFERENCE;
+    }
+    return t;
   }
 
   enum IssuerNameStyle {

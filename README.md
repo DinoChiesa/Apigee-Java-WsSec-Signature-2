@@ -105,55 +105,77 @@ The properties are:
 
 This policy will sign the entire document and embed a Signature element as a child of the root element.
 
-Regarding `key-identifier-type`: The default behavior of the signing callout is
-to embed the certificate into the signed document using a BinarySecurityToken
-and a SecurityTokenReference that points to it.  The KeyInfo element looks like
-this:
-```
-<KeyInfo>
-  <wssec:SecurityTokenReference>
-    <wssec:Reference URI="#SecurityToken-e828bfab-bb52-4429"
-        ValueType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3"/>
-  </wssec:SecurityTokenReference>
-</KeyInfo>
-```
+Regarding `key-identifier-type`, these are the options:
 
-You can optionally specify the `key-identifier-type` as `thumbprint` and get
-this:
-```
-<KeyInfo>
-  <wsse:SecurityTokenReference>
-    <wsse:KeyIdentifier
-          ValueType="http://docs.oasis-open.org/wss/oasis-wss-soap-message-security1.1#ThumbprintSHA1">9JscCwWHk5IvR/6JLTSayTY7M=</wsse:KeyIdentifier>
-  </wsse:SecurityTokenReference>
-</KeyInfo>
-```
+* `bst_direct_reference`. This is the default; this is what you get if you omit
+  this property. With this setting, the Sign callout embeds the certificate into
+  the signed document using a BinarySecurityToken and a SecurityTokenReference
+  that points to it.
 
-And you can specify  the `key-identifier-type` as `issuer_serial` (common with
-WCF) and get this:
+  The KeyInfo element looks like this:
+  ```
+   <KeyInfo>
+     <wssec:SecurityTokenReference>
+       <wssec:Reference URI="#SecurityToken-e828bfab-bb52-4429"
+           ValueType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3"/>
+     </wssec:SecurityTokenReference>
+   </KeyInfo>
+  ```
 
-```
-<KeyInfo>
-  <wsse:SecurityTokenReference wsu:Id="STR-2795B41DA34FD80A771574109162615125">
-    <X509Data>
-      <X509IssuerSerial>
-        <X509IssuerName>CN=common.name.on.cert</X509IssuerName>
-        <X509SerialNumber>837113432321</X509SerialNumber>
-      </X509IssuerSerial>
-    </X509Data>
-  </wsse:SecurityTokenReference>
-</KeyInfo>
-```
+  And there will be a child element of the wssec:Security element that looks like
+  this:
+  ```
+      <wssec:BinarySecurityToken
+          EncodingType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary"
+          ValueType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3"
+          wsu:Id="SecurityToken-e828bfab-bb52-4429-b6a4-755b26abc387">MIIC0...</wssec:BinarySecurityToken>
+  ```
 
-For the last case, you can specify another property, `issuer-name-style`, as
-either `short` or `subject_dn`.  The former is the default. The latter results
-in something like this:
-```
-<X509IssuerSerial>
-  <X509IssuerName>C=US,ST=Washington,L=Kirkland,O=Google,OU=Apigee,CN=apigee.google.com,E=dino@apigee.com</X509IssuerName>
-  <X509SerialNumber>837113432321</X509SerialNumber>
-</X509IssuerSerial>
-```
+* `thumbprint` gives you this:
+
+  ```
+   <KeyInfo>
+     <wsse:SecurityTokenReference>
+       <wsse:KeyIdentifier
+             ValueType="http://docs.oasis-open.org/wss/oasis-wss-soap-message-security1.1#ThumbprintSHA1">9JscCwWHk5IvR/6JLTSayTY7M=</wsse:KeyIdentifier>
+     </wsse:SecurityTokenReference>
+   </KeyInfo>
+  ```
+
+* `issuer_serial` (common with WCF) results in this:
+
+  ```
+   <KeyInfo>
+     <wsse:SecurityTokenReference wsu:Id="STR-2795B41DA34FD80A771574109162615125">
+       <X509Data>
+         <X509IssuerSerial>
+           <X509IssuerName>CN=common.name.on.cert</X509IssuerName>
+           <X509SerialNumber>837113432321</X509SerialNumber>
+         </X509IssuerSerial>
+       </X509Data>
+     </wsse:SecurityTokenReference>
+   </KeyInfo>
+  ```
+
+  For this case, you can specify another property, `issuer-name-style`, as
+  either `short` or `subject_dn`.  The former is the default. The latter results
+  in something like this:
+   ```
+   <X509IssuerSerial>
+     <X509IssuerName>C=US,ST=Washington,L=Kirkland,O=Google,OU=Apigee,CN=apigee.google.com,E=dino@apigee.com</X509IssuerName>
+     <X509SerialNumber>837113432321</X509SerialNumber>
+   </X509IssuerSerial>
+   ```
+
+* `raw` gives you this:
+  ```
+  <KeyInfo>
+     <X509Data>
+       <X509Certificate>MIICAjCCAWu....7BQnulQ=</X509Certificate>
+     </X509Data>
+   </KeyInfo>
+  ```
+
 
 
 ### Validating
