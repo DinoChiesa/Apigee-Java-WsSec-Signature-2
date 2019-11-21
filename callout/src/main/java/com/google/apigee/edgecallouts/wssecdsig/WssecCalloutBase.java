@@ -85,7 +85,7 @@ public abstract class WssecCalloutBase {
   }
 
   protected String getSimpleOptionalProperty(String propName, MessageContext msgCtxt)
-      throws Exception {
+       {
     String value = (String) this.properties.get(propName);
     if (value == null) {
       return null;
@@ -102,7 +102,7 @@ public abstract class WssecCalloutBase {
   }
 
   protected String getSimpleRequiredProperty(String propName, MessageContext msgCtxt)
-      throws Exception {
+    throws IllegalStateException {
     String value = (String) this.properties.get(propName);
     if (value == null) {
       throw new IllegalStateException(propName + " resolves to an empty string");
@@ -137,6 +137,33 @@ public abstract class WssecCalloutBase {
     return sb.toString();
   }
 
+  protected X509Certificate getCertificate(MessageContext msgCtxt)
+    throws NoSuchAlgorithmException, InvalidNameException, KeyException, CertificateEncodingException {
+    String certificateString = getSimpleRequiredProperty("certificate", msgCtxt);
+    certificateString = certificateString.trim();
+    X509Certificate certificate = (X509Certificate) certificateFromPEM(certificateString);
+    X500Principal principal = certificate.getIssuerX500Principal();
+    msgCtxt.setVariable(varName("cert_issuer_cn"), getCommonName(principal));
+    msgCtxt.setVariable(varName("cert_thumbprint"), getThumbprintHex(certificate));
+    return certificate;
+  }
+
+  enum IssuerNameStyle {
+    NOT_SPECIFIED,
+    SHORT,
+    SUBJECT_DN
+  }
+
+  protected IssuerNameStyle getIssuerNameStyle(MessageContext msgCtxt) {
+    String kitString = getSimpleOptionalProperty("issuer-name-style", msgCtxt);
+    if (kitString == null) return IssuerNameStyle.SHORT;
+    kitString = kitString.trim().toUpperCase();
+    if (kitString.equals("SHORT")) return IssuerNameStyle.SHORT;
+    if (kitString.equals("SUBJECT_DN")) return IssuerNameStyle.SUBJECT_DN;
+    msgCtxt.setVariable(varName("warning"), "unrecognized issuer-name-style");
+    return IssuerNameStyle.SHORT;
+  }
+
   protected static String reformIndents(String s) {
     return s.trim().replaceAll("([\\r|\\n|\\r\\n] *)", "\n");
   }
@@ -169,7 +196,7 @@ public abstract class WssecCalloutBase {
   }
 
   protected static String getThumbprintBase64(X509Certificate certificate)
-    throws java.security.NoSuchAlgorithmException, java.security.cert.CertificateEncodingException {
+    throws NoSuchAlgorithmException, CertificateEncodingException {
     return Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-1").digest(certificate.getEncoded()));
 
   }

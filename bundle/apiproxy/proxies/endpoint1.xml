@@ -111,6 +111,21 @@
       <Condition>(proxy.pathsuffix ~ "/sign6") and (request.verb = "POST")</Condition>
     </Flow>
 
+    <Flow name='sign7'>
+      <Request>
+        <Step>
+          <Condition>NOT((request.header.content-type =| "text/xml") OR (request.header.content-type =| "application/xml" ))</Condition>
+          <Name>RF-InvalidRequest</Name>
+        </Step>
+      </Request>
+      <Response>
+        <Step><Name>AM-KeyAndCert</Name></Step>
+        <Step><Name>Java-WSSEC-Sign-7</Name></Step>
+        <Step><Name>AM-SignatureResponse</Name></Step>
+      </Response>
+      <Condition>(proxy.pathsuffix ~ "/sign7") and (request.verb = "POST")</Condition>
+    </Flow>
+
     <Flow name='validate1'>
       <Request>
         <Step>

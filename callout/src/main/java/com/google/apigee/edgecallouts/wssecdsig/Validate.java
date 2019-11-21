@@ -22,7 +22,9 @@ import com.apigee.flow.message.MessageContext;
 import com.google.apigee.util.TimeResolver;
 import com.google.apigee.xml.Namespaces;
 import java.security.KeyException;
+import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
@@ -36,6 +38,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import javax.naming.InvalidNameException;
 import javax.security.auth.x500.X500Principal;
 import javax.xml.crypto.KeySelector;
 import javax.xml.crypto.MarshalException;
@@ -108,16 +111,113 @@ public class Validate extends WssecCalloutBase implements Execution {
     return null;
   }
 
-  private static Certificate getCertificate(Element keyInfo, Document doc) throws KeyException {
+  private Certificate getCertificate(Element keyInfo, Document doc, MessageContext msgCtxt)
+    throws KeyException, NoSuchAlgorithmException, InvalidNameException, CertificateEncodingException {
+    // There are 4 cases to handle:
+    // 1. SecurityTokenReference pointing to a BinarySecurityToken
+    // 2. SecurityTokenReference with a thumbprint
+    // 3. SecurityTokenReference with IssuerName and SerialNumber
+    // 4. X509Data with Raw cert data
+    //
+    // In cases 1 and 4, we have the cert in the document.
+    // In cases 2 and 3, the verifier must provide the cert separately, and the validity
+    // check must verify that the thumbprint or IssuerName and SerialNumber match.
+    //
+
     NodeList nl = keyInfo.getElementsByTagNameNS(Namespaces.WSSEC, "SecurityTokenReference");
     if (nl.getLength() == 0) {
-      throw new RuntimeException("No element: KeyInfo/SecurityTokenReference");
+      nl = keyInfo.getElementsByTagNameNS(XMLSignature.XMLNS, "X509Data");
+      if (nl.getLength() == 0)
+        throw new RuntimeException("No suitable child element of KeyInfo");
+      Element x509Data = (Element) (nl.item(0));
+      nl = x509Data.getElementsByTagNameNS(XMLSignature.XMLNS, "X509Certificate");
+      if (nl.getLength() == 0)
+        throw new RuntimeException("No X509Certificate child element of KeyInfo/X509Data");
+
+      // case 4: X509Data with raw data
+      Element x509Cert = (Element) (nl.item(0));
+
+      String base64String = x509Cert.getTextContent();
+      Certificate cert = certificateFromPEM(toCertPEM(base64String));
+      return cert;
     }
+
     Element str = (Element) nl.item(0);
     nl = str.getElementsByTagNameNS(Namespaces.WSSEC, "Reference");
+    // nl = keyInfo.getChildNodes();
+    // Element reference = (Element) nl.item(0);
     if (nl.getLength() == 0) {
-      throw new RuntimeException("No element: KeyInfo/SecurityTokenReference/Reference");
+      nl = str.getElementsByTagNameNS(Namespaces.WSSEC, "KeyIdentifier");
+      if (nl.getLength() == 0) {
+        nl = str.getElementsByTagNameNS(XMLSignature.XMLNS, "X509Data");
+        if (nl.getLength() == 0)
+          throw new RuntimeException("No suitable child element beneath: KeyInfo/SecurityTokenReference");
+
+
+        // case 3: SecurityTokenReference with IssuerName and SerialNumber
+        Element x509Data = (Element) (nl.item(0));
+        nl = x509Data.getElementsByTagNameNS(XMLSignature.XMLNS, "X509IssuerSerial");
+        if (nl.getLength() == 0)
+          throw new RuntimeException("No X509IssuerSerial child element of KeyInfo/SecurityTokenReference/X509Data");
+        Element x509IssuerSerial = (Element) (nl.item(0));
+        nl = x509IssuerSerial.getElementsByTagNameNS(XMLSignature.XMLNS, "X509IssuerName");
+        if (nl.getLength() == 0)
+          throw new RuntimeException("No X509IssuerName element found");
+        Element x509IssuerName = (Element) (nl.item(0));
+
+        nl = x509IssuerSerial.getElementsByTagNameNS(XMLSignature.XMLNS, "X509SerialNumber");
+        if (nl.getLength() == 0)
+          throw new RuntimeException("No X509IssuerName element found");
+        Element x509SerialNumber = (Element) (nl.item(0));
+        X509Certificate cert = getCertificate(msgCtxt);
+
+        // check that the serial number matches
+        String assertedSerialNumber = x509SerialNumber.getTextContent();
+        if (assertedSerialNumber == null)
+          throw new RuntimeException("KeyInfo/SecurityTokenReference/../X509SerialNumber missing");
+        String availableSerialNumber = cert.getSerialNumber().toString();
+        if (!assertedSerialNumber.equals(availableSerialNumber))
+          throw new RuntimeException(String.format("X509SerialNumber mismatch cert(%s) doc(%s)",
+                                                   availableSerialNumber,
+                                                   assertedSerialNumber));
+
+        // check that the issuer name matches
+        String assertedIssuerName = x509IssuerName.getTextContent();
+        if (assertedIssuerName == null)
+          throw new RuntimeException("KeyInfo/SecurityTokenReference/../X509IssuerName missing");
+        IssuerNameStyle nameStyle = getIssuerNameStyle(msgCtxt);
+
+        String availableIssuerName = (nameStyle == IssuerNameStyle.SHORT) ?
+          "CN=" + getCommonName(cert.getSubjectX500Principal()) :
+          cert.getSubjectDN().getName();
+
+        if (!assertedIssuerName.equals(availableIssuerName))
+          throw new RuntimeException(String.format("X509SerialNumber mismatch cert(%s) doc(%s)",
+                                                   availableIssuerName,
+                                                   assertedIssuerName));
+
+        return cert;
+      }
+
+      // case 2: KeyIdentifier with thumbprint
+      Element ki = (Element) nl.item(0);
+      String valueType = ki.getAttribute("ValueType");
+      if (valueType == null ||
+          !valueType.equals("http://docs.oasis-open.org/wss/oasis-wss-soap-message-security1.1#ThumbprintSHA1"))
+        throw new RuntimeException("KeyInfo/SecurityTokenReference/KeyIdentifier unsupported ValueType");
+
+      String assertedThumbprintSha1Base64 = ki.getTextContent();
+      if (assertedThumbprintSha1Base64 == null)
+        throw new RuntimeException("KeyInfo/SecurityTokenReference/KeyIdentifier no thumbprint");
+
+      X509Certificate cert = getCertificate(msgCtxt);
+      String availableThumbprintSha1Base64 = getThumbprintBase64(cert);
+      if (!assertedThumbprintSha1Base64.equals(availableThumbprintSha1Base64))
+        throw new RuntimeException("KeyInfo/SecurityTokenReference/KeyIdentifier thumbprint mismatch");
+      return cert;
     }
+
+    // case 1: SecurityTokenReference pointing to a BinarySecurityToken
     Element reference = (Element) nl.item(0);
     String strUri = reference.getAttribute("URI");
     if (strUri == null || !strUri.startsWith("#")) {
@@ -234,10 +334,11 @@ public class Validate extends WssecCalloutBase implements Execution {
       msgCtxt.setVariable(varName("signaturemethod"), algorithm);
   }
 
-  private static ValidationResult validate_RSA(
+  private ValidationResult validate_RSA(
       Document doc, List<String> requiredElements, MessageContext msgCtxt)
       throws MarshalException, XMLSignatureException, KeyException, CertificateExpiredException,
-          CertificateNotYetValidException {
+             CertificateNotYetValidException, NoSuchAlgorithmException, InvalidNameException,
+             CertificateEncodingException {
     NodeList signatures = getSignatures(doc);
     if (signatures.getLength() == 0) {
       throw new RuntimeException("No element: Signature");
@@ -259,7 +360,7 @@ public class Validate extends WssecCalloutBase implements Execution {
         if (keyinfoList.getLength() == 0) {
           throw new RuntimeException("No element: Signature/KeyInfo");
         }
-        X509Certificate cert = (X509Certificate) getCertificate((Element) keyinfoList.item(0), doc);
+        X509Certificate cert = (X509Certificate) getCertificate((Element) keyinfoList.item(0), doc, msgCtxt);
         cert.checkValidity();
         KeySelector ks = KeySelector.singletonKeySelector(cert.getPublicKey());
         DOMValidateContext vc = new DOMValidateContext(ks, signatureElement);

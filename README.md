@@ -223,6 +223,8 @@ The properties are:
 | ignore-expiry          | optional. true or false. defaults false. When true, tells the validator to ignore the Timestamp/Expires field when evaluating validity.    |
 | max-lifetime           | optional. Takes a string like 120s, 10m, 4d, etc to imply 120 seconds, 10 minutes, 4 days.  Use this to limit the acceptable lifetime of the signed document. This requires the Timestamp to include a Created as well as an Expires element. Default: no maximum lifetime. |
 | throw-fault-on-invalid | optional. true or false, defaults to false. Whether to throw a fault when the signature is invalid, or when validation fails for another reason (wrong elements signed, lifetime exceeds max, etc). |
+| certificate            | optional. The certificate that provides the public key to verify the signature. This is required (and used) only if the KeyInfo in the signed document does not explicitly provide the Certificate.  |
+| issuer-name-style      | optional. One of {`SHORT`, `SUBJECT_DN`}.  Used only if the signed document includes a KeyInfo that wrapps X509IssuerSerial. See the description under the Sign callout for further details. |
 
 
 The result of the Validate callout is to set a single variable: wssec_valid.
@@ -434,9 +436,4 @@ certificate, is as easy as 1, 2, 3:
 
 ## Bugs
 
-* currently Validation works only with a SecurityTokenReference that points
-  to a BinarySecurityToken elsewhere in the signed document. There is no support
-  for validating a signed document using thumbprint, issuer/Serial number, or a
-  raw certificate embedded in the KeyInfo element. This isn't hard to add, but
-  I'll do it when someone asks for it.
-
+none?

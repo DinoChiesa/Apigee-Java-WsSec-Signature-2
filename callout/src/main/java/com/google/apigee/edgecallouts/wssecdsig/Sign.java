@@ -323,8 +323,7 @@ public class Sign extends WssecCalloutBase implements Execution {
       // <KeyInfo>
       //   <wssec:SecurityTokenReference>
       //     <wssec:Reference URI="#SecurityToken-e828bfab-bb52-4429"
-      //
-      // ValueType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3"/>
+      //          ValueType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3"/>
       //   </wssec:SecurityTokenReference>
       // </KeyInfo>
 
@@ -342,7 +341,7 @@ public class Sign extends WssecCalloutBase implements Execution {
       // <KeyInfo>
       //   <wsse:SecurityTokenReference>
       //     <wsse:KeyIdentifier
-      // ValueType="http://docs.oasis-open.org/wss/oasis-wss-soap-message-security1.1#ThumbprintSHA1">9JscCwWHk5IvR/6JLTSayTY7M=</wsse:KeyIdentifier>
+      //       ValueType="http://docs.oasis-open.org/wss/oasis-wss-soap-message-security1.1#ThumbprintSHA1">9JscCwWHk5IvR/6JLTSayTY7M=</wsse:KeyIdentifier>
       //   </wsse:SecurityTokenReference>
       // </KeyInfo>
       Element secTokenRef =
@@ -551,16 +550,6 @@ public class Sign extends WssecCalloutBase implements Execution {
     return toSign;
   }
 
-  private X509Certificate getCertificate(MessageContext msgCtxt) throws Exception {
-    String certificateString = getSimpleRequiredProperty("certificate", msgCtxt);
-    certificateString = certificateString.trim();
-    X509Certificate certificate = (X509Certificate) certificateFromPEM(certificateString);
-    X500Principal principal = certificate.getIssuerX500Principal();
-    msgCtxt.setVariable(varName("cert_issuer_cn"), getCommonName(principal));
-    msgCtxt.setVariable(varName("cert_thumbprint"), getThumbprintHex(certificate));
-    return certificate;
-  }
-
   enum KeyIdentifierType {
     NOT_SPECIFIED,
     THUMBPRINT,
@@ -586,22 +575,6 @@ public class Sign extends WssecCalloutBase implements Execution {
       return KeyIdentifierType.BST_DIRECT_REFERENCE;
     }
     return t;
-  }
-
-  enum IssuerNameStyle {
-    NOT_SPECIFIED,
-    SHORT,
-    SUBJECT_DN
-  }
-
-  private IssuerNameStyle getIssuerNameStyle(MessageContext msgCtxt) throws Exception {
-    String kitString = getSimpleOptionalProperty("issuer-name-style", msgCtxt);
-    if (kitString == null) return IssuerNameStyle.SHORT;
-    kitString = kitString.trim().toUpperCase();
-    if (kitString.equals("SHORT")) return IssuerNameStyle.SHORT;
-    if (kitString.equals("SUBJECT_DN")) return IssuerNameStyle.SUBJECT_DN;
-    msgCtxt.setVariable(varName("warning"), "unrecognized issuer-name-style");
-    return IssuerNameStyle.SHORT;
   }
 
   static class SignConfiguration {
