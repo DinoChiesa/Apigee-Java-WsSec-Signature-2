@@ -414,6 +414,9 @@ the signed payload looks like this:
 </soapenv:Envelope>
 ```
 
+This example has been prettified. The signed document will not be pretty-printed
+like that. Applying an XML Digital Signature will collapse whitespace.
+
 ## About Keys
 
 There is a private RSA key and a corresponding certificate embedded in the API
