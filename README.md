@@ -434,4 +434,9 @@ certificate, is as easy as 1, 2, 3:
 
 ## Bugs
 
-None reported.
+* currently Validation works only with a SecurityTokenReference that points
+  to a BinarySecurityToken elsewhere in the signed document. There is no support
+  for validating a signed document using thumbprint, issuer/Serial number, or a
+  raw certificate embedded in the KeyInfo element. This isn't hard to add, but
+  I'll do it when someone asks for it.
+
