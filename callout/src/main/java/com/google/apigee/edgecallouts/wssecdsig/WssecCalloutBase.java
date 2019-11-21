@@ -28,6 +28,7 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.Base64;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -167,7 +168,13 @@ public abstract class WssecCalloutBase {
     return cn;
   }
 
-  protected static String getThumbprint(X509Certificate certificate)
+  protected static String getThumbprintBase64(X509Certificate certificate)
+    throws java.security.NoSuchAlgorithmException, java.security.cert.CertificateEncodingException {
+    return Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-1").digest(certificate.getEncoded()));
+
+  }
+
+  protected static String getThumbprintHex(X509Certificate certificate)
     throws NoSuchAlgorithmException, CertificateEncodingException {
     return DatatypeConverter.printHexBinary(
         MessageDigest.getInstance("SHA-1").digest(

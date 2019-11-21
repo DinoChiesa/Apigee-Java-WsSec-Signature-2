@@ -773,7 +773,7 @@ public class TestWssecSignCallout extends CalloutTestBase {
     nl = ((Element)nl.item(0)).getElementsByTagNameNS(Namespaces.WSSEC, "KeyIdentifier");
     Assert.assertEquals(nl.getLength(), 1, method + "KeyIdentifier element");
     String thumbprint = nl.item(0).getTextContent();
-    Assert.assertEquals(thumbprint, "ada3a946669ad4e6e2c9f81360c3249e49a57a7d");
+    Assert.assertEquals(thumbprint, "raOpRmaa1ObiyfgTYMMknkmlen0=");
   }
 
 

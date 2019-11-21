@@ -351,7 +351,7 @@ public class Sign extends WssecCalloutBase implements Execution {
       keyId.setAttribute(
           "ValueType",
           "http://docs.oasis-open.org/wss/oasis-wss-soap-message-security1.1#ThumbprintSHA1");
-      keyId.setTextContent(getThumbprint(signConfiguration.certificate));
+      keyId.setTextContent(getThumbprintBase64(signConfiguration.certificate));
       secTokenRef.appendChild(keyId);
       javax.xml.crypto.XMLStructure structure = new javax.xml.crypto.dom.DOMStructure(secTokenRef);
       keyInfo = kif.newKeyInfo(java.util.Collections.singletonList(structure));
@@ -544,7 +544,7 @@ public class Sign extends WssecCalloutBase implements Execution {
     X509Certificate certificate = (X509Certificate) certificateFromPEM(certificateString);
     X500Principal principal = certificate.getIssuerX500Principal();
     msgCtxt.setVariable(varName("cert_issuer_cn"), getCommonName(principal));
-    msgCtxt.setVariable(varName("cert_thumbprint"), getThumbprint(certificate));
+    msgCtxt.setVariable(varName("cert_thumbprint"), getThumbprintHex(certificate));
     return certificate;
   }
 

@@ -457,7 +457,7 @@ public class Validate extends WssecCalloutBase implements Execution {
         List<X509Certificate> certs = validationResult.getCertificates();
         for (int i = 0; i < certs.size(); i++) {
           X509Certificate certificate = certs.get(i);
-          String thumbprint = getThumbprint(certificate);
+          String thumbprint = getThumbprintHex(certificate);
           msgCtxt.setVariable(varName("cert_" + i + "_thumbprint"), thumbprint);
 
           if (!acceptableThumbprints.contains(thumbprint)) {
