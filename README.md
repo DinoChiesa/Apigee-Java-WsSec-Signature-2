@@ -264,7 +264,7 @@ There are some sample SOAP request documents included in this repo that you can 
 
 ### Invoking the Example proxy:
 
-* Signing with Timestamp but no expiry
+* Signing with Timestamp but no expiry, using BinarySecurityToken
 
    ```
    ORG=myorgname
@@ -273,10 +273,34 @@ There are some sample SOAP request documents included in this repo that you can 
        --data-binary @./sample-data/request1.xml
    ```
 
-* Signing with Timestamp that includes an expiry
+* Signing with Timestamp that includes an expiry, with BinarySecurityToken
 
    ```
    curl -i https://${ORG}-${ENV}.apigee.net/wssec/sign2  -H content-type:application/xml \
+       --data-binary @./sample-data/request1.xml
+   ```
+* Signing with Timestamp and expiry, emitting KeyInfo containing X509IssuerSerial
+
+   ```
+   curl -i https://${ORG}-${ENV}.apigee.net/wssec/sign3  -H content-type:application/xml \
+       --data-binary @./sample-data/request1.xml
+   ```
+* Signing with Timestamp and expiry, emitting KeyInfo containing X509Data (raw certificate)
+
+   ```
+   curl -i https://${ORG}-${ENV}.apigee.net/wssec/sign4  -H content-type:application/xml \
+       --data-binary @./sample-data/request1.xml
+   ```
+* Signing with Timestamp and expiry, emitting KeyInfo containing Thumbprint
+
+   ```
+   curl -i https://${ORG}-${ENV}.apigee.net/wssec/sign5  -H content-type:application/xml \
+       --data-binary @./sample-data/request1.xml
+   ```
+* Signing with SHA256 and RSA-SHA256 digest and signature methods
+
+   ```
+   curl -i https://${ORG}-${ENV}.apigee.net/wssec/sign6  -H content-type:application/xml \
        --data-binary @./sample-data/request1.xml
    ```
 * Validating with hardcoded Common Name
@@ -333,7 +357,8 @@ Supposing the input XML looks like this:
 </soapenv:Envelope>
 ```
 
-...the signed payload looks like this:
+Then, given the default settings for `digest-method`, `signing-method`, and `key-identifier-type`,
+the signed payload looks like this:
 
 ```
 <soapenv:Envelope
@@ -392,9 +417,9 @@ Supposing the input XML looks like this:
 
 There is a private RSA key and a corresponding certificate embedded in the API
 Proxy. You should not use those for your own purposes. Create your
-own. Self-signed is fine. You can
-do it with openssl. Creating a privatekey, a Certificate signing request, and a
-certificate, is as easy as 1,2,3:
+own. Self-signed is fine for testing purposes. You can
+do it with openssl. Creating a privatekey, a certificate signing request, and a
+certificate, is as easy as 1, 2, 3:
 
 ```
  openssl genpkey  -algorithm rsa -pkeyopt  rsa_keygen_bits:2048 -out privatekey.pem

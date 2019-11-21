@@ -1,7 +1,9 @@
-<JavaCallout name='Java-WSSEC-Sign-1'>
+<JavaCallout name='Java-WSSEC-Sign-5'>
   <Properties>
     <Property name='source'>message.content</Property>
     <Property name='output-variable'>output</Property>
+    <Property name='expiry'>5m</Property>
+    <Property name='key-identifier-type'>thumbprint</Property>
     <Property name='private-key'>{my_private_key}</Property>
     <Property name='certificate'>{my_certificate}</Property>
   </Properties>
