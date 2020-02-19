@@ -8,6 +8,7 @@ import com.apigee.flow.execution.ExecutionContext;
 import com.apigee.flow.message.Message;
 import com.apigee.flow.message.MessageContext;
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import mockit.Mock;
@@ -266,8 +267,12 @@ public abstract class CalloutTestBase {
   Message message;
   ExecutionContext exeCtxt;
 
-  @BeforeMethod()
-  public void beforeMethod() {
+  @BeforeMethod
+  public void beforeMethod(Method method) throws Exception {
+    String methodName = method.getName();
+    String className = method.getDeclaringClass().getName();
+    System.out.printf("\n\n==================================================================\n");
+    System.out.printf("TEST %s.%s()\n", className, methodName);
 
     msgCtxt =
         new MockUp<MessageContext>() {

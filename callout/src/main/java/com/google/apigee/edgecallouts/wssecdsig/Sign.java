@@ -240,13 +240,13 @@ public class Sign extends WssecCalloutBase implements Execution {
 
     // 6. maybe embed the BinarySecurityToken
     // but first, verify that the cert signs the public key that corresponds to the private key
-    RSAPublicKey k1 = (RSAPublicKey) signConfiguration.certificate.getPublicKey();
-    final byte[] certModulus = k1.getModulus().toByteArray();
-    RSAPrivateKey k2 = (RSAPrivateKey) signConfiguration.privatekey;
-    final byte[] keyModulus = k2.getModulus().toByteArray();
-    String e1 = Base64.getEncoder().encodeToString(certModulus);
-    String e2 = Base64.getEncoder().encodeToString(keyModulus);
-    if (!e1.equals(e2)) {
+    RSAPublicKey certPublicKey = (RSAPublicKey) signConfiguration.certificate.getPublicKey();
+    final byte[] certModulus = certPublicKey.getModulus().toByteArray();
+    RSAPrivateKey configPrivateKey = (RSAPrivateKey) signConfiguration.privatekey;
+    final byte[] keyModulus = configPrivateKey.getModulus().toByteArray();
+    String encodedCertModulus = Base64.getEncoder().encodeToString(certModulus);
+    String encodedKeyModulus = Base64.getEncoder().encodeToString(keyModulus);
+    if (!encodedCertModulus.equals(encodedKeyModulus)) {
       throw new KeyException(
           "public key mismatch. The public key contained in the certificate does not match the private key.");
     }
@@ -354,7 +354,7 @@ public class Sign extends WssecCalloutBase implements Execution {
       secTokenRef.appendChild(keyId);
       javax.xml.crypto.XMLStructure structure = new javax.xml.crypto.dom.DOMStructure(secTokenRef);
       keyInfo = kif.newKeyInfo(java.util.Collections.singletonList(structure));
-    } else if (signConfiguration.keyIdentifierType == KeyIdentifierType.RAW) {
+    } else if (signConfiguration.keyIdentifierType == KeyIdentifierType.X509_CERT_DIRECT) {
       // <KeyInfo>
       //   <X509Data>
       //     <X509Certificate>MIICAjCCAWugAwIBAgIQwZyW5YOCXZxHg1MBV2CpvDANBgkhkiG9w0BAQnEdD9tI7IYAAoK4O+35EOzcXbvc4Kzz7BQnulQ=</X509Certificate>
@@ -366,6 +366,28 @@ public class Sign extends WssecCalloutBase implements Execution {
           Base64.getEncoder().encodeToString(signConfiguration.certificate.getEncoded()));
       x509Data.appendChild(x509Certificate);
       javax.xml.crypto.XMLStructure structure = new javax.xml.crypto.dom.DOMStructure(x509Data);
+      keyInfo = kif.newKeyInfo(java.util.Collections.singletonList(structure));
+    } else if (signConfiguration.keyIdentifierType == KeyIdentifierType.RSA_KEY_VALUE) {
+      // <KeyInfo>
+      //   <KeyValue>
+      //     <RSAKeyValue>
+      //       <Modulus>B6PenDyT58LjZlG6LYD27IFCh1yO+4...yCP9YNDtsLZftMLoQ==</Modulus>
+      //       <Exponent>AQAB</Exponent>
+      //     </RSAKeyValue>
+      //   </KeyValue>
+      // </KeyInfo>
+      Element keyValue = doc.createElementNS(Namespaces.XMLDSIG, "KeyValue");
+      Element rsaKeyValue = doc.createElementNS(Namespaces.XMLDSIG, "RSAKeyValue");
+      Element modulus = doc.createElementNS(Namespaces.XMLDSIG, "Modulus");
+      Element exponent = doc.createElementNS(Namespaces.XMLDSIG, "Exponent");
+      modulus.setTextContent(encodedCertModulus);
+      final byte[] certExponent = certPublicKey.getPublicExponent().toByteArray();
+      String encodedCertExponent = Base64.getEncoder().encodeToString(certExponent);
+      exponent.setTextContent(encodedCertExponent);
+      rsaKeyValue.appendChild(modulus);
+      rsaKeyValue.appendChild(exponent);
+      keyValue.appendChild(rsaKeyValue);
+      javax.xml.crypto.XMLStructure structure = new javax.xml.crypto.dom.DOMStructure(keyValue);
       keyInfo = kif.newKeyInfo(java.util.Collections.singletonList(structure));
     } else if (signConfiguration.keyIdentifierType == KeyIdentifierType.ISSUER_SERIAL) {
       // <KeyInfo>
@@ -406,6 +428,7 @@ public class Sign extends WssecCalloutBase implements Execution {
       keyInfo = kif.newKeyInfo(java.util.Collections.singletonList(structure));
       // keyInfo = keyInfoFactory.newKeyInfo(Collections.singletonList(x509Data));
     }
+
 
     XMLSignature signature = signatureFactory.newXMLSignature(signedInfo, keyInfo);
     signature.sign(signingContext);
@@ -553,8 +576,9 @@ public class Sign extends WssecCalloutBase implements Execution {
   enum KeyIdentifierType {
     NOT_SPECIFIED,
     THUMBPRINT,
-    RAW,
+    X509_CERT_DIRECT,
     BST_DIRECT_REFERENCE,
+    RSA_KEY_VALUE,
     ISSUER_SERIAL;
 
     static KeyIdentifierType fromString(String s) {

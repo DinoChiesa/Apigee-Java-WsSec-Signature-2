@@ -6,5 +6,5 @@
     <Property name='accept-subject-cns'>apigee.google.com</Property>
   </Properties>
   <ClassName>com.google.apigee.edgecallouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://edge-wssecdsig-20191120.jar</ResourceURL>
+  <ResourceURL>java://edge-wssecdsig-20200219.jar</ResourceURL>
 </JavaCallout>

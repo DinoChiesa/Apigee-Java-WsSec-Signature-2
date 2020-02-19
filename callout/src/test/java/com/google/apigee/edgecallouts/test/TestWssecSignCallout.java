@@ -17,6 +17,7 @@ import javax.xml.crypto.dsig.XMLSignature;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -548,7 +549,7 @@ public class TestWssecSignCallout extends CalloutTestBase {
     props.put("debug", "true");
     props.put("source", "message.content");
     props.put("expiry", minutesExpiry + "m");
-    props.put("key-identifier-type", "raw");
+    props.put("key-identifier-type", "x509_cert_direct");
     props.put("private-key", "{my-private-key}");
     props.put("certificate", "{my-certificate}");
     props.put("output-variable", "output");
@@ -586,6 +587,58 @@ public class TestWssecSignCallout extends CalloutTestBase {
     String certText = x509Cert.getTextContent();
     Assert.assertTrue(certText.startsWith("MIIDpDCCAowCCQDsXkZg"));
     Assert.assertTrue(certText.endsWith("InG8/oOz5ib"));
+  }
+
+  @Test
+  public void rsaKeyValue() throws Exception {
+    String method = "rsaKeyValue() ";
+    int minutesExpiry = 15;
+    msgCtxt.setVariable("message.content", simpleSoap1);
+    msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
+    msgCtxt.setVariable("my-certificate", pairs[2].certificate);
+
+    Map<String, String> props = new HashMap<String, String>();
+    props.put("debug", "true");
+    props.put("source", "message.content");
+    props.put("expiry", minutesExpiry + "m");
+    props.put("key-identifier-type", "rsa_key_value");
+    props.put("private-key", "{my-private-key}");
+    props.put("certificate", "{my-certificate}");
+    props.put("output-variable", "output");
+
+    Sign callout = new Sign(props);
+
+    // execute and retrieve output
+    ExecutionResult actualResult = callout.execute(msgCtxt, exeCtxt);
+    Assert.assertEquals(actualResult, ExecutionResult.SUCCESS, "result not as expected");
+    Object exception = msgCtxt.getVariable("wssec_exception");
+    Assert.assertNull(exception, method + "exception");
+    Object errorOutput = msgCtxt.getVariable("wssec_error");
+    Assert.assertNull(errorOutput, "error not as expected");
+    Object stacktrace = msgCtxt.getVariable("wssec_stacktrace");
+    Assert.assertNull(stacktrace, method + "stacktrace");
+
+    String output = (String) msgCtxt.getVariable("output");
+    // System.out.printf("** Output:\n" + output + "\n");
+
+    Document doc = docFromStream(new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8)));
+    NodeList nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "KeyInfo");
+    Assert.assertEquals(nl.getLength(), 1, method + "KeyInfo element");
+    nl = ((Element)nl.item(0)).getElementsByTagNameNS(XMLSignature.XMLNS, "KeyValue");
+    Assert.assertEquals(nl.getLength(), 1, method + "KeyValue element");
+    nl = ((Element)nl.item(0)).getElementsByTagNameNS(XMLSignature.XMLNS, "RSAKeyValue");
+    Assert.assertEquals(nl.getLength(), 1, method + "RSAKeyValue element");
+    Element rsaKeyValue = (Element)(nl.item(0));
+
+    nl = rsaKeyValue.getElementsByTagNameNS(XMLSignature.XMLNS, "Modulus");
+    Assert.assertEquals(nl.getLength(), 1, method + "Modulus element");
+    String modulusString = nl.item(0).getTextContent();
+    Assert.assertTrue(modulusString.startsWith("AKiQNjcF3ql2lWhztJpCg6U3YTwof/NIB9"));
+
+    nl = rsaKeyValue.getElementsByTagNameNS(XMLSignature.XMLNS, "Exponent");
+    Assert.assertEquals(nl.getLength(), 1, method + "Exponent element");
+    String exponentString = nl.item(0).getTextContent();
+    Assert.assertEquals(exponentString, "AQAB");
   }
 
   @Test
@@ -640,7 +693,6 @@ public class TestWssecSignCallout extends CalloutTestBase {
     Assert.assertEquals(serialString, "17032128222562009281");
   }
 
-
   @Test
   public void issuerSerialWithLongName() throws Exception {
     String method = "issuerSerialWithLongName() ";
@@ -693,7 +745,6 @@ public class TestWssecSignCallout extends CalloutTestBase {
     String serialString = nl.item(0).getTextContent();
     Assert.assertEquals(serialString, "17032128222562009281");
   }
-
 
   @Test
   public void oldFormatPrivateKeyEncrypted() throws Exception {
@@ -816,4 +867,5 @@ public class TestWssecSignCallout extends CalloutTestBase {
     Object errorOutput = msgCtxt.getVariable("wssec_error");
     Assert.assertEquals(errorOutput, expectedError, "errorOutput");
   }
+
 }

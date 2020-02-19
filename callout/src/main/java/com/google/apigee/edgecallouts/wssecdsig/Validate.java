@@ -122,6 +122,12 @@ public class Validate extends WssecCalloutBase implements Execution {
     // In cases 1 and 4, we have the cert in the document.
     // In cases 2 and 3, the verifier must provide the cert separately, and the validity
     // check must verify that the thumbprint or IssuerName and SerialNumber match.
+
+    // There is a 5th case,
+    // 5. KeyValue with RSAKeyValue and Modulus + Exponent
+    //
+    // In case 5, ... we have the public key in the document. Not a cert.
+    // this code does not handle verification for that kind of signature.
     //
 
     NodeList nl = keyInfo.getElementsByTagNameNS(Namespaces.WSSEC, "SecurityTokenReference");
