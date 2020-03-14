@@ -84,6 +84,18 @@ public abstract class WssecCalloutBase {
     return dest;
   }
 
+  protected String getSoapVersion(MessageContext msgCtxt) throws Exception {
+    String soapVersion = getSimpleOptionalProperty("soap-version", msgCtxt);
+    if (soapVersion == null) return "soap1.1";
+    soapVersion = soapVersion.trim().toLowerCase();
+    // warn on invalid values
+    if (!soapVersion.equals("soap1.1") && !soapVersion.equals("soap1.2")) {
+      msgCtxt.setVariable(varName("ERROR"), "invalid value for soap-version");
+      throw new IllegalStateException("invalid value for soap-version");
+    }
+    return soapVersion;
+  }
+
   protected String getSimpleOptionalProperty(String propName, MessageContext msgCtxt)
        {
     String value = (String) this.properties.get(propName);

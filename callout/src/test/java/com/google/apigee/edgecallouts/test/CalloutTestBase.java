@@ -295,7 +295,7 @@ public abstract class CalloutTestBase {
             if (variables == null) {
               variables = new HashMap();
             }
-            System.out.printf("setVariable(%s, %s)\n", name, value.toString());
+            System.out.printf("setVariable(%s, %s)\n", name, value==null?"-null-":value.toString());
             variables.put(name, value);
             return true;
           }

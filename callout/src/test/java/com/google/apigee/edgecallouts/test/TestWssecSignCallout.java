@@ -25,7 +25,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 public class TestWssecSignCallout extends CalloutTestBase {
-  private static final String simpleSoap1 =
+  private static final String simpleSoap11 =
       "<soapenv:Envelope xmlns:ns1='http://ws.example.com/' xmlns:soapenv='http://schemas.xmlsoap.org/soap/envelope/'>"
           + "  <soapenv:Body>"
           + "    <ns1:sumResponse>"
@@ -33,6 +33,27 @@ public class TestWssecSignCallout extends CalloutTestBase {
           + "    </ns1:sumResponse>"
           + "  </soapenv:Body>"
           + "</soapenv:Envelope>";
+
+  private static final String simpleSoap12 = ""
++"<soap:Envelope \n"
++"    xmlns:soap='http://www.w3.org/2003/05/soap-envelope'\n"
++"    xmlns:v1='https://foo/servicecontract/v1.0'\n"
++"    xmlns:v11='https://foo/claims/datacontract/v1.0'>\n"
++"  <soap:Header \n"
++"      xmlns:wsa='http://www.w3.org/2005/08/addressing'>\n"
++"    <wsa:Action>https://foo/v1.0/ClaimsService/FileMultipleClaims</wsa:Action>\n"
++"    <wsa:To>https://foo/v1.0/ClaimsService</wsa:To>\n"
++"  </soap:Header>\n"
++"  <soap:Body>\n"
++"    <ns2:FileMultipleClaims \n"
++"        xmlns:ns2='https://foo/servicecontract/v1.0'\n"
++"        xmlns='https://foo/claims/datacontract/v1.0'>\n"
++"      <ns2:request>\n"
++"        <body>here</body>\n"
++"      </ns2:request>\n"
++"    </ns2:FileMultipleClaims>\n"
++"  </soap:Body>\n"
++"</soap:Envelope>\n";
 
   private static Document docFromStream(InputStream inputStream)
       throws IOException, ParserConfigurationException, SAXException {
@@ -46,7 +67,7 @@ public class TestWssecSignCallout extends CalloutTestBase {
   public void emptySource() throws Exception {
     String method = "emptySource() ";
     String expectedError = "source variable resolves to null";
-    msgCtxt.setVariable("message-content", simpleSoap1);
+    msgCtxt.setVariable("message-content", simpleSoap11);
 
     Map<String, String> props = new HashMap<String, String>();
     props.put("source", "not-message.content");
@@ -69,7 +90,7 @@ public class TestWssecSignCallout extends CalloutTestBase {
     String method = "missingPrivateKey() ";
     String expectedError = "private-key resolves to an empty string";
 
-    msgCtxt.setVariable("message.content", simpleSoap1);
+    msgCtxt.setVariable("message.content", simpleSoap11);
 
     Map<String, String> props = new HashMap<String, String>();
     props.put("source", "message.content");
@@ -93,7 +114,7 @@ public class TestWssecSignCallout extends CalloutTestBase {
   public void missingCertificate() throws Exception {
     String method = "missingCertificate() ";
     String expectedError = "certificate resolves to an empty string";
-    msgCtxt.setVariable("message.content", simpleSoap1);
+    msgCtxt.setVariable("message.content", simpleSoap11);
     msgCtxt.setVariable("my-private-key", pairs[0].privateKey);
 
     Map<String, String> props = new HashMap<String, String>();
@@ -120,7 +141,7 @@ public class TestWssecSignCallout extends CalloutTestBase {
   @Test
   public void validResult() throws Exception {
     String method = "validResult() ";
-    msgCtxt.setVariable("message.content", simpleSoap1);
+    msgCtxt.setVariable("message.content", simpleSoap11);
     msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
     msgCtxt.setVariable("my-certificate", pairs[2].certificate);
 
@@ -189,7 +210,7 @@ public class TestWssecSignCallout extends CalloutTestBase {
   @Test
   public void signSha256() throws Exception {
     String method = "validResult1() ";
-    msgCtxt.setVariable("message.content", simpleSoap1);
+    msgCtxt.setVariable("message.content", simpleSoap11);
     msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
     msgCtxt.setVariable("my-certificate", pairs[2].certificate);
 
@@ -260,7 +281,7 @@ public class TestWssecSignCallout extends CalloutTestBase {
   @Test
   public void digestSha256() throws Exception {
     String method = "validResult1() ";
-    msgCtxt.setVariable("message.content", simpleSoap1);
+    msgCtxt.setVariable("message.content", simpleSoap11);
     msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
     msgCtxt.setVariable("my-certificate", pairs[2].certificate);
 
@@ -330,7 +351,7 @@ public class TestWssecSignCallout extends CalloutTestBase {
   @Test
   public void signOnlyTimestamp() throws Exception {
     String method = "signOnlyTimestamp() ";
-    msgCtxt.setVariable("message.content", simpleSoap1);
+    msgCtxt.setVariable("message.content", simpleSoap11);
     msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
     msgCtxt.setVariable("my-certificate", pairs[2].certificate);
 
@@ -385,7 +406,7 @@ public class TestWssecSignCallout extends CalloutTestBase {
   @Test
   public void signOnlyBody() throws Exception {
     String method = "signOnlyBody() ";
-    msgCtxt.setVariable("message.content", simpleSoap1);
+    msgCtxt.setVariable("message.content", simpleSoap11);
     msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
     msgCtxt.setVariable("my-certificate", pairs[2].certificate);
 
@@ -441,7 +462,7 @@ public class TestWssecSignCallout extends CalloutTestBase {
   public void withExpiry() throws Exception {
     String method = "withExpiry() ";
     int minutesExpiry = 15;
-    msgCtxt.setVariable("message.content", simpleSoap1);
+    msgCtxt.setVariable("message.content", simpleSoap11);
     msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
     msgCtxt.setVariable("my-certificate", pairs[2].certificate);
 
@@ -496,7 +517,7 @@ public class TestWssecSignCallout extends CalloutTestBase {
   public void thumbprint() throws Exception {
     String method = "thumbprint() ";
     int minutesExpiry = 15;
-    msgCtxt.setVariable("message.content", simpleSoap1);
+    msgCtxt.setVariable("message.content", simpleSoap11);
     msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
     msgCtxt.setVariable("my-certificate", pairs[2].certificate);
 
@@ -541,7 +562,7 @@ public class TestWssecSignCallout extends CalloutTestBase {
   public void rawCert() throws Exception {
     String method = "rawCert() ";
     int minutesExpiry = 15;
-    msgCtxt.setVariable("message.content", simpleSoap1);
+    msgCtxt.setVariable("message.content", simpleSoap11);
     msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
     msgCtxt.setVariable("my-certificate", pairs[2].certificate);
 
@@ -593,7 +614,7 @@ public class TestWssecSignCallout extends CalloutTestBase {
   public void rsaKeyValue() throws Exception {
     String method = "rsaKeyValue() ";
     int minutesExpiry = 15;
-    msgCtxt.setVariable("message.content", simpleSoap1);
+    msgCtxt.setVariable("message.content", simpleSoap11);
     msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
     msgCtxt.setVariable("my-certificate", pairs[2].certificate);
 
@@ -645,7 +666,7 @@ public class TestWssecSignCallout extends CalloutTestBase {
   public void issuerSerial() throws Exception {
     String method = "issuerSerial() ";
     int minutesExpiry = 15;
-    msgCtxt.setVariable("message.content", simpleSoap1);
+    msgCtxt.setVariable("message.content", simpleSoap11);
     msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
     msgCtxt.setVariable("my-certificate", pairs[2].certificate);
 
@@ -697,7 +718,7 @@ public class TestWssecSignCallout extends CalloutTestBase {
   public void issuerSerialWithLongName() throws Exception {
     String method = "issuerSerialWithLongName() ";
     int minutesExpiry = 15;
-    msgCtxt.setVariable("message.content", simpleSoap1);
+    msgCtxt.setVariable("message.content", simpleSoap11);
     msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
     msgCtxt.setVariable("my-certificate", pairs[2].certificate);
 
@@ -749,7 +770,7 @@ public class TestWssecSignCallout extends CalloutTestBase {
   @Test
   public void oldFormatPrivateKeyEncrypted() throws Exception {
     String method = "oldFormatPrivateKeyEncrypted() ";
-    msgCtxt.setVariable("message.content", simpleSoap1);
+    msgCtxt.setVariable("message.content", simpleSoap11);
     msgCtxt.setVariable("my-private-key", pairs[1].privateKey);
     msgCtxt.setVariable("my-certificate", pairs[1].certificate);
 
@@ -782,7 +803,7 @@ public class TestWssecSignCallout extends CalloutTestBase {
   @Test
   public void oldFormatPrivateKey() throws Exception {
     String method = "oldFormatPrivateKey() ";
-    msgCtxt.setVariable("message.content", simpleSoap1);
+    msgCtxt.setVariable("message.content", simpleSoap11);
     msgCtxt.setVariable("my-private-key", pairs[3].privateKey);
     msgCtxt.setVariable("my-certificate", pairs[3].certificate);
 
@@ -816,7 +837,7 @@ public class TestWssecSignCallout extends CalloutTestBase {
     String method = "oldFormatPrivateKeyEncrypted() ";
     String expectedException =
         "org.bouncycastle.openssl.PEMException: exception processing key pair: password empty";
-    msgCtxt.setVariable("message.content", simpleSoap1);
+    msgCtxt.setVariable("message.content", simpleSoap11);
     msgCtxt.setVariable("my-private-key", pairs[1].privateKey);
     msgCtxt.setVariable("my-certificate", pairs[1].certificate);
 
@@ -846,7 +867,7 @@ public class TestWssecSignCallout extends CalloutTestBase {
     String expectedError =
         "public key mismatch. The public key contained in the certificate does not match the private key.";
     String expectedException = "java.security.KeyException: " + expectedError;
-    msgCtxt.setVariable("message.content", simpleSoap1);
+    msgCtxt.setVariable("message.content", simpleSoap11);
     msgCtxt.setVariable("my-private-key", pairs[2].privateKey); // mismatch
     msgCtxt.setVariable("my-certificate", pairs[1].certificate);
 
@@ -866,6 +887,78 @@ public class TestWssecSignCallout extends CalloutTestBase {
     Assert.assertEquals(exception, expectedException, method + "exception");
     Object errorOutput = msgCtxt.getVariable("wssec_error");
     Assert.assertEquals(errorOutput, expectedError, "errorOutput");
+  }
+
+
+  @Test
+  public void validResult_soap12() throws Exception {
+    String method = "validResult_soap12() ";
+    msgCtxt.setVariable("message.content", simpleSoap12);
+    msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
+    msgCtxt.setVariable("my-certificate", pairs[2].certificate);
+
+    Map<String, String> props = new HashMap<String, String>();
+    props.put("debug", "true");
+    props.put("soap-version", "soap1.2");
+    props.put("source", "message.content");
+    props.put("private-key", "{my-private-key}");
+    props.put("certificate", "{my-certificate}");
+    props.put("output-variable", "output");
+
+    Sign callout = new Sign(props);
+
+    // execute and retrieve output
+    ExecutionResult actualResult = callout.execute(msgCtxt, exeCtxt);
+    Assert.assertEquals(actualResult, ExecutionResult.SUCCESS, "result not as expected");
+    Object exception = msgCtxt.getVariable("wssec_exception");
+    Assert.assertNull(exception, method + "exception");
+    Object errorOutput = msgCtxt.getVariable("wssec_error");
+    Assert.assertNull(errorOutput, "error not as expected");
+    Object stacktrace = msgCtxt.getVariable("wssec_stacktrace");
+    Assert.assertNull(stacktrace, method + "stacktrace");
+
+    String output = (String) msgCtxt.getVariable("output");
+    Assert.assertNotNull(output);
+    System.out.printf("** Output:\n" + output + "\n");
+
+    Document doc = docFromStream(new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8)));
+
+    // signature
+    NodeList nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "Signature");
+    Assert.assertEquals(nl.getLength(), 1, method + "Signature element");
+
+    // SignatureMethod (default)
+    nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "SignatureMethod");
+    Assert.assertEquals(nl.getLength(), 1, method + "SignatureMethod element");
+    Element element = (Element) nl.item(0);
+    String signatureMethodAlgorithm = element.getAttribute("Algorithm");
+    Assert.assertEquals(signatureMethodAlgorithm, "http://www.w3.org/2000/09/xmldsig#rsa-sha1");
+
+    // c14n
+    nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "CanonicalizationMethod");
+    Assert.assertEquals(nl.getLength(), 1, method + "CanonicalizationMethod element");
+    element = (Element) nl.item(0);
+    String canonicalizationMethodAlgorithm = element.getAttribute("Algorithm");
+    Assert.assertEquals(canonicalizationMethodAlgorithm, "http://www.w3.org/2001/10/xml-exc-c14n#");
+
+    // Reference
+    nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "Reference");
+    Assert.assertEquals(nl.getLength(), 2, method + "Reference element");
+
+    // DigestMethod
+    for (int i = 0; i < nl.getLength(); i++) {
+      element = (Element) nl.item(i);
+      NodeList digestMethodNodes =
+          element.getElementsByTagNameNS(XMLSignature.XMLNS, "DigestMethod");
+      Assert.assertEquals(digestMethodNodes.getLength(), 1, method + "DigestMethod element");
+      element = (Element) digestMethodNodes.item(0);
+      String digestAlg = element.getAttribute("Algorithm");
+      Assert.assertEquals(digestAlg, "http://www.w3.org/2000/09/xmldsig#sha1");
+    }
+
+    // SignatureValue
+    nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "SignatureValue");
+    Assert.assertEquals(nl.getLength(), 1, method + "SignatureValue element");
   }
 
 }

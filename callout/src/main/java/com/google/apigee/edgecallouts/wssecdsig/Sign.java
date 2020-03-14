@@ -167,22 +167,24 @@ public class Sign extends WssecCalloutBase implements Execution {
           KeyException, MarshalException, XMLSignatureException, TransformerException,
           CertificateEncodingException, InvalidNameException {
     XMLSignatureFactory signatureFactory = XMLSignatureFactory.getInstance("DOM");
-    String soapns = Namespaces.SOAP10;
+
+    String soapns = (signConfiguration.soapVersion.equals("soap1.2")) ?
+      Namespaces.SOAP1_2 : Namespaces.SOAP1_1;
 
     NodeList nodes = doc.getElementsByTagNameNS(soapns, "Envelope");
     if (nodes.getLength() != 1) {
-      return null;
+      throw new IllegalStateException("No soap:Envelope found");
     }
     Element envelope = (Element) nodes.item(0);
 
     nodes = envelope.getElementsByTagNameNS(soapns, "Body");
     if (nodes.getLength() != 1) {
-      return null;
+      throw new IllegalStateException("No soap:Body found");
     }
 
     Map<String, String> knownNamespaces = Namespaces.getExistingNamespaces(envelope);
     String wsuPrefix = declareXmlnsPrefix(envelope, knownNamespaces, Namespaces.WSU);
-    String soapPrefix = declareXmlnsPrefix(envelope, knownNamespaces, Namespaces.SOAP10);
+    String soapPrefix = declareXmlnsPrefix(envelope, knownNamespaces, Namespaces.SOAP1_1);
     String wssePrefix = declareXmlnsPrefix(envelope, knownNamespaces, Namespaces.WSSEC);
 
     String bodyId = null;
@@ -402,8 +404,6 @@ public class Sign extends WssecCalloutBase implements Execution {
       // </KeyInfo>
       Element secTokenRef =
           doc.createElementNS(Namespaces.WSSEC, wssePrefix + ":SecurityTokenReference");
-      // String xmldsigPrefix = declareXmlnsPrefix(null, knownNamespaces, Namespaces.XMLDSIG);
-      // elt.setAttributeNS(Namespaces.XMLNS, "xmlns:" + prefix, namespaceURIToAdd);
       Element x509Data = doc.createElementNS(Namespaces.XMLDSIG, "X509Data");
       Element x509IssuerSerial = doc.createElementNS(Namespaces.XMLDSIG, "X509IssuerSerial");
       Element x509IssuerName = doc.createElementNS(Namespaces.XMLDSIG, "X509IssuerName");
@@ -605,6 +605,7 @@ public class Sign extends WssecCalloutBase implements Execution {
     public RSAPrivateKey privatekey; // required
     public X509Certificate certificate; // required
     public int expiresInSeconds; // optional
+    public String soapVersion; // optional
     public String signingMethod;
     public String digestMethod;
     public IssuerNameStyle issuerNameStyle;
@@ -613,6 +614,11 @@ public class Sign extends WssecCalloutBase implements Execution {
 
     public SignConfiguration() {
       keyIdentifierType = KeyIdentifierType.BST_DIRECT_REFERENCE;
+    }
+
+    public SignConfiguration withSoapVersion(String version) {
+      this.soapVersion = version;
+      return this;
     }
 
     public SignConfiguration withKey(RSAPrivateKey key) {
@@ -662,6 +668,7 @@ public class Sign extends WssecCalloutBase implements Execution {
 
       SignConfiguration signConfiguration =
           new SignConfiguration()
+              .withSoapVersion(getSoapVersion(msgCtxt))
               .withKey(getPrivateKey(msgCtxt))
               .withCertificate(getCertificate(msgCtxt))
               .withKeyIdentifierType(getKeyIdentifierType(msgCtxt))

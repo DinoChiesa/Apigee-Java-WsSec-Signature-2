@@ -57,13 +57,13 @@ public class Validate extends WssecCalloutBase implements Execution {
     super(properties);
   }
 
-  private static Element getSecurityElement(Document doc) {
-    NodeList nl = doc.getElementsByTagNameNS(Namespaces.SOAP10, "Envelope");
+  private static Element getSecurityElement(Document doc, String soapNs) {
+    NodeList nl = doc.getElementsByTagNameNS(soapNs, "Envelope");
     if (nl.getLength() != 1) {
       throw new RuntimeException("No element: soap:Envelope");
     }
     Element envelope = (Element) nl.item(0);
-    nl = envelope.getElementsByTagNameNS(Namespaces.SOAP10, "Header");
+    nl = envelope.getElementsByTagNameNS(soapNs, "Header");
     if (nl.getLength() != 1) {
       throw new RuntimeException("No element: soap:Header");
     }
@@ -75,8 +75,8 @@ public class Validate extends WssecCalloutBase implements Execution {
     return (Element) nl.item(0);
   }
 
-  private static NodeList getSignatures(Document doc) {
-    return getSecurityElement(doc).getElementsByTagNameNS(XMLSignature.XMLNS, "Signature");
+  private static NodeList getSignatures(Document doc, String soapNs) {
+    return getSecurityElement(doc, soapNs).getElementsByTagNameNS(XMLSignature.XMLNS, "Signature");
   }
 
   private static String toCertPEM(String s) {
@@ -100,9 +100,9 @@ public class Validate extends WssecCalloutBase implements Execution {
   }
 
   private static Element getNamedElementWithId(
-      String xmlns, String tagName, String id, Document doc) {
+     String xmlns, String soapNs, String tagName, String id, Document doc) {
     id = id.substring(1); // chopLeft
-    NodeList nl = getSecurityElement(doc).getElementsByTagNameNS(xmlns, tagName);
+    NodeList nl = getSecurityElement(doc, soapNs).getElementsByTagNameNS(xmlns, tagName);
     for (int i = 0; i < nl.getLength(); i++) {
       Element candidate = (Element) nl.item(i);
       String candidateId = candidate.getAttributeNS(Namespaces.WSU, "Id");
@@ -111,7 +111,7 @@ public class Validate extends WssecCalloutBase implements Execution {
     return null;
   }
 
-  private Certificate getCertificate(Element keyInfo, Document doc, MessageContext msgCtxt)
+  private Certificate getCertificate(Element keyInfo, Document doc, String soapNs, MessageContext msgCtxt)
     throws KeyException, NoSuchAlgorithmException, InvalidNameException, CertificateEncodingException {
     // There are 4 cases to handle:
     // 1. SecurityTokenReference pointing to a BinarySecurityToken
@@ -230,7 +230,7 @@ public class Validate extends WssecCalloutBase implements Execution {
       throw new RuntimeException(
           "Unsupported URI format: KeyInfo/SecurityTokenReference/Reference");
     }
-    Element bst = getNamedElementWithId(Namespaces.WSSEC, "BinarySecurityToken", strUri, doc);
+    Element bst = getNamedElementWithId(Namespaces.WSSEC, soapNs, "BinarySecurityToken", strUri, doc);
     if (bst == null) {
       throw new RuntimeException("Unresolvable reference: #" + strUri);
     }
@@ -277,23 +277,31 @@ public class Validate extends WssecCalloutBase implements Execution {
     }
   }
 
-  private static void markIdAttributes(Document doc) {
-    NodeList nl = doc.getElementsByTagNameNS(Namespaces.SOAP10, "Body");
-
+  private static void markIdAttributes(Document doc, String soapNs) {
+    NodeList nl = doc.getElementsByTagNameNS(soapNs, "Body");
     if (nl.getLength() == 1) {
       Element element = (Element) nl.item(0);
       element.setIdAttributeNS(Namespaces.WSU, "Id", true);
     }
-    nl = doc.getElementsByTagNameNS(Namespaces.WSU, "Timestamp");
 
+    nl = doc.getElementsByTagNameNS(soapNs, "Header");
     if (nl.getLength() == 1) {
-      Element element = (Element) nl.item(0);
-      element.setIdAttributeNS(Namespaces.WSU, "Id", true);
+      Element header = (Element) nl.item(0);
+      nl = header.getElementsByTagNameNS(Namespaces.WSSEC, "Security");
+      if (nl.getLength() == 1) {
+        Element security = (Element) nl.item(0);
+        nl = security.getElementsByTagNameNS(Namespaces.WSU, "Timestamp");
+
+        if (nl.getLength() == 1) {
+          Element element = (Element) nl.item(0);
+          element.setIdAttributeNS(Namespaces.WSU, "Id", true);
+        }
+      }
     }
   }
 
   private static void checkCompulsoryElements(
-      Document doc, Element signatureElement, List<String> foundTags) {
+      Document doc, String soapNs, Element signatureElement, List<String> foundTags) {
     NodeList nl = signatureElement.getElementsByTagNameNS(XMLSignature.XMLNS, "SignedInfo");
     if (nl.getLength() == 1) {
       Element signedInfo = (Element) nl.item(0);
@@ -314,7 +322,7 @@ public class Validate extends WssecCalloutBase implements Execution {
               if (tagName.equals("Timestamp") && ns.equals(Namespaces.WSU)) {
                 foundTags.add("timestamp");
               }
-              if (tagName.equals("Body") && ns.equals(Namespaces.SOAP10)) {
+              if (tagName.equals("Body") && ns.equals(soapNs)) {
                 foundTags.add("body");
               }
             }
@@ -341,16 +349,16 @@ public class Validate extends WssecCalloutBase implements Execution {
   }
 
   private ValidationResult validate_RSA(
-      Document doc, List<String> requiredElements, MessageContext msgCtxt)
+      Document doc, String soapNs, List<String> requiredElements, MessageContext msgCtxt)
       throws MarshalException, XMLSignatureException, KeyException, CertificateExpiredException,
              CertificateNotYetValidException, NoSuchAlgorithmException, InvalidNameException,
              CertificateEncodingException {
-    NodeList signatures = getSignatures(doc);
+    NodeList signatures = getSignatures(doc, soapNs);
     if (signatures.getLength() == 0) {
       throw new RuntimeException("No element: Signature");
     }
 
-    markIdAttributes(doc);
+    markIdAttributes(doc, soapNs);
 
     boolean isValid = true;
     List<X509Certificate> certs = new ArrayList<X509Certificate>();
@@ -359,14 +367,14 @@ public class Validate extends WssecCalloutBase implements Execution {
     for (int i = 0; i < signatures.getLength(); i++) {
       if (isValid) {
         Element signatureElement = (Element) signatures.item(i);
-        checkCompulsoryElements(doc, signatureElement, signedElements);
+        checkCompulsoryElements(doc, soapNs, signatureElement, signedElements);
         checkSignatureMethod(signatureElement, msgCtxt);
         NodeList keyinfoList =
             signatureElement.getElementsByTagNameNS(XMLSignature.XMLNS, "KeyInfo");
         if (keyinfoList.getLength() == 0) {
           throw new RuntimeException("No element: Signature/KeyInfo");
         }
-        X509Certificate cert = (X509Certificate) getCertificate((Element) keyinfoList.item(0), doc, msgCtxt);
+        X509Certificate cert = (X509Certificate) getCertificate((Element) keyinfoList.item(0), doc, soapNs, msgCtxt);
         cert.checkValidity();
         KeySelector ks = KeySelector.singletonKeySelector(cert.getPublicKey());
         DOMValidateContext vc = new DOMValidateContext(ks, signatureElement);
@@ -393,16 +401,16 @@ public class Validate extends WssecCalloutBase implements Execution {
     return new ValidationResult(isValid, certs);
   }
 
-  private static Element getTimestamp(Document doc) {
-    NodeList nl = getSecurityElement(doc).getElementsByTagNameNS(Namespaces.WSU, "Timestamp");
+  private static Element getTimestamp(Document doc, String soapNs) {
+    NodeList nl = getSecurityElement(doc, soapNs).getElementsByTagNameNS(Namespaces.WSU, "Timestamp");
     if (nl.getLength() == 0) {
       return null;
     }
     return (Element) nl.item(0);
   }
 
-  private static boolean hasExpiry(Document doc) {
-    Element timestamp = getTimestamp(doc);
+  private static boolean hasExpiry(Document doc, String soapNs) {
+    Element timestamp = getTimestamp(doc, soapNs);
     if (timestamp == null) {
       return false;
     }
@@ -426,8 +434,8 @@ public class Validate extends WssecCalloutBase implements Execution {
     return documentLifetime;
   }
 
-  private static boolean isExpired(Document doc, MessageContext msgCtxt) {
-    Element timestamp = getTimestamp(doc);
+  private static boolean isExpired(Document doc, String soapNs, MessageContext msgCtxt) {
+    Element timestamp = getTimestamp(doc, soapNs);
     if (timestamp == null) {
       return false;
     }
@@ -526,14 +534,17 @@ public class Validate extends WssecCalloutBase implements Execution {
       List<String> acceptableThumbprints = getAcceptableThumbprints(msgCtxt);
       List<String> acceptableSubjectCNs = getAcceptableSubjectCommonNames(msgCtxt);
       List<String> requiredElements = getRequiredSignedElements(msgCtxt);
-      ValidationResult validationResult = validate_RSA(document, requiredElements, msgCtxt);
+      String soapNs = (getSoapVersion(msgCtxt).equals("soap1.2")) ?
+        Namespaces.SOAP1_2 : Namespaces.SOAP1_1;
+
+      ValidationResult validationResult = validate_RSA(document, soapNs, requiredElements, msgCtxt);
       boolean isValid = validationResult.isValid();
       if (!isValid) {
         msgCtxt.setVariable(varName("error"), "signature did not verify");
       }
 
       if (isValid && requireExpiry(msgCtxt)) {
-        if (!hasExpiry(document)) {
+        if (!hasExpiry(document, soapNs)) {
           msgCtxt.setVariable(varName("error"), "required element Timestamp/Expires is missing");
           isValid = false;
         }
@@ -548,7 +559,7 @@ public class Validate extends WssecCalloutBase implements Execution {
       }
 
       if (isValid) {
-        boolean expired = isExpired(document, msgCtxt);
+        boolean expired = isExpired(document, soapNs, msgCtxt);
         if (expired) {
           if (wantIgnoreExpiry(msgCtxt)) {
             msgCtxt.setVariable(varName("notice"), "Timestamp/Expires is past");
