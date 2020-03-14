@@ -889,7 +889,6 @@ public class TestWssecSignCallout extends CalloutTestBase {
     Assert.assertEquals(errorOutput, expectedError, "errorOutput");
   }
 
-
   @Test
   public void validResult_soap12() throws Exception {
     String method = "validResult_soap12() ";
@@ -959,6 +958,63 @@ public class TestWssecSignCallout extends CalloutTestBase {
     // SignatureValue
     nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "SignatureValue");
     Assert.assertEquals(nl.getLength(), 1, method + "SignatureValue element");
+  }
+
+  @Test
+  public void soapVersionMismatch() throws Exception {
+    String method = "validResult_soap12() ";
+    msgCtxt.setVariable("message.content", simpleSoap12);
+    msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
+    msgCtxt.setVariable("my-certificate", pairs[2].certificate);
+
+    Map<String, String> props = new HashMap<String, String>();
+    props.put("debug", "true");
+    props.put("soap-version", "soap1.1");
+    props.put("source", "message.content");
+    props.put("private-key", "{my-private-key}");
+    props.put("certificate", "{my-certificate}");
+    props.put("output-variable", "output");
+
+    Sign callout = new Sign(props);
+
+    // execute and retrieve output
+    ExecutionResult actualResult = callout.execute(msgCtxt, exeCtxt);
+    Assert.assertEquals(actualResult, ExecutionResult.ABORT, "result not as expected");
+    Object exception = msgCtxt.getVariable("wssec_exception");
+    Assert.assertEquals(exception, "java.lang.IllegalStateException: No soap:Envelope found");
+    Object errorOutput = msgCtxt.getVariable("wssec_error");
+    Assert.assertEquals(errorOutput, "No soap:Envelope found");
+    Object stacktrace = msgCtxt.getVariable("wssec_stacktrace");
+    Assert.assertNull(stacktrace, method + "stacktrace");
+  }
+
+  @Test
+  public void invalidSoapVersion() throws Exception {
+    String method = "invalidSoapVersion() ";
+    msgCtxt.setVariable("message.content", simpleSoap12);
+    msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
+    msgCtxt.setVariable("my-certificate", pairs[2].certificate);
+
+    Map<String, String> props = new HashMap<String, String>();
+    props.put("debug", "true");
+    props.put("soap-version", "soap2.1");
+    props.put("source", "message.content");
+    props.put("private-key", "{my-private-key}");
+    props.put("certificate", "{my-certificate}");
+    props.put("output-variable", "output");
+
+    Sign callout = new Sign(props);
+
+    // execute and retrieve output
+    ExecutionResult actualResult = callout.execute(msgCtxt, exeCtxt);
+    Assert.assertEquals(actualResult, ExecutionResult.ABORT, "result not as expected");
+    Object exception = msgCtxt.getVariable("wssec_exception");
+    //Assert.assertNotNull(exception, method + "exception");
+    Assert.assertEquals(exception, "java.lang.IllegalStateException: invalid value for soap-version");
+    Object errorOutput = msgCtxt.getVariable("wssec_error");
+    Assert.assertEquals(errorOutput, "invalid value for soap-version");
+    Object stacktrace = msgCtxt.getVariable("wssec_stacktrace");
+    Assert.assertNull(stacktrace, method + "stacktrace");
   }
 
 }
