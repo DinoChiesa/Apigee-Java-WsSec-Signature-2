@@ -48,6 +48,7 @@ There is a single jar, edge-wssecdsig-20200219.jar . Within that jar, there are 
 
 The Sign callout has these constraints and features:
 * supports RSA algorithms - rsa-sha1 (default) or rsa-sha256
+* supports soap1.1 and soap1.2
 * Will automatically add a Timestamp to the WS-Security header
 * Can optionally add an Expiry to that timestamp
 * signs the SOAP Body, or the Timestamp, or both (default)
@@ -57,6 +58,7 @@ The Sign callout has these constraints and features:
 
 The Verify callout has these constraints and features:
 * supports RSA algorithms - rsa-sha1 (default) or rsa-sha256
+* supports soap1.1. (Not tested with soap 1.2; might work!)
 * If a Timestamp is present in the WS-Security header, validates expiry.
 
 ## Dependencies
@@ -88,11 +90,12 @@ Configure the policy this way:
 </JavaCallout>
 ```
 
-The properties are:
+The available properties are:
 
 | name                 | description |
 | -------------------- | ------------ |
 | source               | optional. the variable name in which to obtain the source document to sign. Defaults to message.content |
+| soap-version         | optional. Either soap1.1 or soap1.2. Defaults to soap1.1 . |
 | output-variable      | optional. the variable name in which to write the signed XML. Defaults to message.content |
 | private-key          | required. the PEM-encoded RSA private key. You can use a variable reference here as shown above. Probably you want to read this from encrypted KVM. |
 | private-key-password | optional. The password for the key, if it is encrypted. |
