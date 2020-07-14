@@ -184,7 +184,7 @@ public class Sign extends WssecCalloutBase implements Execution {
 
     Map<String, String> knownNamespaces = Namespaces.getExistingNamespaces(envelope);
     String wsuPrefix = declareXmlnsPrefix(envelope, knownNamespaces, Namespaces.WSU);
-    String soapPrefix = declareXmlnsPrefix(envelope, knownNamespaces, Namespaces.SOAP1_1);
+    String soapPrefix = declareXmlnsPrefix(envelope, knownNamespaces, soapns);
     String wssePrefix = declareXmlnsPrefix(envelope, knownNamespaces, Namespaces.WSSEC);
 
     String bodyId = null;
