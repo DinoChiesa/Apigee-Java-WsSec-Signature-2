@@ -15,7 +15,7 @@
     <java.version>1.8</java.version>
     <slf4j.version>1.7.25</slf4j.version>
     <testng.version>6.8.7</testng.version>
-    <bouncycastle.version>1.60</bouncycastle.version>
+    <bouncycastle.version>1.62</bouncycastle.version>
     <apiproxy.java.rsrc.dir>../bundle/apiproxy/resources/java</apiproxy.java.rsrc.dir>
   </properties>
 
@@ -147,8 +147,8 @@ do it manually by running these commands:
                     <include name="lib/*.jar"/>
                     <exclude name="lib/message-flow-1.0.0.jar"/>
                     <exclude name="lib/expressions-1.0.0.jar"/>
-                    <exclude name="lib/bcpkix-jdk15on-1.60.jar"/>
-                    <exclude name="lib/bcprov-jdk15on-1.60.jar"/>
+                    <exclude name="lib/bcpkix-jdk15on-${bouncycastle.version}.jar"/>
+                    <exclude name="lib/bcprov-jdk15on-${bouncycastle.version}.jar"/>
                   </fileset>
                   <mapper type="flatten"/>
                 </copy>
