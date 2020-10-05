@@ -277,6 +277,35 @@ public class TestWssecValidateCallout extends CalloutTestBase {
   }
 
   @Test
+  public void subjectNameMatch() throws Exception {
+    String method = "subjectNameMatch() ";
+    msgCtxt.setVariable("message.content", signedSoapNoExpiry1);
+
+    Map<String, String> props = new HashMap<String, String>();
+    props.put("debug", "true");
+    props.put("require-expiry", "false");
+    props.put("throw-fault-on-invalid", "true");
+    props.put("source", "message.content");
+    props.put("accept-thumbprints", "ada3a946669ad4e6e2c9f81360c3249e49a57a7d"); // match
+    props.put("accept-subject-cns", "apigee.google.com, abc.example.com"); // one of these names matches
+
+    Validate callout = new Validate(props);
+
+    // execute and retrieve output
+    ExecutionResult actualResult = callout.execute(msgCtxt, exeCtxt);
+    Assert.assertEquals(actualResult, ExecutionResult.SUCCESS, "result not as expected");
+    Object errorOutput = msgCtxt.getVariable("wssec_error");
+    Assert.assertNull(errorOutput, "errorOutput");
+    Object exception = msgCtxt.getVariable("wssec_exception");
+    Assert.assertNull(exception, method + "exception");
+    Object stacktrace = msgCtxt.getVariable("wssec_stacktrace");
+    Assert.assertNull(stacktrace, method + "stacktrace");
+    Boolean isValid = (Boolean) msgCtxt.getVariable("wssec_valid");
+
+    Assert.assertTrue(isValid, method + "valid");
+  }
+
+  @Test
   public void subjectNameMismatch() throws Exception {
     String method = "subjectNameMismatch() ";
     msgCtxt.setVariable("message.content", signedSoapNoExpiry1);
@@ -303,6 +332,108 @@ public class TestWssecValidateCallout extends CalloutTestBase {
     Assert.assertNull(stacktrace, method + "stacktrace");
     Boolean isValid = (Boolean) msgCtxt.getVariable("wssec_valid");
 
+    Assert.assertFalse(isValid, method + "valid");
+  }
+
+  @Test
+  public void signingAlgorithmMatch() throws Exception {
+    String method = "signingAlgorithmMatch() ";
+    msgCtxt.setVariable("message.content", signedSoapNoExpiry1);
+
+    Map<String, String> props = new HashMap<String, String>();
+    props.put("debug", "true");
+    props.put("require-expiry", "false");
+    props.put("source", "message.content");
+    props.put("accept-thumbprints", "ada3a946669ad4e6e2c9f81360c3249e49a57a7d"); // match
+    props.put("signing-method", "rsa-sha1");
+
+    Validate callout = new Validate(props);
+
+    // execute and retrieve output
+    ExecutionResult actualResult = callout.execute(msgCtxt, exeCtxt);
+    Assert.assertEquals(actualResult, ExecutionResult.SUCCESS, "result not as expected");
+    Object errorOutput = msgCtxt.getVariable("wssec_error");
+    Assert.assertNull(errorOutput, "errorOutput");
+    Object exception = msgCtxt.getVariable("wssec_exception");
+    Assert.assertNull(exception, method + "exception");
+    Boolean isValid = (Boolean) msgCtxt.getVariable("wssec_valid");
+    Assert.assertTrue(isValid, method + "valid");
+  }
+
+  @Test
+  public void signingAlgorithmMismatch() throws Exception {
+    String method = "signingAlgorithmMismatch() ";
+    msgCtxt.setVariable("message.content", signedSoapNoExpiry1);
+
+    Map<String, String> props = new HashMap<String, String>();
+    props.put("debug", "true");
+    props.put("require-expiry", "false");
+    props.put("source", "message.content");
+    props.put("accept-thumbprints", "ada3a946669ad4e6e2c9f81360c3249e49a57a7d"); // match
+    props.put("signing-method", "rsa-sha256");
+
+    Validate callout = new Validate(props);
+
+    // execute and retrieve output
+    ExecutionResult actualResult = callout.execute(msgCtxt, exeCtxt);
+    Assert.assertEquals(actualResult, ExecutionResult.ABORT, "result not as expected");
+    Object errorOutput = msgCtxt.getVariable("wssec_error");
+    Assert.assertNotNull(errorOutput, "errorOutput");
+    Assert.assertEquals(errorOutput, "SignatureMethod/@Algorithm is not acceptable");
+    Object exception = msgCtxt.getVariable("wssec_exception");
+    Assert.assertNotNull(exception, method + "exception");
+    Boolean isValid = (Boolean) msgCtxt.getVariable("wssec_valid");
+    Assert.assertFalse(isValid, method + "valid");
+  }
+
+  @Test
+  public void digestMethodMatch() throws Exception {
+    String method = "digestMethodMatch() ";
+    msgCtxt.setVariable("message.content", signedSoapNoExpiry1);
+
+    Map<String, String> props = new HashMap<String, String>();
+    props.put("debug", "true");
+    props.put("require-expiry", "false");
+    props.put("source", "message.content");
+    props.put("accept-thumbprints", "ada3a946669ad4e6e2c9f81360c3249e49a57a7d");
+    props.put("digest-method", "sha1");
+
+    Validate callout = new Validate(props);
+
+    // execute and retrieve output
+    ExecutionResult actualResult = callout.execute(msgCtxt, exeCtxt);
+    Assert.assertEquals(actualResult, ExecutionResult.SUCCESS, "result not as expected");
+    Object errorOutput = msgCtxt.getVariable("wssec_error");
+    Assert.assertNull(errorOutput, "errorOutput");
+    Object exception = msgCtxt.getVariable("wssec_exception");
+    Assert.assertNull(exception, method + "exception");
+    Boolean isValid = (Boolean) msgCtxt.getVariable("wssec_valid");
+    Assert.assertTrue(isValid, method + "valid");
+  }
+
+  @Test
+  public void digestMethodMismatch() throws Exception {
+    String method = "digestMethodMismatch() ";
+    msgCtxt.setVariable("message.content", signedSoapNoExpiry1);
+
+    Map<String, String> props = new HashMap<String, String>();
+    props.put("debug", "true");
+    props.put("require-expiry", "false");
+    props.put("source", "message.content");
+    props.put("accept-thumbprints", "ada3a946669ad4e6e2c9f81360c3249e49a57a7d"); // match
+    props.put("digest-method", "sha256");
+
+    Validate callout = new Validate(props);
+
+    // execute and retrieve output
+    ExecutionResult actualResult = callout.execute(msgCtxt, exeCtxt);
+    Assert.assertEquals(actualResult, ExecutionResult.ABORT, "result not as expected");
+    Object errorOutput = msgCtxt.getVariable("wssec_error");
+    Assert.assertNotNull(errorOutput, "errorOutput");
+    Assert.assertEquals(errorOutput, "Reference/DigestMethod/@Algorithm is not acceptable");
+    Object exception = msgCtxt.getVariable("wssec_exception");
+    Assert.assertNotNull(exception, method + "exception");
+    Boolean isValid = (Boolean) msgCtxt.getVariable("wssec_valid");
     Assert.assertFalse(isValid, method + "valid");
   }
 

@@ -179,7 +179,7 @@ public class TestWssecSignCallout extends CalloutTestBase {
 
   @Test
   public void signSha256() throws Exception {
-    String method = "validResult1() ";
+    String method = "signSha256() ";
     msgCtxt.setVariable("message.content", simpleSoap11);
     msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
     msgCtxt.setVariable("my-certificate", pairs[2].certificate);
@@ -250,7 +250,7 @@ public class TestWssecSignCallout extends CalloutTestBase {
 
   @Test
   public void digestSha256() throws Exception {
-    String method = "validResult1() ";
+    String method = "digestSha256() ";
     msgCtxt.setVariable("message.content", simpleSoap11);
     msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
     msgCtxt.setVariable("my-certificate", pairs[2].certificate);
@@ -290,6 +290,77 @@ public class TestWssecSignCallout extends CalloutTestBase {
     Element element = (Element) nl.item(0);
     String signatureMethodAlgorithm = element.getAttribute("Algorithm");
     Assert.assertEquals(signatureMethodAlgorithm, "http://www.w3.org/2000/09/xmldsig#rsa-sha1");
+
+    // c14n
+    nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "CanonicalizationMethod");
+    Assert.assertEquals(nl.getLength(), 1, method + "CanonicalizationMethod element");
+    element = (Element) nl.item(0);
+    String canonicalizationMethodAlgorithm = element.getAttribute("Algorithm");
+    Assert.assertEquals(canonicalizationMethodAlgorithm, "http://www.w3.org/2001/10/xml-exc-c14n#");
+
+    // Reference
+    nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "Reference");
+    Assert.assertEquals(nl.getLength(), 2, method + "Reference element");
+
+    // DigestMethod
+    for (int i = 0; i < nl.getLength(); i++) {
+      element = (Element) nl.item(i);
+      NodeList digestMethodNodes =
+          element.getElementsByTagNameNS(XMLSignature.XMLNS, "DigestMethod");
+      Assert.assertEquals(digestMethodNodes.getLength(), 1, method + "DigestMethod element");
+      element = (Element) digestMethodNodes.item(0);
+      String digestAlg = element.getAttribute("Algorithm");
+      Assert.assertEquals(digestAlg, "http://www.w3.org/2001/04/xmlenc#sha256");
+    }
+
+    // SignatureValue
+    nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "SignatureValue");
+    Assert.assertEquals(nl.getLength(), 1, method + "SignatureValue element");
+  }
+
+  @Test
+  public void digestAndSigningSha256() throws Exception {
+    String method = "digestAndSigningSha256() ";
+    msgCtxt.setVariable("message.content", simpleSoap11);
+    msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
+    msgCtxt.setVariable("my-certificate", pairs[2].certificate);
+
+    Map<String, String> props = new HashMap<String, String>();
+    props.put("debug", "true");
+    props.put("source", "message.content");
+    props.put("digest-method", "sha256");
+    props.put("signing-method", "rsa-sha256");
+    props.put("private-key", "{my-private-key}");
+    props.put("certificate", "{my-certificate}");
+    props.put("output-variable", "output");
+
+    Sign callout = new Sign(props);
+
+    // execute and retrieve output
+    ExecutionResult actualResult = callout.execute(msgCtxt, exeCtxt);
+    Assert.assertEquals(actualResult, ExecutionResult.SUCCESS, "result not as expected");
+    Object exception = msgCtxt.getVariable("wssec_exception");
+    Assert.assertNull(exception, method + "exception");
+    Object errorOutput = msgCtxt.getVariable("wssec_error");
+    Assert.assertNull(errorOutput, "error not as expected");
+    Object stacktrace = msgCtxt.getVariable("wssec_stacktrace");
+    Assert.assertNull(stacktrace, method + "stacktrace");
+
+    String output = (String) msgCtxt.getVariable("output");
+    System.out.printf("** Output:\n" + output + "\n");
+
+    Document doc = docFromStream(new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8)));
+
+    // signature
+    NodeList nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "Signature");
+    Assert.assertEquals(nl.getLength(), 1, method + "Signature element");
+
+    // SignatureMethod (default)
+    nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "SignatureMethod");
+    Assert.assertEquals(nl.getLength(), 1, method + "SignatureMethod element");
+    Element element = (Element) nl.item(0);
+    String signatureMethodAlgorithm = element.getAttribute("Algorithm");
+    Assert.assertEquals(signatureMethodAlgorithm, "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256");
 
     // c14n
     nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "CanonicalizationMethod");

@@ -158,6 +158,20 @@
       <Condition>(proxy.pathsuffix ~ "/validate2") and (request.verb = "POST")</Condition>
     </Flow>
 
+    <Flow name='validate3'>
+      <Request>
+        <Step>
+          <Condition>NOT((request.header.content-type =| "text/xml") OR (request.header.content-type =| "application/xml" ))</Condition>
+          <Name>RF-InvalidRequest</Name>
+        </Step>
+      </Request>
+      <Response>
+        <Step><Name>Java-WSSEC-Validate-3</Name></Step>
+        <Step><Name>AM-ValidationResponse</Name></Step>
+      </Response>
+      <Condition>(proxy.pathsuffix ~ "/validate3") and (request.verb = "POST")</Condition>
+    </Flow>
+
     <Flow name='unknown'>
       <!--
            applies as a "default" flow, in case none of the conditions

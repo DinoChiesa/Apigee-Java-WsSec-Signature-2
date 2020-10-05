@@ -1,4 +1,4 @@
-// Copyright 2018 Google LLC
+// Copyright 2018-2020 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -37,17 +37,19 @@ import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 import javax.security.auth.x500.X500Principal;
 import javax.xml.bind.DatatypeConverter;
+import javax.xml.crypto.dsig.DigestMethod;
 import org.w3c.dom.Document;
 
 public abstract class WssecCalloutBase {
   private static final String _varprefix = "wssec_";
   private Map properties; // read-only
-  private static final String variableReferencePatternString = "(.*?)\\{([^\\{\\} ]+?)\\}(.*?)";
   private static final Pattern variableReferencePattern =
-      Pattern.compile(variableReferencePatternString);
+      Pattern.compile("(.*?)\\{([^\\{\\} ]+?)\\}(.*?)");
 
-  private static final String commonError = "^(.+?)[:;] (.+)$";
-  private static final Pattern commonErrorPattern = Pattern.compile(commonError);
+  private static final Pattern commonErrorPattern = Pattern.compile("^(.+?)[:;] (.+)$");
+
+  protected static final String SIGNING_METHOD_RSA_SHA256 = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256";
+  protected static final String SIGNING_METHOD_RSA_SHA1 = "http://www.w3.org/2000/09/xmldsig#rsa-sha1";
 
   public WssecCalloutBase(Map properties) {
     this.properties = properties;
@@ -174,6 +176,57 @@ public abstract class WssecCalloutBase {
     if (kitString.equals("SUBJECT_DN")) return IssuerNameStyle.SUBJECT_DN;
     msgCtxt.setVariable(varName("warning"), "unrecognized issuer-name-style");
     return IssuerNameStyle.SHORT;
+  }
+
+  private String signingMethodToUri(String shortName) {
+    if (shortName == null)
+      throw new IllegalStateException("signing method is null");
+
+    if (shortName.toLowerCase().equals("rsa-sha256"))
+      return SIGNING_METHOD_RSA_SHA256;
+
+    if (shortName.toLowerCase().equals("rsa-sha1"))
+      return SIGNING_METHOD_RSA_SHA1;
+
+    return shortName; // unrecognized, but let's go with it.
+  }
+
+  protected String getSigningMethod(MessageContext msgCtxt) throws Exception {
+    String signingMethod = getSimpleOptionalProperty("signing-method", msgCtxt);
+    if (signingMethod == null) return null; // SIGNING_METHOD_RSA_SHA1; // default
+    signingMethod = signingMethodToUri(signingMethod.trim());
+    // warn on unrecognized values
+    if (!signingMethod.equals(SIGNING_METHOD_RSA_SHA1)
+        && !signingMethod.equals(SIGNING_METHOD_RSA_SHA256)) {
+      msgCtxt.setVariable(varName("WARNING"),
+                          String.format("unrecognized value for signing-method: %s", signingMethod));
+    }
+    return signingMethod;
+  }
+
+  private String digestMethodToUri(String shortName) {
+    if (shortName == null)
+      throw new IllegalStateException("digest method is null");
+
+    if (shortName.toLowerCase().equals("sha256"))
+      return DigestMethod.SHA256;
+
+    if (shortName.toLowerCase().equals("sha1"))
+      return DigestMethod.SHA1;
+
+    return shortName; // unrecognized
+  }
+
+  protected String getDigestMethod(MessageContext msgCtxt) throws Exception {
+    String digestMethod = getSimpleOptionalProperty("digest-method", msgCtxt);
+    if (digestMethod == null) return null;
+    digestMethod = digestMethodToUri(digestMethod.trim());
+    // warn on invalid values
+    if (!digestMethod.equals(DigestMethod.SHA1)
+        && !digestMethod.equals(DigestMethod.SHA256)) {
+      msgCtxt.setVariable(varName("WARNING"), String.format("invalid value for digest-method: %s", digestMethod));
+    }
+    return digestMethod;
   }
 
   protected static String reformIndents(String s) {

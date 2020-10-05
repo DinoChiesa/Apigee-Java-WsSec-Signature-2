@@ -1,9 +1,20 @@
 # Java Callout for WS-Security Digital Signature
 
-This directory contains the Java source code and pom.xml file required
-to compile a simple Java callout for Apigee Edge, that creates or validates
-a digital signature that complies with WS-Security standard, using an x509v3
-Binary Security Token.
+This repo contains the Java source code and pom.xml file required to compile a
+simple Java callout for Apigee Edge, that creates or validates a signed SOAP
+document that complies with the WS-Security standard. This repo also contains
+the packaged jar.
+
+There's a great deal of flexibility in the WS-Security standard, in terms of how
+signatures are generated and embedded into a document, and how keys are
+referenced. This callout in particular supports:
+
+- RSA key pairs
+- Signing or validating with RSA-SHA1 or RSA-SHA256. The latter is highly recommended.
+- When signing, signing either the soap:Body, or the wssec:Security/wsu:Timestamp element, or both.
+- When validating, validating either the Body, or the Timestamp, or both.
+- Validating signatures via public keys embedded in X509v3 certificates.
+- Obtaining the certificates to use to Validate in one of two ways: either in the signed document itself, or as configuration to the Validate step.
 
 ## Status
 
@@ -13,21 +24,21 @@ The previous version of the callout was not parameterizable, and depended upon
 wss4j.  The latter prevented the use of the callout in Apigee cloud. This
 callout does not exhibit those limitations.
 
-
 ## Disclaimer
 
 This example is not an official Google product, nor is it part of an official Google product.
 
 ## License
 
-This material is Copyright 2018-2019, Google LLC.
+This material is Copyright 2018-2020, Google LLC.
 and is licensed under the Apache 2.0 license. See the [LICENSE](LICENSE) file.
 
 This code is open source but you don't need to compile it in order to use it.
 
 ## Building
 
-Use maven to build and package the jar. You need maven v3.5 at a minimum.
+You do not need to build this callout in order to use it. You can build it if
+you wish. To do so, use maven. You need maven v3.5 at a minimum.
 
 ```
 mvn clean package
@@ -35,13 +46,13 @@ mvn clean package
 
 The 'package' goal will copy the jar to the resources/java directory for the
 example proxy bundle. If you want to use this in your own API Proxy, you need
-to drop this JAR into the appropriate API Proxy bundle. Or include the jar as an
+to copy this JAR into the appropriate API Proxy bundle. Or include the jar as an
 environment-wide or organization-wide jar via the Apigee administrative API.
 
 
 ## Details
 
-There is a single jar, apigee-wssecdsig-20201005.jar . Within that jar, there are two callout classes,
+There is a single jar, apigee-wssecdsig-20201006.jar . Within that jar, there are two callout classes,
 
 * com.google.apigee.edgecallouts.wssecdsig.Sign - signs the input SOAP document.
 * com.google.apigee.edgecallouts.wssecdsig.Validate - validates the signed SOAP document
@@ -50,7 +61,7 @@ The Sign callout has these constraints and features:
 * supports RSA algorithms - rsa-sha1 (default) or rsa-sha256
 * supports soap1.1 and soap1.2
 * Will automatically add a Timestamp to the WS-Security header
-* Can optionally add an Expiry to that timestamp
+* Can optionally add an explicit Expiry to that timestamp (recommended)
 * signs the SOAP Body, or the Timestamp, or both (default)
 * uses a canonicalization method of "http://www.w3.org/2001/10/xml-exc-c14n#"
 * uses a digest mode of sha1 (default) or sha256
@@ -65,11 +76,11 @@ The Verify callout has these constraints and features:
 
 Make sure these JARs are available as resources in the  proxy or in the environment or organization.
 
-* Bouncy Castle: bcprov-jdk15on-1.60.jar, bcpkix-jdk15on-1.60.jar
+* Bouncy Castle: bcprov-jdk15on-1.62.jar, bcpkix-jdk15on-1.62.jar
 
 This Callout does not depend on WSS4J.  The WSS4J is prohibited from use within
 Apigee SaaS, due to Java permissions settings. This callout is intended to be
-usable in Apigee SaaS.
+usable in Apigee SaaS, OPDK, or hybrid.
 
 ## Usage
 
@@ -82,11 +93,14 @@ Configure the policy this way:
   <Properties>
     <Property name='source'>message.content</Property>
     <Property name='output-variable'>output</Property>
+    <Property name='expiry'>180s</Property>
+    <Property name='signing-method'>rsa-sha156</Property>
+    <Property name='digest-method'>sha256</Property>
     <Property name='private-key'>{my_private_key}</Property>
     <Property name='certificate'>{my_certificate}</Property>
   </Properties>
   <ClassName>com.google.apigee.edgecallouts.wssecdsig.Sign</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20201005.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20201006.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -99,24 +113,24 @@ The available properties for the Sign callout are:
 | output-variable      | optional. the variable name in which to write the signed XML. Defaults to message.content |
 | private-key          | required. the PEM-encoded RSA private key. You can use a variable reference here as shown above. Probably you want to read this from encrypted KVM. |
 | private-key-password | optional. The password for the key, if it is encrypted. |
-| key-identifier-type  | optional. One of {`THUMBPRINT`, `BST_DIRECT_REFERENCE`, `ISSUER_SERIAL`, `X509_CERT_DIRECT`, or `RSA_KEY_VALUE`}.  See below for details. |
+| key-identifier-type  | optional. One of {`BST_DIRECT_REFERENCE`, `THUMBPRINT`,  `ISSUER_SERIAL`, `X509_CERT_DIRECT`, or `RSA_KEY_VALUE`}.  Defaults to `BST_DIRECT_REFERENCE`. See below for details on these options. |
 | issuer-name-style    | optional. One of {`SHORT`, `SUBJECT_DN`}.  See below for details. |
 | certificate          | required. The certificate matching the private key. In PEM form. |
 | signing-method       | optional. Takes value rsa-sha1 or rsa-sha256. Defaults to rsa-sha1. |
-| digest-method        | optional. Takes value sha1 or sha256. Defaults to sha1. |
-| elements-to-sign     | optional. Takes a comma-separated value. parts can include "timestamp" and "body". Nothing else. Default: the signer signs both the timestamp and the soap body. |
-| expiry               | optional. Takes a string like 120s, 10m, 4d, etc to imply 120 seconds, 10 minutes, 4 days.  Default: no expiry. |
+| digest-method        | optional. Takes value sha1 or sha256. Defaults to sha1. If you have the flexibility to do so, it's preferred that you use sha256. |
+| elements-to-sign     | optional. Takes a comma-separated value. parts can include "timestamp" and "body". Nothing else. Default: the signer signs both the Timestamp and the soap:Body. |
+| expiry               | optional. Takes a string like 120s, 10m, 4d, etc to imply 120 seconds, 10 minutes, 4 days. Default: no expiry. |
 
 This policy will sign the entire document and embed a Signature element as a child of the root element.
 
-Regarding `key-identifier-type`, these are the options:
+The value you specify for the `key-identifier-type` property affects the shape of the output `KeyInfo` element.  These are the options:
 
 * `bst_direct_reference`. This is the default; this is what you get if you omit
   this property. With this setting, the Sign callout embeds the certificate into
-  the signed document using a BinarySecurityToken and a SecurityTokenReference
+  the signed document using a `BinarySecurityToken` and a `SecurityTokenReference`
   that points to it.
 
-  The KeyInfo element looks like this:
+  The resulting `KeyInfo` element looks like this:
   ```xml
    <KeyInfo>
      <wssec:SecurityTokenReference>
@@ -126,7 +140,7 @@ Regarding `key-identifier-type`, these are the options:
    </KeyInfo>
   ```
 
-  And there will be a child element of the wssec:Security element that looks like
+  And there will be a child element of the `wssec:Security` element that looks like
   this:
   ```xml
       <wssec:BinarySecurityToken
@@ -135,7 +149,7 @@ Regarding `key-identifier-type`, these are the options:
           wsu:Id="SecurityToken-e828bfab-bb52-4429-b6a4-755b26abc387">MIIC0...</wssec:BinarySecurityToken>
   ```
 
-* `thumbprint` gives you this:
+* `thumbprint` gives you a `SecurityTokenReference` with a `KeyIdentifier`, like this:
 
   ```xml
    <KeyInfo>
@@ -146,7 +160,7 @@ Regarding `key-identifier-type`, these are the options:
    </KeyInfo>
   ```
 
-* `issuer_serial` (common with WCF) results in this:
+* `issuer_serial` (common with WCF) gives you a `SecurityTokenReference` with an identification of an X509 cert, like this:
 
   ```xml
    <KeyInfo>
@@ -161,9 +175,11 @@ Regarding `key-identifier-type`, these are the options:
    </KeyInfo>
   ```
 
-  For this case, you can specify another property, `issuer-name-style`, as
-  either `short` or `subject_dn`.  The former is the default. The latter results
-  in something like this:
+  For this case, you can optionally specify another property, `issuer-name-style`, as
+  either `short` or `subject_dn`.  The former is the default, and an example for
+  that is shown above. The latter provides the full distinguished name, which
+  results in something like this:
+
    ```xml
    <X509IssuerSerial>
      <X509IssuerName>C=US,ST=Washington,L=Kirkland,O=Google,OU=Apigee,CN=apigee.google.com,E=dino@apigee.com</X509IssuerName>
@@ -171,7 +187,7 @@ Regarding `key-identifier-type`, these are the options:
    </X509IssuerSerial>
    ```
 
-* `x509_cert_direct` gives you this:
+* `x509_cert_direct` gives you a `KeyInfo` with the `X509Data` directly embedding the certificate, like this:
   ```xml
   <KeyInfo>
      <X509Data>
@@ -180,7 +196,7 @@ Regarding `key-identifier-type`, these are the options:
    </KeyInfo>
   ```
 
-* `rsa_key_value` gives you this:
+* `rsa_key_value` gives you a `KeyInfo` with a `KeyValue` element, like this:
   ```xml
   <KeyInfo>
     <KeyValue>
@@ -191,6 +207,9 @@ Regarding `key-identifier-type`, these are the options:
      </KeyValue>
    </KeyInfo>
   ```
+
+All of these are valid according to the WS-Security standard. The sender and
+receiver of a signed document must agree on which configuration to use.
 
 
 ### Validating
@@ -204,17 +223,19 @@ Configure the policy this way:
     <Property name='accept-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
   </Properties>
   <ClassName>com.google.apigee.edgecallouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20201005.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20201006.jar</ResourceURL>
 </JavaCallout>
 ```
 
 This will verify a WS-Security signature on the specified document. It will by
 default require a Timestamp and an Expires element. It will validate only a
-signed document that includes am embedded certificate, and it will check that
-the thumbprint on the embedded cert matches that specified in the
+signed document that includes an embedded certificate. It will check that the
+embedded cert is valid (not expired and not being used before its not-before
+date).  It will also check that the base16-encoded (aka hex-encoded) SHA1
+thumbprint on the embedded certificate matches that specified in the
 `accept-thumbprints` property.
 
-To verify a signature and not require an expiry, and also enforce subject common name, use this:
+To verify a signature and NOT require an expiry, and also enforce subject common name, use this:
 
 ```xml
 <JavaCallout name='Java-WSSEC-Validate'>
@@ -222,10 +243,10 @@ To verify a signature and not require an expiry, and also enforce subject common
     <Property name='source'>message.content</Property>
     <Property name='require-expiry'>false</Property>
     <Property name='accept-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
-    <Property name='accept-subject-common-names'>host.example.com</Property>
+    <Property name='accept-subject-cns'>host.example.com</Property>
   </Properties>
   <ClassName>com.google.apigee.edgecallouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20201005.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20201006.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -234,15 +255,17 @@ The properties available for the Validate callout are:
 | name                   | description |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | source                 | optional. the variable name in which to obtain the source signed document to validate. Defaults to message.content |
+| signing-method         | optional. Takes value rsa-sha1 or rsa-sha256. Checks that the signing method on the document is as specified. If this property is not present, there is no check on the algorithm. |
+| digest-method          | optional. Takes value sha1 or sha256. Checks that the digest method for each reference is as specified. If this property is not present, there is no check on the algorithm. |
 | accept-thumbprints     | optional. a comma-separated list of thumbprints of the certs which are acceptable signers. If any signature is from a cert that has a thumbprint other than that specified, the verification fails. Required if the `certificate` property is not provided.  |
 | accept-subject-cns     | optional. a comma-separated list of common names (CNs) for the subject which are acceptable signers. If any signature is from a CN other than that specified, the verification fails. |
-| require-expiry         | optional. true or false, defaults true. Whether to require an expiry in the timestamp.  |
+| require-expiry         | optional. true or false, defaults true. Whether to require an expiry in the timestamp.  It is highly recommended that you use 'true' here, or just omit this property and accept the default. |
 | required-signed-elements | optional. a comma-separated list of elements that must be signed. Defaults to "body,timestamp" . To require only a signature on the Timestamp and not the Body when validating, set this to "timestamp". (You probably don't want to do this.) To require only a signature on the Body and not the Timestamp when validating, set this to "body". (You probably don't want to do this, either.) Probably you want to just leave this element out of your configuration and accept the default. |
 | ignore-expiry          | optional. true or false. defaults false. When true, tells the validator to ignore the Timestamp/Expires field when evaluating validity.    |
 | max-lifetime           | optional. Takes a string like 120s, 10m, 4d, etc to imply 120 seconds, 10 minutes, 4 days.  Use this to limit the acceptable lifetime of the signed document. This requires the Timestamp to include a Created as well as an Expires element. Default: no maximum lifetime. |
 | throw-fault-on-invalid | optional. true or false, defaults to false. Whether to throw a fault when the signature is invalid, or when validation fails for another reason (wrong elements signed, lifetime exceeds max, etc). |
 | certificate            | optional. The certificate that provides the public key to verify the signature. This is required (and used) only if the KeyInfo in the signed document does not explicitly provide the Certificate.  |
-| issuer-name-style      | optional. One of {`SHORT`, `SUBJECT_DN`}.  Used only if the signed document includes a KeyInfo that wrapps X509IssuerSerial. See the description under the Sign callout for further details. |
+| issuer-name-style      | optional. One of {`SHORT`, `SUBJECT_DN`}.  Used only if the signed document includes a KeyInfo that wraps X509IssuerSerial. See the description under the Sign callout for further details. |
 
 
 The result of the Validate callout is to set a single variable: wssec_valid.
@@ -253,14 +276,20 @@ property is true.
 
 Further comments:
 
+* The Validate callout verifies signatures using x509v3 certificates that
+  contain RSA public keys. The callout is not able to validate a signature using
+  an embedded RSA key found in the signed document. (This is a reasonable
+  feature enhancement; hasn't been requested yet.)
+
 * Every certificate has a "thumbprint", which is just a SHA-1 hash of the
   encoded certificate data. This thumbprint is unique among certificates.  If
   the certificate is embedded within the signed document, then the Validate
   callout checks for certificate trust via these thumbprints. In that case,
   `accept-thumbprints` is required; You must configure it when using the
-  Validate callout on a signed document that embeds the certificate.  If you
+  Validate callout on a signed document that embeds the certificate. If you
   explicitly provide a certificate to the Validate callout via the `certificate`
-  property, then this property is ignored.
+  property, then this property is ignored, because the assumption is that if you
+  specify the certificate, you trust it.
 
 * With the `max-lifetime` property, you can configure the policy to reject a
   signature that has a lifetime greater, say, 5 minutes. The maximum lifetime of
@@ -275,8 +304,8 @@ Further comments:
 * it is possible to configure the policy with `require-expiry` = true and
   `ignore-expiry` = true.  While this seems nonsensical, it can be useful in
   testing scenarios. It tells the policy to check that an Expires element is
-  present, but do not evaluate the value of the element. This will be needed
-  rarely if ever, in a production situation.
+  present in the Timestamp, but do not evaluate the value of the element. This
+  will be wanted rarely if ever, in a production situation.
 
 * There is a `wssec_error` variable that gets set when the validation check fails.
   It will give you some additional information about the validation failure.
@@ -326,10 +355,16 @@ There are some sample SOAP request documents included in this repo that you can 
    curl -i https://${ORG}-${ENV}.apigee.net/wssec/sign5  -H content-type:application/xml \
        --data-binary @./sample-data/request1.xml
    ```
-* Signing with SHA256 and RSA-SHA256 digest and signature methods
+* Signing, emitting KeyInfo with raw RSA Key
 
    ```
    curl -i https://${ORG}-${ENV}.apigee.net/wssec/sign6  -H content-type:application/xml \
+       --data-binary @./sample-data/request1.xml
+   ```
+* Signing with SHA256 and RSA-SHA256 digest and signature methods
+
+   ```
+   curl -i https://${ORG}-${ENV}.apigee.net/wssec/sign7  -H content-type:application/xml \
        --data-binary @./sample-data/request1.xml
    ```
 * Validating with hardcoded Common Name
@@ -366,8 +401,16 @@ There are some sample SOAP request documents included in this repo that you can 
        --data-binary @./sample-data/signed-request.xml
    ```
    The output of the above should indicate that the signature on the document is
-   valid, because the thumbproint provided matches the thumbprint on the cert
+   valid, because the thumbprint provided matches the thumbprint on the cert
    that was used to sign the document.
+
+* Validating with specified digest and signing method
+
+   ```
+   curl -i https://${ORG}-${ENV}.apigee.net/wssec/validate3  -H content-type:application/xml \
+       --data-binary @./sample-data/signed-request-nonexpiring-sha256.xml
+   ```
+   The output of the above should indicate that the message is valid.
 
 
 ### Example of Signed Output
@@ -443,13 +486,15 @@ the signed payload looks like this:
 ```
 
 This example has been prettified. The signed document will not be pretty-printed
-like that. Applying an XML Digital Signature will collapse whitespace.
+like that; applying an XML Digital Signature will collapse whitespace. If you do
+"pretty print" the signed document, you may render the signature
+invalid. Whitespace matters.
 
 ## About Keys
 
 There is a private RSA key and a corresponding certificate embedded in the API
-Proxy. You should not use those for your own purposes. Create your
-own. Self-signed is fine for testing purposes. You can
+Proxy. *You should not use those for your own purposes.* Create your
+own keypair and certificate. Self-signed certificates are fine for testing purposes. You can
 do it with openssl. Creating a privatekey, a certificate signing request, and a
 certificate, is as easy as 1, 2, 3:
 
@@ -462,4 +507,4 @@ certificate, is as easy as 1, 2, 3:
 
 ## Bugs
 
-none?
+* The Sign callout always uses XML Canonicalization, never uses Transform.ENVELOPED.

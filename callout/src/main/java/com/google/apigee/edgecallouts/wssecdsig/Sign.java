@@ -270,12 +270,7 @@ public class Sign extends WssecCalloutBase implements Execution {
       wssecHeader.appendChild(bst);
     }
 
-    String digestMethodUri =
-        ((signConfiguration.digestMethod != null)
-                && (signConfiguration.digestMethod.toLowerCase().equals("sha256")))
-            ? DigestMethod.SHA256
-            : DigestMethod.SHA1;
-
+    String digestMethodUri = (signConfiguration.digestMethod != null) ? signConfiguration.digestMethod : DigestMethod.SHA1;
     DigestMethod digestMethod = signatureFactory.newDigestMethod(digestMethodUri, null);
 
     Transform transform =
@@ -301,12 +296,7 @@ public class Sign extends WssecCalloutBase implements Execution {
     }
 
     // 7. add <SignatureMethod Algorithm="..."?>
-    String signingMethodUri =
-        ((signConfiguration.signingMethod != null)
-                && (signConfiguration.signingMethod.toLowerCase().equals("rsa-sha256")))
-            ? "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"
-            : "http://www.w3.org/2000/09/xmldsig#rsa-sha1";
-
+    String signingMethodUri = (signConfiguration.signingMethod != null) ? signConfiguration.signingMethod : SIGNING_METHOD_RSA_SHA1;
     SignatureMethod signatureMethod = signatureFactory.newSignatureMethod(signingMethodUri, null);
 
     CanonicalizationMethod canonicalizationMethod =
@@ -525,30 +515,6 @@ public class Sign extends WssecCalloutBase implements Execution {
     Long durationInMilliseconds = TimeResolver.resolveExpression(expiryString);
     if (durationInMilliseconds < 0L) return 0;
     return ((Long) (durationInMilliseconds / 1000L)).intValue();
-  }
-
-  private String getSigningMethod(MessageContext msgCtxt) throws Exception {
-    String signingMethod = getSimpleOptionalProperty("signing-method", msgCtxt);
-    if (signingMethod == null) return null;
-    signingMethod = signingMethod.trim();
-    // warn on invalid values
-    if (!signingMethod.toLowerCase().equals("rsa-sha1")
-        && !signingMethod.toLowerCase().equals("rsa-sha256")) {
-      msgCtxt.setVariable(varName("WARNING"), "invalid value for signing-method");
-    }
-    return signingMethod;
-  }
-
-  private String getDigestMethod(MessageContext msgCtxt) throws Exception {
-    String digestMethod = getSimpleOptionalProperty("digest-method", msgCtxt);
-    if (digestMethod == null) return null;
-    digestMethod = digestMethod.trim();
-    // warn on invalid values
-    if (!digestMethod.toLowerCase().equals("sha1")
-        && !digestMethod.toLowerCase().equals("sha256")) {
-      msgCtxt.setVariable(varName("WARNING"), "invalid value for digest-method");
-    }
-    return digestMethod;
   }
 
   private List<String> getElementsToSign(MessageContext msgCtxt) throws Exception {
