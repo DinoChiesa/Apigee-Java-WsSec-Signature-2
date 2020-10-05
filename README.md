@@ -41,7 +41,7 @@ environment-wide or organization-wide jar via the Apigee administrative API.
 
 ## Details
 
-There is a single jar, edge-wssecdsig-20200219.jar . Within that jar, there are two callout classes,
+There is a single jar, apigee-wssecdsig-20201005.jar . Within that jar, there are two callout classes,
 
 * com.google.apigee.edgecallouts.wssecdsig.Sign - signs the input SOAP document.
 * com.google.apigee.edgecallouts.wssecdsig.Validate - validates the signed SOAP document
@@ -54,7 +54,7 @@ The Sign callout has these constraints and features:
 * signs the SOAP Body, or the Timestamp, or both (default)
 * uses a canonicalization method of "http://www.w3.org/2001/10/xml-exc-c14n#"
 * uses a digest mode of sha1 (default) or sha256
-* has various options for embedding the KeyInfo for the certificate in the signed document
+* has various options for embedding the KeyInfo for the certificate in the signed document: directly embedding the certificate, embedding a thumprint, a serial number, or embedding a public RSA key.
 
 The Verify callout has these constraints and features:
 * supports RSA algorithms - rsa-sha1 (default) or rsa-sha256
@@ -86,11 +86,11 @@ Configure the policy this way:
     <Property name='certificate'>{my_certificate}</Property>
   </Properties>
   <ClassName>com.google.apigee.edgecallouts.wssecdsig.Sign</ClassName>
-  <ResourceURL>java://edge-wssecdsig-20200219.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20201005.jar</ResourceURL>
 </JavaCallout>
 ```
 
-The available properties are:
+The available properties for the Sign callout are:
 
 | name                 | description |
 | -------------------- | ------------ |
@@ -201,36 +201,40 @@ Configure the policy this way:
 <JavaCallout name='Java-WSSEC-Validate'>
   <Properties>
     <Property name='source'>message.content</Property>
-    <Property name='acceptable-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
+    <Property name='accept-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
   </Properties>
   <ClassName>com.google.apigee.edgecallouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://edge-wssecdsig-20200219.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20201005.jar</ResourceURL>
 </JavaCallout>
 ```
 
 This will verify a WS-Security signature on the specified document. It will by
-default require a Timestamp and an Expires element.
+default require a Timestamp and an Expires element. It will validate only a
+signed document that includes am embedded certificate, and it will check that
+the thumbprint on the embedded cert matches that specified in the
+`accept-thumbprints` property.
 
-To verify a signature and not require an expiry, use this:
+To verify a signature and not require an expiry, and also enforce subject common name, use this:
+
 ```xml
 <JavaCallout name='Java-WSSEC-Validate'>
   <Properties>
     <Property name='source'>message.content</Property>
     <Property name='require-expiry'>false</Property>
-    <Property name='acceptable-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
-    <Property name='acceptable-subject-common-names'>host.example.com</Property>
+    <Property name='accept-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
+    <Property name='accept-subject-common-names'>host.example.com</Property>
   </Properties>
   <ClassName>com.google.apigee.edgecallouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://edge-wssecdsig-20200219.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20201005.jar</ResourceURL>
 </JavaCallout>
 ```
 
-The properties are:
+The properties available for the Validate callout are:
 
 | name                   | description |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | source                 | optional. the variable name in which to obtain the source signed document to validate. Defaults to message.content |
-| accept-thumbprints     | required. a comma-separated list of thumbprints of the certs which are acceptable signers. If any signature is from a cert that has a thumbprint other than that specified, the verification fails. |
+| accept-thumbprints     | optional. a comma-separated list of thumbprints of the certs which are acceptable signers. If any signature is from a cert that has a thumbprint other than that specified, the verification fails. Required if the `certificate` property is not provided.  |
 | accept-subject-cns     | optional. a comma-separated list of common names (CNs) for the subject which are acceptable signers. If any signature is from a CN other than that specified, the verification fails. |
 | require-expiry         | optional. true or false, defaults true. Whether to require an expiry in the timestamp.  |
 | required-signed-elements | optional. a comma-separated list of elements that must be signed. Defaults to "body,timestamp" . To require only a signature on the Timestamp and not the Body when validating, set this to "timestamp". (You probably don't want to do this.) To require only a signature on the Body and not the Timestamp when validating, set this to "body". (You probably don't want to do this, either.) Probably you want to just leave this element out of your configuration and accept the default. |
@@ -250,23 +254,31 @@ property is true.
 Further comments:
 
 * Every certificate has a "thumbprint", which is just a SHA-1 hash of the
-  encoded certificate data. This thumbprint is unique among certificates.
-  The way the Validate callout checks for certificate trust is via these
-  thumbprints. `accept-thumbprints` is required; You must configure it when using the Validate
-  callout.
+  encoded certificate data. This thumbprint is unique among certificates.  If
+  the certificate is embedded within the signed document, then the Validate
+  callout checks for certificate trust via these thumbprints. In that case,
+  `accept-thumbprints` is required; You must configure it when using the
+  Validate callout on a signed document that embeds the certificate.  If you
+  explicitly provide a certificate to the Validate callout via the `certificate`
+  property, then this property is ignored.
 
-* The maximum lifetime is computed from the asserted (and probably signed)
+* With the `max-lifetime` property, you can configure the policy to reject a
+  signature that has a lifetime greater, say, 5 minutes. The maximum lifetime of
+  a signed documented is computed from the asserted (and, ideally signed)
   Timestamp, by computing the difference between the Created and the Expires
-  times. With this property, you can configure the policy to reject a signature
-  that has a lifetime greater, say, 5 minutes.
+  times. It does not make sense to specify `max-lifetime` if you also specify
+  `required-signed-elements` to not include Timestamp, for an obvious reason: If
+  the signature does not sign the timestamp, it means any party can change the
+  timestamp, and therefore the computed lifetime of the document would bve
+  untrustworthy.
 
-* it is possible to configure the policy with require-expiry = true and
-  ignore-expiry = true.  While this seems nonsensical, it can be useful in
+* it is possible to configure the policy with `require-expiry` = true and
+  `ignore-expiry` = true.  While this seems nonsensical, it can be useful in
   testing scenarios. It tells the policy to check that an Expires element is
   present, but do not evaluate the value of the element. This will be needed
   rarely if ever, in a production situation.
 
-* There is a wssec_error variable that gets set when the validation check fails.
+* There is a `wssec_error` variable that gets set when the validation check fails.
   It will give you some additional information about the validation failure.
 
 

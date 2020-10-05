@@ -2,6 +2,7 @@ package com.google.apigee.edgecallouts.test;
 
 import com.apigee.flow.execution.ExecutionResult;
 import com.google.apigee.edgecallouts.wssecdsig.Validate;
+import com.google.apigee.edgecallouts.wssecdsig.Sign;
 import java.util.HashMap;
 import java.util.Map;
 import org.testng.Assert;
@@ -427,6 +428,54 @@ public class TestWssecValidateCallout extends CalloutTestBase {
     Assert.assertEquals(actualResult, ExecutionResult.SUCCESS, "result not as expected");
     Object errorOutput = msgCtxt.getVariable("wssec_error");
     Assert.assertNull(errorOutput, "errorOutput");
+
+    Boolean isValid = (Boolean) msgCtxt.getVariable("wssec_valid");
+    Assert.assertTrue(isValid, method + "valid");
+  }
+
+
+  @Test
+  public void roundTrip() throws Exception {
+    String method = "roundTrip() ";
+    msgCtxt.setVariable("message.content", soapGetContacts);
+    msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
+    msgCtxt.setVariable("my-certificate", pairs[2].certificate);
+
+    Map<String, String> props1 = new HashMap<String, String>();
+    props1.put("debug", "true");
+    props1.put("source", "message.content");
+    props1.put("private-key", "{my-private-key}");
+    props1.put("certificate", "{my-certificate}");
+    props1.put("key-identifier-type", "issuer_serial");
+    props1.put("output-variable", "output");
+
+    Sign callout1 = new Sign(props1);
+
+    // execute and retrieve output
+    ExecutionResult actualResult1 = callout1.execute(msgCtxt, exeCtxt);
+    Assert.assertEquals(actualResult1, ExecutionResult.SUCCESS, "result not as expected");
+    Object errorOutput1 = msgCtxt.getVariable("wssec_error");
+    Assert.assertNull(errorOutput1, "errorOutput");
+
+    String signedDocument = (String) msgCtxt.getVariable("output");
+
+    // now, round-trip. Check that the signed document validates.
+    msgCtxt.setVariable("signed-document", signedDocument);
+
+    Map<String, String> props2 = new HashMap<String, String>();
+    props2.put("debug", "true");
+    //props2.put("accept-thumbprints", "ada3a946669ad4e6e2c9f81360c3249e49a57a7d");
+    props2.put("require-expiry", "false");
+    props2.put("certificate", "{my-certificate}");
+    props2.put("source", "signed-document");
+
+    Validate callout2 = new Validate(props2);
+
+    // execute and retrieve output
+    ExecutionResult actualResult2 = callout2.execute(msgCtxt, exeCtxt);
+    Assert.assertEquals(actualResult2, ExecutionResult.SUCCESS, "result not as expected");
+    Object errorOutput2 = msgCtxt.getVariable("wssec_error");
+    Assert.assertNull(errorOutput2, "errorOutput");
 
     Boolean isValid = (Boolean) msgCtxt.getVariable("wssec_valid");
     Assert.assertTrue(isValid, method + "valid");

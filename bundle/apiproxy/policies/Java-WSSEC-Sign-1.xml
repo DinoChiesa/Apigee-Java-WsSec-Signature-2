@@ -6,5 +6,5 @@
     <Property name='certificate'>{my_certificate}</Property>
   </Properties>
   <ClassName>com.google.apigee.edgecallouts.wssecdsig.Sign</ClassName>
-  <ResourceURL>java://edge-wssecdsig-20200313.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20201005.jar</ResourceURL>
 </JavaCallout>

@@ -149,7 +149,7 @@ public abstract class WssecCalloutBase {
     return sb.toString();
   }
 
-  protected X509Certificate getCertificate(MessageContext msgCtxt)
+  protected X509Certificate getCertificateFromConfiguration(MessageContext msgCtxt)
     throws NoSuchAlgorithmException, InvalidNameException, KeyException, CertificateEncodingException {
     String certificateString = getSimpleRequiredProperty("certificate", msgCtxt);
     certificateString = certificateString.trim();

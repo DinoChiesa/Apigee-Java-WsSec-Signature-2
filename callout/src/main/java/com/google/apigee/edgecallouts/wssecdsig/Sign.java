@@ -670,7 +670,7 @@ public class Sign extends WssecCalloutBase implements Execution {
           new SignConfiguration()
               .withSoapVersion(getSoapVersion(msgCtxt))
               .withKey(getPrivateKey(msgCtxt))
-              .withCertificate(getCertificate(msgCtxt))
+              .withCertificate(getCertificateFromConfiguration(msgCtxt))
               .withKeyIdentifierType(getKeyIdentifierType(msgCtxt))
               .withIssuerNameStyle(getIssuerNameStyle(msgCtxt))
               .withExpiresIn(getExpiresIn(msgCtxt))

@@ -4,9 +4,9 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.google.apigee.edgecallouts</groupId>
-  <artifactId>edge-wssecdsig</artifactId>
-  <version>20200313</version>
-  <name>EdgeJavaWssecSignature</name>
+  <artifactId>apigee-wssecdsig</artifactId>
+  <version>20201005</version>
+  <name>ApigeeJavaWssecSignature</name>
   <url>http://maven.apache.org</url>
   <packaging>jar</packaging>
   <properties>

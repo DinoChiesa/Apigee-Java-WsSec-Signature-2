@@ -21,6 +21,55 @@ public abstract class CalloutTestBase {
     java.security.Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
   }
 
+  static final String simpleSoap11 =
+    "<soapenv:Envelope xmlns:ns1='http://ws.example.com/' xmlns:soapenv='http://schemas.xmlsoap.org/soap/envelope/'>"
+    + "  <soapenv:Body>"
+    + "    <ns1:sumResponse>"
+    + "      <ns1:return>9</ns1:return>"
+    + "    </ns1:sumResponse>"
+    + "  </soapenv:Body>"
+    + "</soapenv:Envelope>";
+
+  static final String simpleSoap12 = ""
+    +"<soap:Envelope \n"
+    +"    xmlns:soap='http://www.w3.org/2003/05/soap-envelope'\n"
+    +"    xmlns:v1='https://foo/servicecontract/v1.0'\n"
+    +"    xmlns:v11='https://foo/claims/datacontract/v1.0'>\n"
+    +"  <soap:Header \n"
+    +"      xmlns:wsa='http://www.w3.org/2005/08/addressing'>\n"
+    +"    <wsa:Action>https://foo/v1.0/ClaimsService/FileMultipleClaims</wsa:Action>\n"
+    +"    <wsa:To>https://foo/v1.0/ClaimsService</wsa:To>\n"
+    +"  </soap:Header>\n"
+    +"  <soap:Body>\n"
+    +"    <ns2:FileMultipleClaims \n"
+    +"        xmlns:ns2='https://foo/servicecontract/v1.0'\n"
+    +"        xmlns='https://foo/claims/datacontract/v1.0'>\n"
+    +"      <ns2:request>\n"
+    +"        <body>here</body>\n"
+    +"      </ns2:request>\n"
+    +"    </ns2:FileMultipleClaims>\n"
+    +"  </soap:Body>\n"
+    +"</soap:Envelope>\n";
+
+  static final String soapGetContacts = ""
+    + "<soapenv:Envelope\n"
+    + "     xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\"\n"
+    + "     xmlns:oas=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"\n"
+    + "     xmlns:ser=\"http://webservices.example.com/services\">\n"
+    + "   <soapenv:Header>\n"
+    + "      <ser:AuthHeader>\n"
+    + "         <ser:HomeID>88850083</ser:HomeID>\n"
+    + "         <ser:SessionID>6f69356c4c533867635a4c5770326d2f4527320699624269</ser:SessionID>\n"
+    + "         <ser:UserAgent>Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)</ser:UserAgent>\n"
+    + "         <ser:CEUserAgent>CXCTurnkey.FIPlugin.20.1</ser:CEUserAgent>\n"
+    + "      </ser:AuthHeader>\n"
+    + "   </soapenv:Header>\n"
+    + "   <soapenv:Body>\n"
+    + "      <ser:GetContacts>\n"
+    + "         <ser:RqUID>GettingContactWithNickName222</ser:RqUID>\n"
+    + "      </ser:GetContacts>\n"
+    + "   </soapenv:Body>\n"
+    + "</soapenv:Envelope>\n";
 
   static class KeyCertPair {
     public String privateKey;
@@ -34,7 +83,7 @@ public abstract class CalloutTestBase {
     }
   }
 
-  KeyCertPair[] pairs =
+  static final KeyCertPair[] pairs =
       new KeyCertPair[] {
         // generated in this way:
         // openssl genpkey  -algorithm rsa  -aes-128-cbc  -pkeyopt rsa_keygen_bits:2048 -out

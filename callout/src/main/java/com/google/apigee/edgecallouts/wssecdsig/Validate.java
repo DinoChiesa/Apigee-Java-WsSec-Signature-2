@@ -111,7 +111,7 @@ public class Validate extends WssecCalloutBase implements Execution {
     return null;
   }
 
-  private Certificate getCertificate(Element keyInfo, Document doc, String soapNs, MessageContext msgCtxt)
+  private SourcedCert getCertificate(Element keyInfo, Document doc, String soapNs, MessageContext msgCtxt)
     throws KeyException, NoSuchAlgorithmException, InvalidNameException, CertificateEncodingException {
     // There are 4 cases to handle:
     // 1. SecurityTokenReference pointing to a BinarySecurityToken
@@ -120,14 +120,18 @@ public class Validate extends WssecCalloutBase implements Execution {
     // 4. X509Data with Raw cert data
     //
     // In cases 1 and 4, we have the cert in the document.
-    // In cases 2 and 3, the verifier must provide the cert separately, and the validity
-    // check must verify that the thumbprint or IssuerName and SerialNumber match.
-
+    //
+    // In cases 2 and 3, the verifier must provide the cert separately, and the
+    // validity check must verify that the thumbprint or IssuerName and
+    // SerialNumber asserted in the document, matches that in the certificate
+    // provided explicitly to Validate.
+    //
     // There is a 5th case,
     // 5. KeyValue with RSAKeyValue and Modulus + Exponent
     //
-    // In case 5, ... we have the public key in the document. Not a cert.
-    // this code does not handle verification for that kind of signature.
+    // In case 5, the document provides a public key, not a certificate.
+    // This callout code does not handle verification for a signed document with
+    // that kind of signature.
     //
 
     NodeList nl = keyInfo.getElementsByTagNameNS(Namespaces.WSSEC, "SecurityTokenReference");
@@ -142,10 +146,9 @@ public class Validate extends WssecCalloutBase implements Execution {
 
       // case 4: X509Data with raw data
       Element x509Cert = (Element) (nl.item(0));
-
       String base64String = x509Cert.getTextContent();
       Certificate cert = certificateFromPEM(toCertPEM(base64String));
-      return cert;
+      return new SourcedCert((X509Certificate)cert, CertificateSource.DOCUMENT);
     }
 
     Element str = (Element) nl.item(0);
@@ -175,7 +178,7 @@ public class Validate extends WssecCalloutBase implements Execution {
         if (nl.getLength() == 0)
           throw new RuntimeException("No X509IssuerName element found");
         Element x509SerialNumber = (Element) (nl.item(0));
-        X509Certificate cert = getCertificate(msgCtxt);
+        X509Certificate cert = getCertificateFromConfiguration(msgCtxt);
 
         // check that the serial number matches
         String assertedSerialNumber = x509SerialNumber.getTextContent();
@@ -201,8 +204,7 @@ public class Validate extends WssecCalloutBase implements Execution {
           throw new RuntimeException(String.format("X509SerialNumber mismatch cert(%s) doc(%s)",
                                                    availableIssuerName,
                                                    assertedIssuerName));
-
-        return cert;
+        return new SourcedCert(cert, CertificateSource.CONFIG);
       }
 
       // case 2: KeyIdentifier with thumbprint
@@ -216,11 +218,12 @@ public class Validate extends WssecCalloutBase implements Execution {
       if (assertedThumbprintSha1Base64 == null)
         throw new RuntimeException("KeyInfo/SecurityTokenReference/KeyIdentifier no thumbprint");
 
-      X509Certificate cert = getCertificate(msgCtxt);
+      X509Certificate cert = getCertificateFromConfiguration(msgCtxt);
       String availableThumbprintSha1Base64 = getThumbprintBase64(cert);
       if (!assertedThumbprintSha1Base64.equals(availableThumbprintSha1Base64))
         throw new RuntimeException("KeyInfo/SecurityTokenReference/KeyIdentifier thumbprint mismatch");
-      return cert;
+
+      return new SourcedCert(cert, CertificateSource.CONFIG);
     }
 
     // case 1: SecurityTokenReference pointing to a BinarySecurityToken
@@ -256,7 +259,22 @@ public class Validate extends WssecCalloutBase implements Execution {
     }
     String base64String = bst.getTextContent();
     Certificate cert = certificateFromPEM(toCertPEM(base64String));
-    return cert;
+    return new SourcedCert((X509Certificate)cert, CertificateSource.DOCUMENT);
+  }
+
+  enum CertificateSource {
+    NOT_SPECIFIED,
+    CONFIG,
+    DOCUMENT;
+  }
+
+  static class SourcedCert {
+    public X509Certificate certificate;
+    public CertificateSource source;
+    public SourcedCert(X509Certificate certificate, CertificateSource source) {
+      this.source = source;
+      this.certificate = certificate;
+    }
   }
 
   static class ValidationResult {
@@ -349,7 +367,7 @@ public class Validate extends WssecCalloutBase implements Execution {
   }
 
   private ValidationResult validate_RSA(
-      Document doc, String soapNs, List<String> requiredElements, MessageContext msgCtxt)
+      Document doc, String soapNs, List<String> requiredSignedElements, MessageContext msgCtxt)
       throws MarshalException, XMLSignatureException, KeyException, CertificateExpiredException,
              CertificateNotYetValidException, NoSuchAlgorithmException, InvalidNameException,
              CertificateEncodingException {
@@ -374,24 +392,26 @@ public class Validate extends WssecCalloutBase implements Execution {
         if (keyinfoList.getLength() == 0) {
           throw new RuntimeException("No element: Signature/KeyInfo");
         }
-        X509Certificate cert = (X509Certificate) getCertificate((Element) keyinfoList.item(0), doc, soapNs, msgCtxt);
-        cert.checkValidity();
-        KeySelector ks = KeySelector.singletonKeySelector(cert.getPublicKey());
+        SourcedCert sourcedCert = getCertificate((Element) keyinfoList.item(0), doc, soapNs, msgCtxt);
+        sourcedCert.certificate.checkValidity();
+        KeySelector ks = KeySelector.singletonKeySelector(sourcedCert.certificate.getPublicKey());
         DOMValidateContext vc = new DOMValidateContext(ks, signatureElement);
         XMLSignature signature = signatureFactory.unmarshalXMLSignature(vc);
         isValid = signature.validate(vc);
-        certs.add(cert);
+        if (sourcedCert.source == CertificateSource.DOCUMENT) {
+          certs.add(sourcedCert.certificate);
+        }
       }
     }
 
     // check for presence of signed elements
-    if (isValid && requiredElements.contains("timestamp")) {
+    if (isValid && requiredSignedElements.contains("timestamp")) {
       if (!signedElements.contains("timestamp")) {
         isValid = false;
         msgCtxt.setVariable(varName("error"), "did not find signature for wsu:Timestamp");
       }
     }
-    if (isValid && requiredElements.contains("body")) {
+    if (isValid && requiredSignedElements.contains("body")) {
       if (!signedElements.contains("body")) {
         isValid = false;
         msgCtxt.setVariable(varName("error"), "did not find signature for soap:Body");
@@ -531,13 +551,12 @@ public class Validate extends WssecCalloutBase implements Execution {
       msgCtxt.setVariable(varName("valid"), false);
       Document document = getDocument(msgCtxt);
       int maxLifetime = getMaxLifetime(msgCtxt);
-      List<String> acceptableThumbprints = getAcceptableThumbprints(msgCtxt);
       List<String> acceptableSubjectCNs = getAcceptableSubjectCommonNames(msgCtxt);
-      List<String> requiredElements = getRequiredSignedElements(msgCtxt);
+      List<String> requiredSignedElements = getRequiredSignedElements(msgCtxt);
       String soapNs = (getSoapVersion(msgCtxt).equals("soap1.2")) ?
         Namespaces.SOAP1_2 : Namespaces.SOAP1_1;
 
-      ValidationResult validationResult = validate_RSA(document, soapNs, requiredElements, msgCtxt);
+      ValidationResult validationResult = validate_RSA(document, soapNs, requiredSignedElements, msgCtxt);
       boolean isValid = validationResult.isValid();
       if (!isValid) {
         msgCtxt.setVariable(varName("error"), "signature did not verify");
@@ -571,30 +590,33 @@ public class Validate extends WssecCalloutBase implements Execution {
       }
 
       if (isValid) {
-        // check CNs of certs
+        // check CNs of certs that were embedded in the document
         List<X509Certificate> certs = validationResult.getCertificates();
-        for (int i = 0; i < certs.size(); i++) {
-          X509Certificate certificate = certs.get(i);
-          String thumbprint = getThumbprintHex(certificate);
-          msgCtxt.setVariable(varName("cert_" + i + "_thumbprint"), thumbprint);
+        if (certs.size() > 0) {
+          List<String> acceptableThumbprints = getAcceptableThumbprints(msgCtxt);
+          for (int i = 0; i < certs.size(); i++) {
+            X509Certificate certificate = certs.get(i);
+            String thumbprint = getThumbprintHex(certificate);
+            msgCtxt.setVariable(varName("cert_" + i + "_thumbprint"), thumbprint);
 
-          if (!acceptableThumbprints.contains(thumbprint)) {
-            msgCtxt.setVariable(varName("error"), "certificate thumbprint not accepted");
-            isValid = false;
-          }
-
-          // record issuer
-          X500Principal principal = certificate.getIssuerX500Principal();
-          String commonName = getCommonName(principal);
-          msgCtxt.setVariable(varName("cert_" + i + "_issuer_cn"), commonName);
-          // then record and subject
-          principal = certificate.getSubjectX500Principal();
-          commonName = getCommonName(principal);
-          msgCtxt.setVariable(varName("cert_" + i + "_subject_cn"), commonName);
-          if (acceptableSubjectCNs != null && isValid) {
-            if (!acceptableSubjectCNs.contains(commonName)) {
-              msgCtxt.setVariable(varName("error"), "subject common name not accepted");
+            if (!acceptableThumbprints.contains(thumbprint)) {
+              msgCtxt.setVariable(varName("error"), "certificate thumbprint not accepted");
               isValid = false;
+            }
+
+            // record issuer
+            X500Principal principal = certificate.getIssuerX500Principal();
+            String commonName = getCommonName(principal);
+            msgCtxt.setVariable(varName("cert_" + i + "_issuer_cn"), commonName);
+            // then record and subject
+            principal = certificate.getSubjectX500Principal();
+            commonName = getCommonName(principal);
+            msgCtxt.setVariable(varName("cert_" + i + "_subject_cn"), commonName);
+            if (acceptableSubjectCNs != null && isValid) {
+              if (!acceptableSubjectCNs.contains(commonName)) {
+                msgCtxt.setVariable(varName("error"), "subject common name not accepted");
+                isValid = false;
+              }
             }
           }
         }

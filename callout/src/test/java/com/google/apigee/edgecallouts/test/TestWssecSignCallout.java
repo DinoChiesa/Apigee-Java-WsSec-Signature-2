@@ -25,36 +25,6 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 public class TestWssecSignCallout extends CalloutTestBase {
-  private static final String simpleSoap11 =
-      "<soapenv:Envelope xmlns:ns1='http://ws.example.com/' xmlns:soapenv='http://schemas.xmlsoap.org/soap/envelope/'>"
-          + "  <soapenv:Body>"
-          + "    <ns1:sumResponse>"
-          + "      <ns1:return>9</ns1:return>"
-          + "    </ns1:sumResponse>"
-          + "  </soapenv:Body>"
-          + "</soapenv:Envelope>";
-
-  private static final String simpleSoap12 = ""
-+"<soap:Envelope \n"
-+"    xmlns:soap='http://www.w3.org/2003/05/soap-envelope'\n"
-+"    xmlns:v1='https://foo/servicecontract/v1.0'\n"
-+"    xmlns:v11='https://foo/claims/datacontract/v1.0'>\n"
-+"  <soap:Header \n"
-+"      xmlns:wsa='http://www.w3.org/2005/08/addressing'>\n"
-+"    <wsa:Action>https://foo/v1.0/ClaimsService/FileMultipleClaims</wsa:Action>\n"
-+"    <wsa:To>https://foo/v1.0/ClaimsService</wsa:To>\n"
-+"  </soap:Header>\n"
-+"  <soap:Body>\n"
-+"    <ns2:FileMultipleClaims \n"
-+"        xmlns:ns2='https://foo/servicecontract/v1.0'\n"
-+"        xmlns='https://foo/claims/datacontract/v1.0'>\n"
-+"      <ns2:request>\n"
-+"        <body>here</body>\n"
-+"      </ns2:request>\n"
-+"    </ns2:FileMultipleClaims>\n"
-+"  </soap:Body>\n"
-+"</soap:Envelope>\n";
-
   private static Document docFromStream(InputStream inputStream)
       throws IOException, ParserConfigurationException, SAXException {
     DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
