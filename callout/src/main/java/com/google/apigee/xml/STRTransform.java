@@ -1,30 +1,20 @@
-// STRTransform.java
-// ------------------------------------------------------------------
-//
 /**
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements. See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License. You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more contributor license
+ * agreements. See the NOTICE file distributed with this work for additional information regarding
+ * copyright ownership. The ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.google.apigee.xml;
 
 import com.google.apigee.util.XmlUtils;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.InvalidAlgorithmParameterException;
@@ -47,13 +37,10 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
-/**
- * Class STRTransform.
- */
 public class STRTransform extends TransformService {
 
   public static final String TRANSFORM_URI =
-    "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#STR-Transform";
+      "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#STR-Transform";
 
   public static final String TRANSFORM_WS_DOC_INFO = "transform_ws_doc_info";
 
@@ -65,48 +52,41 @@ public class STRTransform extends TransformService {
     return params;
   }
 
-  public void init(TransformParameterSpec params)
-    throws InvalidAlgorithmParameterException {
+  public void init(TransformParameterSpec params) throws InvalidAlgorithmParameterException {
     this.params = params;
   }
 
   public void init(XMLStructure parent, XMLCryptoContext context)
-    throws InvalidAlgorithmParameterException {
+      throws InvalidAlgorithmParameterException {
     if (context != null && !(context instanceof DOMCryptoContext)) {
       throw new ClassCastException("context must be of type DOMCryptoContext");
     }
     if (!(parent instanceof javax.xml.crypto.dom.DOMStructure)) {
       throw new ClassCastException("parent must be of type DOMStructure");
     }
-    transformElement = (Element)
-      ((javax.xml.crypto.dom.DOMStructure) parent).getNode();
+    transformElement = (Element) ((javax.xml.crypto.dom.DOMStructure) parent).getNode();
   }
 
-  public void marshalParams(XMLStructure parent, XMLCryptoContext context)
-    throws MarshalException {
+  public void marshalParams(XMLStructure parent, XMLCryptoContext context) throws MarshalException {
     if (context != null && !(context instanceof DOMCryptoContext)) {
       throw new ClassCastException("context must be of type DOMCryptoContext");
     }
     if (!(parent instanceof javax.xml.crypto.dom.DOMStructure)) {
       throw new ClassCastException("parent must be of type DOMStructure");
     }
-    Element transformElement2 = (Element)
-      ((javax.xml.crypto.dom.DOMStructure) parent).getNode();
+    Element transformElement2 = (Element) ((javax.xml.crypto.dom.DOMStructure) parent).getNode();
     appendChild(transformElement2, transformElement);
     transformElement = transformElement2;
   }
 
-
-  public Data transform(Data data, XMLCryptoContext xc)
-    throws TransformException {
+  public Data transform(Data data, XMLCryptoContext xc) throws TransformException {
     if (data == null) {
       throw new NullPointerException("data must not be null");
     }
     return transformIt(data, xc, null);
   }
 
-  public Data transform(Data data, XMLCryptoContext xc, OutputStream os)
-    throws TransformException {
+  public Data transform(Data data, XMLCryptoContext xc, OutputStream os) throws TransformException {
     if (data == null) {
       throw new NullPointerException("data must not be null");
     }
@@ -117,14 +97,16 @@ public class STRTransform extends TransformService {
   }
 
   private Data transformIt(Data data, XMLCryptoContext xc, OutputStream os)
-    throws TransformException {
+      throws TransformException {
 
     String canonAlgo = null;
     Element transformParams =
-      XmlUtils.getDirectChildElement(transformElement, "TransformationParameters", Namespaces.WSSEC);
+        XmlUtils.getDirectChildElement(
+            transformElement, "TransformationParameters", Namespaces.WSSEC);
     if (transformParams != null) {
       Element canonElem =
-        XmlUtils.getDirectChildElement(transformParams, "CanonicalizationMethod", Namespaces.XMLDSIG);
+          XmlUtils.getDirectChildElement(
+              transformParams, "CanonicalizationMethod", Namespaces.XMLDSIG);
       canonAlgo = canonElem.getAttributeNS(null, "Algorithm");
     }
 
@@ -134,12 +116,12 @@ public class STRTransform extends TransformService {
       //
       Element str = null;
       if (data instanceof NodeSetData) {
-        NodeSetData nodeSetData = (NodeSetData)data;
+        NodeSetData nodeSetData = (NodeSetData) data;
         Iterator<?> iterator = nodeSetData.iterator();
         while (iterator.hasNext()) {
-          Node node = (Node)iterator.next();
+          Node node = (Node) iterator.next();
           if (node instanceof Element && "SecurityTokenReference".equals(node.getLocalName())) {
-            str = (Element)node;
+            str = (Element) node;
             break;
           }
         }
@@ -164,11 +146,9 @@ public class STRTransform extends TransformService {
       //   STRTransformUtil.dereferenceSTR(doc, secRef, wsDocInfo);
 
       Document doc = str.getOwnerDocument();
-      Element reference =
-        XmlUtils.getDirectChildElement(str, "Reference", Namespaces.WSSEC);
+      Element reference = XmlUtils.getDirectChildElement(str, "Reference", Namespaces.WSSEC);
       String uri = reference.getAttribute("URI");
-      Element dereferencedToken =
-        XmlUtils.getReferencedElement(doc, uri);
+      Element dereferencedToken = XmlUtils.getReferencedElement(doc, uri);
 
       if (dereferencedToken != null) {
         String type = dereferencedToken.getAttributeNS(null, "ValueType");
@@ -179,7 +159,8 @@ public class STRTransform extends TransformService {
           // namespace on the element, which ... seems like an edge case.
           //
           // // XMLUtils.setNamespace(
-          // //                       dereferencedToken, WSConstants.WSSE_NS, WSConstants.WSSE_PREFIX
+          // //                       dereferencedToken, WSConstants.WSSE_NS,
+          // WSConstants.WSSE_PREFIX
           // //                       );
           // // XMLUtils.setNamespace(
           // //                       dereferencedToken, WSConstants.WSU_NS, WSConstants.WSU_PREFIX
@@ -192,10 +173,11 @@ public class STRTransform extends TransformService {
       //
 
       XMLSignatureFactory fac = XMLSignatureFactory.getInstance("DOM");
-      CanonicalizationMethod canonicalizationMethod = fac.newCanonicalizationMethod(canonAlgo, // CanonicalizationMethod.INCLUSIVE,
-                                                                                    (C14NMethodParameterSpec)null);
+      CanonicalizationMethod canonicalizationMethod =
+          fac.newCanonicalizationMethod(canonAlgo, (C14NMethodParameterSpec) null);
       Data tokenData = new NodeSetDataImpl(dereferencedToken, NodeSetDataImpl.getRootNodeFilter());
-      OctetStreamData transformedData = (OctetStreamData) canonicalizationMethod.transform(tokenData, null);
+      OctetStreamData transformedData =
+          (OctetStreamData) canonicalizationMethod.transform(tokenData, null);
 
       if (os != null) {
         // copy to the output stream
@@ -215,7 +197,6 @@ public class STRTransform extends TransformService {
     }
   }
 
-
   public final boolean isFeatureSupported(String feature) {
     if (feature == null) {
       throw new NullPointerException();
@@ -227,7 +208,7 @@ public class STRTransform extends TransformService {
   private static void appendChild(Node parent, Node child) {
     Document ownerDoc = null;
     if (parent.getNodeType() == Node.DOCUMENT_NODE) {
-      ownerDoc = (Document)parent;
+      ownerDoc = (Document) parent;
     } else {
       ownerDoc = parent.getOwnerDocument();
     }
@@ -237,5 +218,4 @@ public class STRTransform extends TransformService {
       parent.appendChild(child);
     }
   }
-
 }
