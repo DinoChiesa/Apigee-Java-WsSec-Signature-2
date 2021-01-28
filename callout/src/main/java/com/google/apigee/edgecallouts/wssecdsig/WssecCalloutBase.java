@@ -17,13 +17,19 @@ package com.google.apigee.edgecallouts.wssecdsig;
 
 import com.apigee.flow.message.MessageContext;
 import com.google.apigee.util.XmlUtils;
+import com.google.apigee.xml.Constants;
 import java.io.ByteArrayInputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
+import java.security.AccessController;
 import java.security.KeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivilegedAction;
+import java.security.Provider;
+import java.security.Security;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateFactory;
@@ -41,15 +47,47 @@ import javax.xml.crypto.dsig.DigestMethod;
 import org.w3c.dom.Document;
 
 public abstract class WssecCalloutBase {
+  static {
+    try {
+      initSTRTransform();
+    }
+    catch (Exception e) {
+      throw new ExceptionInInitializerError(e);
+    }
+  }
+
+  // private static ClassLoader getTCL() throws IllegalAccessException, InvocationTargetException {
+  //       return AccessController.doPrivileged(new PrivilegedAction<ClassLoader>() {
+  //           public ClassLoader run() {
+  //               return Thread.currentThread().getContextClassLoader();
+  //           }
+  //       });
+  //   }
+
+  private static void initSTRTransform() throws Exception {
+
+    // String className = "com.google.apigee.xml.STRTransformProvider";
+    // Class<? extends Provider> clazz = getTCL().loadClass(className).asSubclass(Provider.class);
+    // Provider provider = clazz.newInstance();
+
+    Provider provider = new com.google.apigee.xml.STRTransformProvider();
+    //int ret = Security.addProvider(provider);
+    int ret = Security.insertProviderAt(provider, 2);
+
+    // System.out.printf("Security Providers: \n");
+    // Provider[] provs = Security.getProviders();
+    // for (int i = 0; i < provs.length; i++) {
+    //   System.out.printf("%d: %s (%s)\n", i, provs[i].getName(), provs[i].getVersion());
+    // }
+  }
+
+
   private static final String _varprefix = "wssec_";
   private Map properties; // read-only
   private static final Pattern variableReferencePattern =
       Pattern.compile("(.*?)\\{([^\\{\\} ]+?)\\}(.*?)");
 
   private static final Pattern commonErrorPattern = Pattern.compile("^(.+?)[:;] (.+)$");
-
-  protected static final String SIGNING_METHOD_RSA_SHA256 = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256";
-  protected static final String SIGNING_METHOD_RSA_SHA1 = "http://www.w3.org/2000/09/xmldsig#rsa-sha1";
 
   public WssecCalloutBase(Map properties) {
     this.properties = properties;
@@ -183,10 +221,10 @@ public abstract class WssecCalloutBase {
       throw new IllegalStateException("signing method is null");
 
     if (shortName.toLowerCase().equals("rsa-sha256"))
-      return SIGNING_METHOD_RSA_SHA256;
+      return Constants.SIGNING_METHOD_RSA_SHA256;
 
     if (shortName.toLowerCase().equals("rsa-sha1"))
-      return SIGNING_METHOD_RSA_SHA1;
+      return Constants.SIGNING_METHOD_RSA_SHA1;
 
     return shortName; // unrecognized, but let's go with it.
   }
@@ -196,8 +234,8 @@ public abstract class WssecCalloutBase {
     if (signingMethod == null) return null; // SIGNING_METHOD_RSA_SHA1; // default
     signingMethod = signingMethodToUri(signingMethod.trim());
     // warn on unrecognized values
-    if (!signingMethod.equals(SIGNING_METHOD_RSA_SHA1)
-        && !signingMethod.equals(SIGNING_METHOD_RSA_SHA256)) {
+    if (!signingMethod.equals(Constants.SIGNING_METHOD_RSA_SHA1)
+        && !signingMethod.equals(Constants.SIGNING_METHOD_RSA_SHA256)) {
       msgCtxt.setVariable(varName("WARNING"),
                           String.format("unrecognized value for signing-method: %s", signingMethod));
     }

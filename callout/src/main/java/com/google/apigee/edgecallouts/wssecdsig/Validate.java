@@ -1,4 +1,4 @@
-// Copyright 2018-2019 Google LLC
+// Copyright 2018-2020 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.apigee.flow.execution.ExecutionResult;
 import com.apigee.flow.execution.spi.Execution;
 import com.apigee.flow.message.MessageContext;
 import com.google.apigee.util.TimeResolver;
+import com.google.apigee.util.XmlUtils;
 import com.google.apigee.xml.Namespaces;
 import java.security.KeyException;
 import java.security.NoSuchAlgorithmException;
@@ -128,11 +129,11 @@ public class Validate extends WssecCalloutBase implements Execution {
     // SerialNumber asserted in the document, matches that in the certificate
     // provided explicitly to Validate.
     //
-    // There is a 5th case,
+    // There is a 5th case, not handled by this callout.
     // 5. KeyValue with RSAKeyValue and Modulus + Exponent
     //
     // In case 5, the document provides a public key, not a certificate.
-    // This callout code does not handle verification for a signed document with
+    // THIS callout code does not handle verification for a signed document with
     // that kind of signature.
     //
 
@@ -336,9 +337,7 @@ public class Validate extends WssecCalloutBase implements Execution {
       for (int i = 0; i < nl.getLength(); i++) {
         Element reference = (Element) nl.item(i);
         String uri = reference.getAttribute("URI");
-        if (uri != null && uri.startsWith("#")) {
-          uri = uri.substring(1);
-          Element referent = doc.getElementById(uri);
+        Element referent = XmlUtils.getReferencedElement(doc, uri);
           if (referent != null) {
             String tagName = referent.getLocalName();
             String ns = referent.getNamespaceURI();
@@ -350,7 +349,6 @@ public class Validate extends WssecCalloutBase implements Execution {
                 foundTags.add("body");
               }
             }
-          }
         }
       }
     }
@@ -403,6 +401,8 @@ public class Validate extends WssecCalloutBase implements Execution {
     boolean isValid = true;
     List<X509Certificate> certs = new ArrayList<X509Certificate>();
     XMLSignatureFactory signatureFactory = XMLSignatureFactory.getInstance("DOM");
+    //System.out.printf("** Security Provider: %s\n", signatureFactory.getProvider().getName());
+
     List<String> signedElements = new ArrayList<String>();
     for (int i = 0; i < signatures.getLength(); i++) {
       if (isValid) {
@@ -428,16 +428,19 @@ public class Validate extends WssecCalloutBase implements Execution {
     }
 
     // check for presence of signed elements
-    if (isValid && validationConfig.requiredSignedElements.contains("timestamp")) {
-      if (!signedElements.contains("timestamp")) {
-        isValid = false;
-        msgCtxt.setVariable(varName("error"), "did not find signature for wsu:Timestamp");
+    if (isValid) {
+      List<String> errors = new ArrayList<String>();
+      if (validationConfig.requiredSignedElements.contains("timestamp") &&
+          !signedElements.contains("timestamp")) {
+        errors.add("did not find signature for wsu:Timestamp");
       }
-    }
-    if (isValid && validationConfig.requiredSignedElements.contains("body")) {
-      if (!signedElements.contains("body")) {
+      if (validationConfig.requiredSignedElements.contains("body") &&
+          !signedElements.contains("body")) {
+        errors.add("did not find signature for soap:Body");
+      }
+      if (errors.size() > 0) {
         isValid = false;
-        msgCtxt.setVariable(varName("error"), "did not find signature for soap:Body");
+        msgCtxt.setVariable(varName("error"), String. join(";", errors));
       }
     }
 

@@ -1,4 +1,4 @@
-// Copyright 2017 Google LLC
+// Copyright 2017-2020 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@ package com.google.apigee.util;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringWriter;
 import java.io.StringReader;
+import java.io.StringWriter;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -28,10 +28,13 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-import org.xml.sax.EntityResolver;
-import org.w3c.dom.Document;
 
 public class XmlUtils {
 
@@ -85,4 +88,32 @@ public class XmlUtils {
         transformer.transform(domSource, result);
         return writer.toString();
     }
+
+  public static Element getDirectChildElement(Element parent, String localName, String namespace) {
+    if (parent == null) {
+      return null;
+    }
+    for (Node currentChild = parent.getFirstChild();
+         currentChild != null;
+         currentChild = currentChild.getNextSibling()
+         ) {
+      if (Node.ELEMENT_NODE == currentChild.getNodeType()
+          && localName.equals(currentChild.getLocalName())
+          && namespace.equals(currentChild.getNamespaceURI())) {
+        return (Element) currentChild;
+      }
+    }
+    return null;
+  }
+
+  public static Element getReferencedElement(Document doc, String refUri) {
+    if (refUri != null && refUri.startsWith("#")) {
+      refUri = refUri.substring(1);
+      Element referent = doc.getElementById(refUri);
+      return referent;
+    }
+    return null;
+
+  }
+
 }

@@ -1,4 +1,4 @@
-// Copyright 2018-2019 Google LLC
+// Copyright 2018-2020 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.apigee.flow.execution.spi.Execution;
 import com.apigee.flow.message.MessageContext;
 import com.google.apigee.util.TimeResolver;
 import com.google.apigee.xml.Namespaces;
+import com.google.apigee.xml.Constants;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringReader;
@@ -259,12 +260,8 @@ public class Sign extends WssecCalloutBase implements Execution {
       bstId = "SecurityToken-" + java.util.UUID.randomUUID().toString();
       bst.setAttributeNS(Namespaces.WSU, wsuPrefix + ":Id", bstId);
       bst.setIdAttributeNS(Namespaces.WSU, "Id", true);
-      bst.setAttribute(
-          "EncodingType",
-          "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary");
-      bst.setAttribute(
-          "ValueType",
-          "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3");
+      bst.setAttribute("EncodingType",Constants.BASE64_BINARY);
+      bst.setAttribute( "ValueType", Constants.X509_V3_TYPE);
       bst.setTextContent(
           Base64.getEncoder().encodeToString(signConfiguration.certificate.getEncoded()));
       wssecHeader.appendChild(bst);
@@ -296,7 +293,7 @@ public class Sign extends WssecCalloutBase implements Execution {
     }
 
     // 7. add <SignatureMethod Algorithm="..."?>
-    String signingMethodUri = (signConfiguration.signingMethod != null) ? signConfiguration.signingMethod : SIGNING_METHOD_RSA_SHA1;
+    String signingMethodUri = (signConfiguration.signingMethod != null) ? signConfiguration.signingMethod : Constants.SIGNING_METHOD_RSA_SHA1;
     SignatureMethod signatureMethod = signatureFactory.newSignatureMethod(signingMethodUri, null);
 
     CanonicalizationMethod canonicalizationMethod =
@@ -323,9 +320,7 @@ public class Sign extends WssecCalloutBase implements Execution {
           doc.createElementNS(Namespaces.WSSEC, wssePrefix + ":SecurityTokenReference");
       Element reference = doc.createElementNS(Namespaces.WSSEC, wssePrefix + ":Reference");
       reference.setAttribute("URI", "#" + bstId);
-      reference.setAttribute(
-          "ValueType",
-          "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3");
+      reference.setAttribute("ValueType", Constants.X509_V3_TYPE);
       secTokenRef.appendChild(reference);
       javax.xml.crypto.XMLStructure structure = new javax.xml.crypto.dom.DOMStructure(secTokenRef);
       keyInfo = kif.newKeyInfo(java.util.Collections.singletonList(structure));
@@ -339,9 +334,8 @@ public class Sign extends WssecCalloutBase implements Execution {
       Element secTokenRef =
           doc.createElementNS(Namespaces.WSSEC, wssePrefix + ":SecurityTokenReference");
       Element keyId = doc.createElementNS(Namespaces.WSSEC, wssePrefix + ":KeyIdentifier");
-      keyId.setAttribute(
-          "ValueType",
-          "http://docs.oasis-open.org/wss/oasis-wss-soap-message-security1.1#ThumbprintSHA1");
+      keyId.setAttribute("ValueType", Constants.THUMBPRINT_SHA1);
+
       keyId.setTextContent(getThumbprintBase64(signConfiguration.certificate));
       secTokenRef.appendChild(keyId);
       javax.xml.crypto.XMLStructure structure = new javax.xml.crypto.dom.DOMStructure(secTokenRef);
