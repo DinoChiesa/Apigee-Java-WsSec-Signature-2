@@ -326,7 +326,7 @@ public class Validate extends WssecCalloutBase implements Execution {
     };
 
     // mark the Ids signed elements have an Id
-    maybeMarkIdAttribute(doc.getElementsByTagNameNS(soapNs, "Body"));
+    maybeMarkIdAttribute.accept(doc.getElementsByTagNameNS(soapNs, "Body"));
 
     NodeList nl = doc.getElementsByTagNameNS(soapNs, "Header");
     if (nl.getLength() == 1) {
@@ -334,8 +334,8 @@ public class Validate extends WssecCalloutBase implements Execution {
       nl = header.getElementsByTagNameNS(Namespaces.WSSEC, "Security");
       if (nl.getLength() == 1) {
         Element security = (Element) nl.item(0);
-        maybeMarkIdAttribute(security.getElementsByTagNameNS(Namespaces.WSU, "Timestamp"));
-        maybeMarkIdAttribute(security.getElementsByTagNameNS(Namespaces.WSSEC, "SecurityTokenReference"));
+        maybeMarkIdAttribute.accept(security.getElementsByTagNameNS(Namespaces.WSU, "Timestamp"));
+        maybeMarkIdAttribute.accept(security.getElementsByTagNameNS(Namespaces.WSSEC, "SecurityTokenReference"));
       }
     }
   }
