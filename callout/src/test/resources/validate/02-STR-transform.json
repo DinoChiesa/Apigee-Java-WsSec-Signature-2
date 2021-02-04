@@ -1,0 +1,15 @@
+{
+  "description" : "STR-Transform from community",
+  "input" : "02-STR-transform.xml",
+  "context" : {
+  },
+  "properties" : {
+    "debug" : "true",
+    "ignore-expiry" : "true"
+  },
+  "expected" : {
+    "success" : "true",
+    "isValid" : "true",
+    "error" : "unknown error"
+  }
+}

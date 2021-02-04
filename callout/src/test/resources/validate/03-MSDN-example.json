@@ -1,0 +1,15 @@
+{
+  "description" : "MSDN STR-Transform https://social.msdn.microsoft.com/Forums/vstudio/en-US/96137766-a7db-46b3-b6bb-b4f6534e3a30/wcf-and-wssecurity-asymmetric-binding-policy?forum=wcf",
+  "input" : "03-MSDN-example.xml",
+  "context" : {
+  },
+  "properties" : {
+    "debug" : "true",
+    "ignore-expiry" : "true"
+  },
+  "expected" : {
+    "success" : "true",
+    "isValid" : "true",
+    "error" : "unknown error"
+  }
+}

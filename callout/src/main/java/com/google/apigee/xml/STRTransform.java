@@ -36,8 +36,12 @@ import javax.xml.crypto.dsig.spec.TransformParameterSpec;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class STRTransform extends TransformService {
+
+  private static final Logger logger = LoggerFactory.getLogger(STRTransform.class);
 
   public static final String TRANSFORM_URI =
       "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#STR-Transform";
@@ -58,6 +62,7 @@ public class STRTransform extends TransformService {
 
   public void init(XMLStructure parent, XMLCryptoContext context)
       throws InvalidAlgorithmParameterException {
+    logger.debug("init()");
     if (context != null && !(context instanceof DOMCryptoContext)) {
       throw new ClassCastException("context must be of type DOMCryptoContext");
     }
@@ -65,9 +70,11 @@ public class STRTransform extends TransformService {
       throw new ClassCastException("parent must be of type DOMStructure");
     }
     transformElement = (Element) ((javax.xml.crypto.dom.DOMStructure) parent).getNode();
+    logger.debug("init() element: {}", XmlUtils.asString(transformElement));
   }
 
   public void marshalParams(XMLStructure parent, XMLCryptoContext context) throws MarshalException {
+    logger.debug("marshalParams()");
     if (context != null && !(context instanceof DOMCryptoContext)) {
       throw new ClassCastException("context must be of type DOMCryptoContext");
     }
@@ -80,6 +87,7 @@ public class STRTransform extends TransformService {
   }
 
   public Data transform(Data data, XMLCryptoContext xc) throws TransformException {
+    logger.debug("transform()");
     if (data == null) {
       throw new NullPointerException("data must not be null");
     }
@@ -87,6 +95,7 @@ public class STRTransform extends TransformService {
   }
 
   public Data transform(Data data, XMLCryptoContext xc, OutputStream os) throws TransformException {
+    logger.debug("transform()");
     if (data == null) {
       throw new NullPointerException("data must not be null");
     }
@@ -98,7 +107,7 @@ public class STRTransform extends TransformService {
 
   private Data transformIt(Data data, XMLCryptoContext xc, OutputStream os)
       throws TransformException {
-
+    logger.debug("transformIt()");
     String canonAlgo = null;
     Element transformParams =
         XmlUtils.getDirectChildElement(
@@ -175,11 +184,14 @@ public class STRTransform extends TransformService {
       XMLSignatureFactory fac = XMLSignatureFactory.getInstance("DOM");
       CanonicalizationMethod canonicalizationMethod =
           fac.newCanonicalizationMethod(canonAlgo, (C14NMethodParameterSpec) null);
+
       Data tokenData = new NodeSetDataImpl(dereferencedToken, NodeSetDataImpl.getRootNodeFilter());
       OctetStreamData transformedData =
           (OctetStreamData) canonicalizationMethod.transform(tokenData, null);
 
       if (os != null) {
+        logger.debug("transformIt() outputStream is non-null");
+
         // copy to the output stream
         byte[] buf = new byte[1024];
         InputStream source = transformedData.getOctetStream();
@@ -190,6 +202,7 @@ public class STRTransform extends TransformService {
         return null;
       }
 
+      logger.debug("transformIt() outputStream is null");
       return transformedData;
 
     } catch (Exception ex) {

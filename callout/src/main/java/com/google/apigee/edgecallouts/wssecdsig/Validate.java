@@ -21,6 +21,7 @@ import com.apigee.flow.execution.spi.Execution;
 import com.apigee.flow.message.MessageContext;
 import com.google.apigee.util.TimeResolver;
 import com.google.apigee.util.XmlUtils;
+import com.google.apigee.xml.Constants;
 import com.google.apigee.xml.Namespaces;
 import java.security.KeyException;
 import java.security.NoSuchAlgorithmException;
@@ -38,6 +39,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.naming.InvalidNameException;
 import javax.security.auth.x500.X500Principal;
@@ -47,11 +49,16 @@ import javax.xml.crypto.dsig.XMLSignature;
 import javax.xml.crypto.dsig.XMLSignatureException;
 import javax.xml.crypto.dsig.XMLSignatureFactory;
 import javax.xml.crypto.dsig.dom.DOMValidateContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
 public class Validate extends WssecCalloutBase implements Execution {
+
+  private static final Logger logger = LoggerFactory.getLogger(Validate.class);
+
   private static final int PEM_LINE_LENGTH = 64;
 
   public Validate(Map properties) {
@@ -147,6 +154,7 @@ public class Validate extends WssecCalloutBase implements Execution {
         throw new RuntimeException("No X509Certificate child element of KeyInfo/X509Data");
 
       // case 4: X509Data with raw data
+      logger.debug("getCertificate() case 4: X509Data with raw data");
       Element x509Cert = (Element) (nl.item(0));
       String base64String = x509Cert.getTextContent();
       Certificate cert = certificateFromPEM(toCertPEM(base64String));
@@ -164,6 +172,8 @@ public class Validate extends WssecCalloutBase implements Execution {
               "No suitable child element beneath: KeyInfo/SecurityTokenReference");
 
         // case 3: SecurityTokenReference with IssuerName and SerialNumber
+        logger.debug("getCertificate() case 3: IssuerName and SerialNumber");
+
         Element x509Data = (Element) (nl.item(0));
         nl = x509Data.getElementsByTagNameNS(XMLSignature.XMLNS, "X509IssuerSerial");
         if (nl.getLength() == 0)
@@ -210,13 +220,13 @@ public class Validate extends WssecCalloutBase implements Execution {
       }
 
       // case 2: KeyIdentifier with thumbprint
+        logger.debug("getCertificate() case 2: KeyIdentifier with thumbprint");
       Element ki = (Element) nl.item(0);
       String valueType = ki.getAttribute("ValueType");
-      if (valueType == null
-          || !valueType.equals(
-              "http://docs.oasis-open.org/wss/oasis-wss-soap-message-security1.1#ThumbprintSHA1"))
+      if (valueType == null || !valueType.equals(Constants.THUMBPRINT_SHA1)) {
         throw new RuntimeException(
             "KeyInfo/SecurityTokenReference/KeyIdentifier unsupported ValueType");
+      }
 
       String assertedThumbprintSha1Base64 = ki.getTextContent();
       if (assertedThumbprintSha1Base64 == null)
@@ -232,6 +242,7 @@ public class Validate extends WssecCalloutBase implements Execution {
     }
 
     // case 1: SecurityTokenReference pointing to a BinarySecurityToken
+    logger.debug("getCertificate() case 1: SecurityTokenReference pointing to a BinarySecurityToken");
     Element reference = (Element) nl.item(0);
     String strUri = reference.getAttribute("URI");
     if (strUri == null || !strUri.startsWith("#")) {
@@ -252,17 +263,18 @@ public class Validate extends WssecCalloutBase implements Execution {
       throw new RuntimeException("Unsupported SecurityTokenReference type");
     }
     String encodingType = bst.getAttribute("EncodingType");
-    if (encodingType == null
-        || !encodingType.equals(
-            "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary")) {
-      throw new RuntimeException("Unsupported SecurityTokenReference EncodingType");
-    }
+    if (encodingType == null)
+      throw new RuntimeException("Unsupported SecurityTokenReference EncodingType (null)");
+    if (!encodingType.equals(Constants.BASE64_BINARY))
+      throw new RuntimeException(String.format("Unsupported SecurityTokenReference EncodingType (%s)", encodingType));
+
     String valueType = bst.getAttribute("ValueType");
-    if (valueType == null
-        || !valueType.equals(
-            "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3")) {
+    if (valueType == null)
       throw new RuntimeException("Unsupported SecurityTokenReference ValueType");
-    }
+    if (!valueType.equals(Constants.X509_V3_TYPE))
+      throw new RuntimeException(String.format("Unsupported SecurityTokenReference ValueType (%s)", valueType));
+
+    // check encoding type here?
     String base64String = bst.getTextContent();
     Certificate cert = certificateFromPEM(toCertPEM(base64String));
     return new SourcedCert((X509Certificate) cert, CertificateSource.DOCUMENT);
@@ -302,25 +314,28 @@ public class Validate extends WssecCalloutBase implements Execution {
     }
   }
 
-  private static void markIdAttributes(Document doc, String soapNs) {
-    NodeList nl = doc.getElementsByTagNameNS(soapNs, "Body");
-    if (nl.getLength() == 1) {
-      Element element = (Element) nl.item(0);
-      element.setIdAttributeNS(Namespaces.WSU, "Id", true);
-    }
+  private static void markIdAttributes(final Document doc, String soapNs) {
 
-    nl = doc.getElementsByTagNameNS(soapNs, "Header");
+    Consumer<NodeList> maybeMarkIdAttribute = (nl) -> {
+      if (nl.getLength() == 1) {
+        Element element = (Element) nl.item(0);
+        if (element.hasAttributeNS(Namespaces.WSU, "Id")) {
+          element.setIdAttributeNS(Namespaces.WSU, "Id", true);
+        }
+      }
+    };
+
+    // mark the Ids signed elements have an Id
+    maybeMarkIdAttribute(doc.getElementsByTagNameNS(soapNs, "Body"));
+
+    NodeList nl = doc.getElementsByTagNameNS(soapNs, "Header");
     if (nl.getLength() == 1) {
       Element header = (Element) nl.item(0);
       nl = header.getElementsByTagNameNS(Namespaces.WSSEC, "Security");
       if (nl.getLength() == 1) {
         Element security = (Element) nl.item(0);
-        nl = security.getElementsByTagNameNS(Namespaces.WSU, "Timestamp");
-
-        if (nl.getLength() == 1) {
-          Element element = (Element) nl.item(0);
-          element.setIdAttributeNS(Namespaces.WSU, "Id", true);
-        }
+        maybeMarkIdAttribute(security.getElementsByTagNameNS(Namespaces.WSU, "Timestamp"));
+        maybeMarkIdAttribute(security.getElementsByTagNameNS(Namespaces.WSSEC, "SecurityTokenReference"));
       }
     }
   }
@@ -355,6 +370,7 @@ public class Validate extends WssecCalloutBase implements Execution {
   }
 
   private static void checkAlgorithms(Element signature, ValidateConfiguration validationConfig, MessageContext msgCtxt) {
+    logger.debug("checkAlgorithms()");
     NodeList nl = signature.getElementsByTagNameNS(XMLSignature.XMLNS, "SignedInfo");
     if (nl.getLength() == 0) throw new RuntimeException("No element: SignedInfo");
 
@@ -401,12 +417,13 @@ public class Validate extends WssecCalloutBase implements Execution {
     boolean isValid = true;
     List<X509Certificate> certs = new ArrayList<X509Certificate>();
     XMLSignatureFactory signatureFactory = XMLSignatureFactory.getInstance("DOM");
-    //System.out.printf("** Security Provider: %s\n", signatureFactory.getProvider().getName());
+    logger.debug("Security Provider: {}", signatureFactory.getProvider().getName());
 
     List<String> signedElements = new ArrayList<String>();
     for (int i = 0; i < signatures.getLength(); i++) {
       if (isValid) {
         Element signatureElement = (Element) signatures.item(i);
+        logger.debug("validate_RSA() signature {}", XmlUtils.asString(signatureElement));
         checkCompulsoryElements(doc, validationConfig.soapNs, signatureElement, signedElements);
         checkAlgorithms(signatureElement, validationConfig, msgCtxt);
         NodeList keyinfoList =
@@ -417,10 +434,12 @@ public class Validate extends WssecCalloutBase implements Execution {
         SourcedCert sourcedCert =
             getCertificate((Element) keyinfoList.item(0), doc, validationConfig.soapNs, msgCtxt);
         sourcedCert.certificate.checkValidity();
+        logger.debug("validate_RSA() cert is valid");
         KeySelector ks = KeySelector.singletonKeySelector(sourcedCert.certificate.getPublicKey());
         DOMValidateContext vc = new DOMValidateContext(ks, signatureElement);
         XMLSignature signature = signatureFactory.unmarshalXMLSignature(vc);
         isValid = signature.validate(vc);
+        logger.debug("validate_RSA() valid? {}", isValid);
         if (sourcedCert.source == CertificateSource.DOCUMENT) {
           certs.add(sourcedCert.certificate);
         }

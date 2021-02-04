@@ -1,0 +1,15 @@
+{
+  "description" : "SAP STR-Transform https://wiki.scn.sap.com/wiki/display/Security/Single+Sign+on+using+SAML+Sender+Vouches+example",
+  "input" : "01-STR-transform.xml",
+  "context" : {
+  },
+  "properties" : {
+    "debug" : "true",
+    "ignore-expiry" : "true"
+  },
+  "expected" : {
+    "success" : "true",
+    "isValid" : "true",
+    "error" : "unknown error"
+  }
+}

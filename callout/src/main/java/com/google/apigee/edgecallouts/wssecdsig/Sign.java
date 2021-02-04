@@ -20,8 +20,8 @@ import com.apigee.flow.execution.ExecutionResult;
 import com.apigee.flow.execution.spi.Execution;
 import com.apigee.flow.message.MessageContext;
 import com.google.apigee.util.TimeResolver;
-import com.google.apigee.xml.Namespaces;
 import com.google.apigee.xml.Constants;
+import com.google.apigee.xml.Namespaces;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringReader;
@@ -47,7 +47,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import javax.naming.InvalidNameException;
-import javax.security.auth.x500.X500Principal;
 import javax.xml.crypto.MarshalException;
 import javax.xml.crypto.dsig.CanonicalizationMethod;
 import javax.xml.crypto.dsig.DigestMethod;
@@ -91,48 +90,6 @@ public class Sign extends WssecCalloutBase implements Execution {
     super(properties);
   }
 
-  // public static String toPrettyString(Document document, int indent) {
-  //   try {
-  //     // Remove whitespaces outside tags
-  //     document.normalize();
-  //     XPath xPath = XPathFactory.newInstance().newXPath();
-  //     NodeList nodeList =
-  //         (NodeList)
-  //             xPath.evaluate("//text()[normalize-space()='']", document, XPathConstants.NODESET);
-  //
-  //     for (int i = 0; i < nodeList.getLength(); ++i) {
-  //       Node node = nodeList.item(i);
-  //       node.getParentNode().removeChild(node);
-  //     }
-  //
-  //     // Setup pretty print options
-  //     TransformerFactory transformerFactory = TransformerFactory.newInstance();
-  //     transformerFactory.setAttribute("indent-number", indent);
-  //     Transformer transformer = transformerFactory.newTransformer();
-  //     transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-  //     transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-  //     transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-  //
-  //     // Return pretty print xml string
-  //     StringWriter stringWriter = new StringWriter();
-  //     transformer.transform(new DOMSource(document), new StreamResult(stringWriter));
-  //     return stringWriter.toString();
-  //   } catch (Exception e) {
-  //     throw new RuntimeException(e);
-  //   }
-  // }
-
-  // public static Element getFirstChildElement(Element element) {
-  //   for (Node currentChild = element.getFirstChild();
-  //        currentChild != null;
-  //        currentChild = currentChild.getNextSibling()) {
-  //     if (currentChild instanceof Element) {
-  //       return (Element) currentChild;
-  //     }
-  //   }
-  //   return null;
-  // }
-
   private int nsCounter = 1;
 
   private String declareXmlnsPrefix(
@@ -169,8 +126,8 @@ public class Sign extends WssecCalloutBase implements Execution {
           CertificateEncodingException, InvalidNameException {
     XMLSignatureFactory signatureFactory = XMLSignatureFactory.getInstance("DOM");
 
-    String soapns = (signConfiguration.soapVersion.equals("soap1.2")) ?
-      Namespaces.SOAP1_2 : Namespaces.SOAP1_1;
+    String soapns =
+        (signConfiguration.soapVersion.equals("soap1.2")) ? Namespaces.SOAP1_2 : Namespaces.SOAP1_1;
 
     NodeList nodes = doc.getElementsByTagNameNS(soapns, "Envelope");
     if (nodes.getLength() != 1) {
@@ -260,14 +217,17 @@ public class Sign extends WssecCalloutBase implements Execution {
       bstId = "SecurityToken-" + java.util.UUID.randomUUID().toString();
       bst.setAttributeNS(Namespaces.WSU, wsuPrefix + ":Id", bstId);
       bst.setIdAttributeNS(Namespaces.WSU, "Id", true);
-      bst.setAttribute("EncodingType",Constants.BASE64_BINARY);
-      bst.setAttribute( "ValueType", Constants.X509_V3_TYPE);
+      bst.setAttribute("EncodingType", Constants.BASE64_BINARY);
+      bst.setAttribute("ValueType", Constants.X509_V3_TYPE);
       bst.setTextContent(
           Base64.getEncoder().encodeToString(signConfiguration.certificate.getEncoded()));
       wssecHeader.appendChild(bst);
     }
 
-    String digestMethodUri = (signConfiguration.digestMethod != null) ? signConfiguration.digestMethod : DigestMethod.SHA1;
+    String digestMethodUri =
+        (signConfiguration.digestMethod != null)
+            ? signConfiguration.digestMethod
+            : DigestMethod.SHA1;
     DigestMethod digestMethod = signatureFactory.newDigestMethod(digestMethodUri, null);
 
     Transform transform =
@@ -293,7 +253,10 @@ public class Sign extends WssecCalloutBase implements Execution {
     }
 
     // 7. add <SignatureMethod Algorithm="..."?>
-    String signingMethodUri = (signConfiguration.signingMethod != null) ? signConfiguration.signingMethod : Constants.SIGNING_METHOD_RSA_SHA1;
+    String signingMethodUri =
+        (signConfiguration.signingMethod != null)
+            ? signConfiguration.signingMethod
+            : Constants.SIGNING_METHOD_RSA_SHA1;
     SignatureMethod signatureMethod = signatureFactory.newSignatureMethod(signingMethodUri, null);
 
     CanonicalizationMethod canonicalizationMethod =
@@ -312,7 +275,8 @@ public class Sign extends WssecCalloutBase implements Execution {
       // <KeyInfo>
       //   <wssec:SecurityTokenReference>
       //     <wssec:Reference URI="#SecurityToken-e828bfab-bb52-4429"
-      //          ValueType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3"/>
+      //
+      // ValueType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3"/>
       //   </wssec:SecurityTokenReference>
       // </KeyInfo>
 
@@ -328,7 +292,8 @@ public class Sign extends WssecCalloutBase implements Execution {
       // <KeyInfo>
       //   <wsse:SecurityTokenReference>
       //     <wsse:KeyIdentifier
-      //       ValueType="http://docs.oasis-open.org/wss/oasis-wss-soap-message-security1.1#ThumbprintSHA1">9JscCwWHk5IvR/6JLTSayTY7M=</wsse:KeyIdentifier>
+      //
+      // ValueType="http://docs.oasis-open.org/wss/oasis-wss-soap-message-security1.1#ThumbprintSHA1">9JscCwWHk5IvR/6JLTSayTY7M=</wsse:KeyIdentifier>
       //   </wsse:SecurityTokenReference>
       // </KeyInfo>
       Element secTokenRef =
@@ -343,7 +308,8 @@ public class Sign extends WssecCalloutBase implements Execution {
     } else if (signConfiguration.keyIdentifierType == KeyIdentifierType.X509_CERT_DIRECT) {
       // <KeyInfo>
       //   <X509Data>
-      //     <X509Certificate>MIICAjCCAWugAwIBAgIQwZyW5YOCXZxHg1MBV2CpvDANBgkhkiG9w0BAQnEdD9tI7IYAAoK4O+35EOzcXbvc4Kzz7BQnulQ=</X509Certificate>
+      //
+      // <X509Certificate>MIICAjCCAWugAwIBAgIQwZyW5YOCXZxHg1MBV2CpvDANBgkhkiG9w0BAQnEdD9tI7IYAAoK4O+35EOzcXbvc4Kzz7BQnulQ=</X509Certificate>
       //   </X509Data>
       // </KeyInfo>
       Element x509Data = doc.createElementNS(Namespaces.XMLDSIG, "X509Data");
@@ -412,7 +378,6 @@ public class Sign extends WssecCalloutBase implements Execution {
       keyInfo = kif.newKeyInfo(java.util.Collections.singletonList(structure));
       // keyInfo = keyInfoFactory.newKeyInfo(Collections.singletonList(x509Data));
     }
-
 
     XMLSignature signature = signatureFactory.newXMLSignature(signedInfo, keyInfo);
     signature.sign(signingContext);
@@ -542,10 +507,10 @@ public class Sign extends WssecCalloutBase implements Execution {
     ISSUER_SERIAL;
 
     static KeyIdentifierType fromString(String s) {
-       for (KeyIdentifierType t : KeyIdentifierType.values()) {
-         if (t.name().equals(s)) return t;
-       }
-       return KeyIdentifierType.NOT_SPECIFIED;
+      for (KeyIdentifierType t : KeyIdentifierType.values()) {
+        if (t.name().equals(s)) return t;
+      }
+      return KeyIdentifierType.NOT_SPECIFIED;
     }
   }
 

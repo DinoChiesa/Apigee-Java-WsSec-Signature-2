@@ -1,8 +1,6 @@
-package com.google.apigee.edgecallouts.test;
+package com.google.apigee.edgecallouts.wssecdsig;
 
 import com.apigee.flow.execution.ExecutionResult;
-import com.google.apigee.edgecallouts.wssecdsig.Sign;
-import com.google.apigee.edgecallouts.wssecdsig.Validate;
 import java.util.HashMap;
 import java.util.Map;
 import org.testng.Assert;
@@ -75,57 +73,6 @@ public class TestWssecValidateCallout extends CalloutTestBase {
           + "    </ns1:sumResponse>\n"
           + "  </soapenv:Body>\n"
           + "</soapenv:Envelope>\n";
-
-  private static final String signedSoapWithSTRTransform =
-      "<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\">\n"
-          + "  <SOAP-ENV:Header>\n"
-          + "    <wsse:Security xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\" xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\" SOAP-ENV:mustUnderstand=\"1\">\n"
-          + "      <wsse:BinarySecurityToken EncodingType=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary\" ValueType=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3\" wsu:Id=\"X509-ABCD\">MIIDpDCCAowCCQDsXkZg2rbAwTANBgkqhkiG9w0BAQUFADCBkzELMAkGA1UEBhMCVVMxEzARBgNVBAgMCldhc2hpbmd0b24xETAPBgNVBAcMCEtpcmtsYW5kMQ8wDQYDVQQKDAZHb29nbGUxDzANBgNVBAsMBkFwaWdlZTEaMBgGA1UEAwwRYXBpZ2VlLmdvb2dsZS5jb20xHjAcBgkqhkiG9w0BCQEWD2Rpbm9AYXBpZ2VlLmNvbTAeFw0xOTEwMDgxMTExMjBaFw0yOTEwMDUxMTExMjBaMIGTMQswCQYDVQQGEwJVUzETMBEGA1UECAwKV2FzaGluZ3RvbjERMA8GA1UEBwwIS2lya2xhbmQxDzANBgNVBAoMBkdvb2dsZTEPMA0GA1UECwwGQXBpZ2VlMRowGAYDVQQDDBFhcGlnZWUuZ29vZ2xlLmNvbTEeMBwGCSqGSIb3DQEJARYPZGlub0BhcGlnZWUuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqJA2NwXeqXaVaHO0mkKDpTdhPCh/80gH2Oun4DJOYjYgvdMRJ83xB6Hwm809T593rkX9PwOjUDQ7kJvH0aLaqxb+FrrTDTFcXZXJZ65dca9lYARxgEAwasPIkvBdr0nP2W2VQgPKtkwStZinMiJh/JSlXCz7ULDGVqW8FyklGaVIkxrXhHsjH+hhJ8Kp+zjFsfdsTkGbaqXj/qexeHUBcF6GbHe7xhaLoj/P24D7mFHB3uXx4vN3ohP+ZiT1y5X8fCLVu5SSC+vDFHR2Z5I26yTlcNRwKt24lNypGsEzM5KZILJlEr3BnAA1qkcSX7wZQDHp3XOHJHaR6lxarvYlmQIDAQABMA0GCSqGSIb3DQEBBQUAA4IBAQBD+S4bF8b07955E7HshWFez5Q4/7cXhGPjFaiNw9lH9Ny1iIcblRl36iiVda4Lemy1Kxa5xGJ+I5NZ8k1MyxZ1x5K9bPX5LiI8ThLGRxBNUNLgaoQ+7FZLklpZARoIuQ3Gg90V0qUqkm2eipgZxzdtEGj+lqoX10A2B+wimO6nzUv6vYoJARMBtqsYmQKz5GRBoajGdMn60UF9Ry5B32k31JVpat4qm7+Ig1YMwv2nfY6bgHzsI4WjETOLvFCYgBDJzIEy+0jA1FUe5Ec5Fs5nmiG8F7FRJ/9aYb1e+cbQVRZyc1wKlmIReK/LgG8FjdDjeqFZTg0AjInG8/oOz5ib</wsse:BinarySecurityToken>\n"
-          + "      <ds:Signature xmlns:ds=\"http://www.w3.org/2000/09/xmldsig#\" Id=\"SIG-206\">\n"
-          + "        <ds:SignedInfo>\n"
-          + "          <ds:CanonicalizationMethod Algorithm=\"http://www.w3.org/2001/10/xml-exc-c14n#\">\n"
-          + "            <ec:InclusiveNamespaces xmlns:ec=\"http://www.w3.org/2001/10/xml-exc-c14n#\" PrefixList=\"SOAP-ENV\"/>\n"
-          + "          </ds:CanonicalizationMethod>\n"
-          + "          <ds:SignatureMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#rsa-sha1\"/>\n"
-          + "          <ds:Reference URI=\"#id-205\">\n"
-          + "            <ds:Transforms>\n"
-          + "              <ds:Transform Algorithm=\"http://www.w3.org/2001/10/xml-exc-c14n#\">\n"
-          + "                <ec:InclusiveNamespaces\n"
-          + "                    xmlns:ec=\"http://www.w3.org/2001/10/xml-exc-c14n#\" PrefixList=\"\"/>\n"
-          + "              </ds:Transform>\n"
-          + "            </ds:Transforms>\n"
-          + "            <ds:DigestMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#sha1\"/>\n"
-          + "            <ds:DigestValue>xyRKsY2Yg0I/yFvG1M8Mh1RMu7s=</ds:DigestValue>\n"
-          + "          </ds:Reference>\n"
-          + "          <ds:Reference URI=\"#STR-XYZ\">\n"
-          + "            <ds:Transforms>\n"
-          + "              <ds:Transform Algorithm=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#STR-Transform\">\n"
-          + "                <wsse:TransformationParameters>\n"
-          + "                  <ds:CanonicalizationMethod Algorithm=\"http://www.w3.org/2001/10/xml-exc-c14n#\"/>\n"
-          + "                </wsse:TransformationParameters>\n"
-          + "              </ds:Transform>\n"
-          + "            </ds:Transforms>\n"
-          + "            <ds:DigestMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#sha1\"/>\n"
-          + "            <ds:DigestValue>xyRKsY2Yg0I/yFvG1M8Mh1RMu7s=</ds:DigestValue>\n"
-          + "          </ds:Reference>\n"
-          + "\n"
-          + "        </ds:SignedInfo>\n"
-          + "        <ds:SignatureValue>Kt4b1P/vC+TkzLho7LtM965U/n+X445cTesn7JAq7Q3wjvqdqKYM+MCDNP9P1yuVD7bdVpoGhcs6\n"
-          + "hCTyPup4yepfW/ihsBYMRQt9IT7/j8QE2sUr+7A+V6vFEj8KeYCyfrcPbZPVVPD6HBIhQZ4l6+di\n"
-          + "blNOaRWquHSjGAe/aueX4mhVtdWSvw3C4srrsleMqViP8z8C5lqONpl2cXz1n3YqtdAZBa9FXlAs\n"
-          + "Kqrj0YmZbQp+MUOUE7LnSIWMEVcIKO1eXMpohfUeNlI7Qq0bFc5rI0Jeh1dn6m44kvkstG/W0AX1\n"
-          + "nNLI+3gJTyMo7xXe2Yve2SNWov05trRJcwH1bQ==</ds:SignatureValue>\n"
-          + "        <ds:KeyInfo Id=\"KI-ABCXYZ\">\n"
-          + "          <wsse:SecurityTokenReference wsu:Id=\"STR-XYZ\">\n"
-          + "            <wsse:Reference URI=\"#X509-ABCD\" ValueType=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3\"/>\n"
-          + "          </wsse:SecurityTokenReference>\n"
-          + "        </ds:KeyInfo>\n"
-          + "      </ds:Signature>\n"
-          + "    </wsse:Security>\n"
-          + "  </SOAP-ENV:Header>\n"
-          + "  <SOAP-ENV:Body\n"
-          + "      xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\" wsu:Id=\"id-205\">***</SOAP-ENV:Body>\n"
-          + "</SOAP-ENV:Envelope>\n";
 
   @Test
   public void emptySource() throws Exception {
@@ -616,32 +563,6 @@ public class TestWssecValidateCallout extends CalloutTestBase {
     Boolean isValid = (Boolean) msgCtxt.getVariable("wssec_valid");
     Assert.assertTrue(isValid, method + "valid");
   }
-
-  // @Test
-  // public void withStrTransform() throws Exception {
-  //
-  //   String method = "withStrTransform() ";
-  //   msgCtxt.setVariable("message.content", signedSoapWithSTRTransform);
-  //   // msgCtxt.setVariable("my-certificate", pairs[2].certificate);
-  //
-  //   Map<String, String> props = new HashMap<String, String>();
-  //   props.put("debug", "true");
-  //   props.put("ignore-expiry", "true");
-  //   props.put("accept-thumbprints", "ada3a946669ad4e6e2c9f81360c3249e49a57a7d");
-  //   // props.put("certificate", "{my-certificate}");
-  //   props.put("source", "message.content");
-  //
-  //   Validate callout = new Validate(props);
-  //
-  //   // execute and retrieve output
-  //   ExecutionResult actualResult = callout.execute(msgCtxt, exeCtxt);
-  //   Assert.assertEquals(actualResult, ExecutionResult.SUCCESS, "result not as expected");
-  //   Object errorOutput = msgCtxt.getVariable("wssec_error");
-  //   Assert.assertNull(errorOutput, "errorOutput");
-  //
-  //   Boolean isValid = (Boolean) msgCtxt.getVariable("wssec_valid");
-  //   Assert.assertTrue(isValid, method + "valid");
-  // }
 
   @Test
   public void roundTrip() throws Exception {

@@ -24,10 +24,13 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -116,4 +119,63 @@ public class XmlUtils {
 
   }
 
+  // public static String toPrettyString(Document document, int indent) {
+  //   try {
+  //     // Remove whitespaces outside tags
+  //     document.normalize();
+  //     XPath xPath = XPathFactory.newInstance().newXPath();
+  //     NodeList nodeList =
+  //         (NodeList)
+  //             xPath.evaluate("//text()[normalize-space()='']", document, XPathConstants.NODESET);
+  //
+  //     for (int i = 0; i < nodeList.getLength(); ++i) {
+  //       Node node = nodeList.item(i);
+  //       node.getParentNode().removeChild(node);
+  //     }
+  //
+  //     // Setup pretty print options
+  //     TransformerFactory transformerFactory = TransformerFactory.newInstance();
+  //     transformerFactory.setAttribute("indent-number", indent);
+  //     Transformer transformer = transformerFactory.newTransformer();
+  //     transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+  //     transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+  //     transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+  //
+  //     // Return pretty print xml string
+  //     StringWriter stringWriter = new StringWriter();
+  //     transformer.transform(new DOMSource(document), new StreamResult(stringWriter));
+  //     return stringWriter.toString();
+  //   } catch (Exception e) {
+  //     throw new RuntimeException(e);
+  //   }
+  // }
+
+  // public static Element getFirstChildElement(Element element) {
+  //   for (Node currentChild = element.getFirstChild();
+  //        currentChild != null;
+  //        currentChild = currentChild.getNextSibling()) {
+  //     if (currentChild instanceof Element) {
+  //       return (Element) currentChild;
+  //     }
+  //   }
+  //   return null;
+  // }
+
+  public static String asString(Node node) {
+    StringWriter writer = new StringWriter();
+    try {
+      Transformer trans = TransformerFactory.newInstance().newTransformer();
+      trans.setOutputProperty(OutputKeys.INDENT, "yes");
+      trans.setOutputProperty(OutputKeys.VERSION, "1.0");
+      if (!(node instanceof Document)) {
+        trans.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+      }
+      trans.transform(new DOMSource(node), new StreamResult(writer));
+    } catch (final TransformerConfigurationException ex) {
+      throw new IllegalStateException(ex);
+    } catch (final TransformerException ex) {
+      throw new IllegalArgumentException(ex);
+    }
+    return writer.toString();
+  }
 }
