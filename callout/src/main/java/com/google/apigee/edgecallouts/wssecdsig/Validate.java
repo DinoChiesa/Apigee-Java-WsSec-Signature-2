@@ -316,6 +316,17 @@ public class Validate extends WssecCalloutBase implements Execution {
 
   private static void markIdAttributes(final Document doc, String soapNs) {
 
+    // TODO: also handle saml assertion. Example:
+    //
+    // <saml:Assertion MajorVersion="1" MinorVersion="1"
+    //     AssertionID="saml-0018FE864EEE1DDE86C5371CA2C53C43" Issuer="BXI/000" ...
+    //
+    // This will be the case in the "Sender Vouches" scenario, in which an
+    // unsigned saml assertion is injected as a child of the wsse:Security element,
+    // and the signature for that assertion is is embedded in wsse:Security along
+    // with signatures for the timestamp and body.
+    //
+    // see https://wiki.scn.sap.com/wiki/display/Security/Single+Sign+on+using+SAML+Sender+Vouches+example
     Consumer<NodeList> maybeMarkIdAttribute = (nl) -> {
       if (nl.getLength() == 1) {
         Element element = (Element) nl.item(0);
