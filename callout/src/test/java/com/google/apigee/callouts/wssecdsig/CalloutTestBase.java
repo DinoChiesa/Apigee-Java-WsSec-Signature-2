@@ -2,7 +2,7 @@
 // ------------------------------------------------------------------
 //
 
-package com.google.apigee.edgecallouts.wssecdsig;
+package com.google.apigee.callouts.wssecdsig;
 
 import com.apigee.flow.execution.ExecutionContext;
 import com.apigee.flow.message.Message;

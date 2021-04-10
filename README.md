@@ -1,7 +1,7 @@
 # Java Callout for WS-Security Digital Signature
 
 This repo contains the Java source code and pom.xml file required to compile a
-simple Java callout for Apigee Edge, that creates or validates a signed SOAP
+simple Java callout for Apigee, that creates or validates a signed SOAP
 document that complies with the WS-Security standard. This repo also contains
 the packaged jar.
 
@@ -30,7 +30,7 @@ This example is not an official Google product, nor is it part of an official Go
 
 ## License
 
-This material is Copyright 2018-2020, Google LLC.
+This material is Copyright 2018-2021, Google LLC.
 and is licensed under the Apache 2.0 license. See the [LICENSE](LICENSE) file.
 
 This code is open source but you don't need to compile it in order to use it.
@@ -52,10 +52,10 @@ environment-wide or organization-wide jar via the Apigee administrative API.
 
 ## Details
 
-There is a single jar, apigee-wssecdsig-20210204.jar . Within that jar, there are two callout classes,
+There is a single jar, apigee-wssecdsig-20210409.jar . Within that jar, there are two callout classes,
 
-* com.google.apigee.edgecallouts.wssecdsig.Sign - signs the input SOAP document.
-* com.google.apigee.edgecallouts.wssecdsig.Validate - validates the signed SOAP document
+* com.google.apigee.callouts.wssecdsig.Sign - signs the input SOAP document.
+* com.google.apigee.callouts.wssecdsig.Validate - validates the signed SOAP document
 
 The Sign callout has these constraints and features:
 * supports RSA algorithms - rsa-sha1 (default) or rsa-sha256
@@ -99,8 +99,8 @@ Configure the policy this way:
     <Property name='private-key'>{my_private_key}</Property>
     <Property name='certificate'>{my_certificate}</Property>
   </Properties>
-  <ClassName>com.google.apigee.edgecallouts.wssecdsig.Sign</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20210204.jar</ResourceURL>
+  <ClassName>com.google.apigee.callouts.wssecdsig.Sign</ClassName>
+  <ResourceURL>java://apigee-wssecdsig-20210409.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -222,8 +222,8 @@ Configure the policy this way:
     <Property name='source'>message.content</Property>
     <Property name='accept-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
   </Properties>
-  <ClassName>com.google.apigee.edgecallouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20210204.jar</ResourceURL>
+  <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
+  <ResourceURL>java://apigee-wssecdsig-20210409.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -245,8 +245,8 @@ To verify a signature and NOT require an expiry, and also enforce subject common
     <Property name='accept-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
     <Property name='accept-subject-cns'>host.example.com</Property>
   </Properties>
-  <ClassName>com.google.apigee.edgecallouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20210204.jar</ResourceURL>
+  <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
+  <ResourceURL>java://apigee-wssecdsig-20210409.jar</ResourceURL>
 </JavaCallout>
 ```
 

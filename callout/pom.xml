@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.google.apigee.edgecallouts</groupId>
   <artifactId>apigee-wssecdsig</artifactId>
-  <version>20210204</version>
+  <version>20210409</version>
   <name>ApigeeJavaWssecSignature</name>
   <url>http://maven.apache.org</url>
   <packaging>jar</packaging>
@@ -222,7 +222,7 @@ do it manually by running these commands:
             <configuration>
               <rules>
                 <requireMavenVersion>
-                  <version>3.0.5</version>
+                  <version>3.5.0</version>
                 </requireMavenVersion>
               </rules>
             </configuration>

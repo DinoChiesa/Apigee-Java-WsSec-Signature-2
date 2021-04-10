@@ -5,6 +5,6 @@
     <Property name='private-key'>{my_private_key}</Property>
     <Property name='certificate'>{my_certificate}</Property>
   </Properties>
-  <ClassName>com.google.apigee.edgecallouts.wssecdsig.Sign</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20210204.jar</ResourceURL>
+  <ClassName>com.google.apigee.callouts.wssecdsig.Sign</ClassName>
+  <ResourceURL>java://apigee-wssecdsig-20210409.jar</ResourceURL>
 </JavaCallout>
