@@ -45,6 +45,8 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.naming.InvalidNameException;
 import javax.xml.crypto.MarshalException;
@@ -61,6 +63,7 @@ import javax.xml.crypto.dsig.dom.DOMSignContext;
 import javax.xml.crypto.dsig.keyinfo.KeyInfo;
 import javax.xml.crypto.dsig.keyinfo.KeyInfoFactory;
 import javax.xml.crypto.dsig.spec.C14NMethodParameterSpec;
+import javax.xml.crypto.dsig.spec.ExcC14NParameterSpec;
 import javax.xml.crypto.dsig.spec.TransformParameterSpec;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
@@ -112,6 +115,13 @@ public class Sign extends WssecCalloutBase implements Execution {
     return prefix;
   }
 
+  private static String randomId() {
+    return java.util.UUID.randomUUID().toString().replaceAll("[-]", "");
+  }
+
+  // private static String applyWsuId(Element elt, String prefix) {
+  // }
+
   private static String getISOTimestamp(int offsetFromNow) {
     ZonedDateTime zdt = ZonedDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS);
     if (offsetFromNow != 0) zdt = zdt.plusSeconds(offsetFromNow);
@@ -145,17 +155,27 @@ public class Sign extends WssecCalloutBase implements Execution {
     String soapPrefix = declareXmlnsPrefix(envelope, knownNamespaces, soapns);
     String wssePrefix = declareXmlnsPrefix(envelope, knownNamespaces, Namespaces.WSSEC);
 
-    String bodyId = null;
+    BiFunction<Element, String, String> wsuId =
+        (elt, prefix) -> {
+          String id = prefix + "-" + randomId();
+          elt.setAttributeNS(Namespaces.WSU, wsuPrefix + ":Id", id);
+          elt.setIdAttributeNS(Namespaces.WSU, "Id", true);
+          return id;
+        };
+
+    Function<String, String> dsPrefix =
+        localName -> {
+          return (signConfiguration.digSigPrefix != null)
+              ? signConfiguration.digSigPrefix + ":" + localName
+              : localName;
+        };
+
     // 1. get or set the Id of the Body element
     Element body = (Element) nodes.item(0);
-    if (body.hasAttributeNS(Namespaces.WSU, "Id")) {
-      bodyId = body.getAttributeNS(Namespaces.WSU, "Id");
-    } else {
-      bodyId = "Body-" + java.util.UUID.randomUUID().toString();
-      body.setAttributeNS(Namespaces.WSU, wsuPrefix + ":Id", bodyId);
-      // body.setIdAttributeNS(Namespaces.WSU, wsuPrefix + ":Id", true);
-      body.setIdAttributeNS(Namespaces.WSU, "Id", true);
-    }
+    String bodyId =
+        (body.hasAttributeNS(Namespaces.WSU, "Id"))
+            ? body.getAttributeNS(Namespaces.WSU, "Id")
+            : wsuId.apply(body, "Body");
 
     // 2. create or get the soap:Header
     Element header = null;
@@ -174,16 +194,13 @@ public class Sign extends WssecCalloutBase implements Execution {
       wssecHeader = doc.createElementNS(Namespaces.WSSEC, wssePrefix + ":Security");
       wssecHeader.setAttributeNS(soapns, soapPrefix + ":mustUnderstand", "1");
       header.appendChild(wssecHeader);
-      // envelope.insertBefore(wssecHeader, header.getFirstChild());
     } else {
       wssecHeader = (Element) nodes.item(0);
     }
 
     // 4. embed a Timestamp element under the wssecHeader element
     Element timestamp = doc.createElementNS(Namespaces.WSU, wsuPrefix + ":Timestamp");
-    String timestampId = "Timestamp-" + java.util.UUID.randomUUID().toString();
-    timestamp.setAttributeNS(Namespaces.WSU, wsuPrefix + ":Id", timestampId);
-    timestamp.setIdAttributeNS(Namespaces.WSU, "Id", true);
+    String timestampId = wsuId.apply(timestamp, "TS");
     wssecHeader.appendChild(timestamp);
 
     // 5a. embed a Created element into the Timestamp
@@ -214,9 +231,7 @@ public class Sign extends WssecCalloutBase implements Execution {
     String bstId = "none";
     if (signConfiguration.keyIdentifierType == KeyIdentifierType.BST_DIRECT_REFERENCE) {
       Element bst = doc.createElementNS(Namespaces.WSSEC, wssePrefix + ":BinarySecurityToken");
-      bstId = "SecurityToken-" + java.util.UUID.randomUUID().toString();
-      bst.setAttributeNS(Namespaces.WSU, wsuPrefix + ":Id", bstId);
-      bst.setIdAttributeNS(Namespaces.WSU, "Id", true);
+      bstId = wsuId.apply(bst, "ST");
       bst.setAttribute("EncodingType", Constants.BASE64_BINARY);
       bst.setAttribute("ValueType", Constants.X509_V3_TYPE);
       bst.setTextContent(
@@ -230,9 +245,17 @@ public class Sign extends WssecCalloutBase implements Execution {
             : DigestMethod.SHA1;
     DigestMethod digestMethod = signatureFactory.newDigestMethod(digestMethodUri, null);
 
+    TransformParameterSpec tps =
+        (signConfiguration.transformInclusiveNamespaces != null)
+            ? new ExcC14NParameterSpec(
+                signConfiguration.transformInclusiveNamespaces.stream()
+                    .map(s -> knownNamespaces.get(s))
+                    .collect(Collectors.toList()))
+            : null;
+
     Transform transform =
-        signatureFactory.newTransform(
-            "http://www.w3.org/2001/10/xml-exc-c14n#", (TransformParameterSpec) null);
+        signatureFactory.newTransform("http://www.w3.org/2001/10/xml-exc-c14n#", tps);
+
     // Transform transform =
     //     signatureFactory.newTransform(Transform.ENVELOPED, (TransformParameterSpec) null);
 
@@ -259,13 +282,34 @@ public class Sign extends WssecCalloutBase implements Execution {
             : Constants.SIGNING_METHOD_RSA_SHA1;
     SignatureMethod signatureMethod = signatureFactory.newSignatureMethod(signingMethodUri, null);
 
+    C14NMethodParameterSpec c14nParamSpec = null;
+    if (signConfiguration.c14nInclusiveNamespaces != null) {
+      //
+      // <ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#">
+      //   <ec:InclusiveNamespaces
+      //                xmlns:ec="http://www.w3.org/2001/10/xml-exc-c14n#"
+      //                PrefixList="ns1 ns2"/>
+      // </ds:CanonicalizationMethod>
+
+      List<String> prefixes =
+          signConfiguration.c14nInclusiveNamespaces.stream()
+              .map(s -> knownNamespaces.get(s))
+              .collect(Collectors.toList());
+
+      c14nParamSpec = new ExcC14NParameterSpec(prefixes);
+    }
+
     CanonicalizationMethod canonicalizationMethod =
-        signatureFactory.newCanonicalizationMethod(
-            CanonicalizationMethod.EXCLUSIVE, (C14NMethodParameterSpec) null);
+        signatureFactory.newCanonicalizationMethod(CanonicalizationMethod.EXCLUSIVE, c14nParamSpec);
 
     // The marshalled XMLSignature (SignatureS?) will be added as the last child element
     // of the specified parent node.
     DOMSignContext signingContext = new DOMSignContext(signConfiguration.privatekey, wssecHeader);
+    if (signConfiguration.digSigPrefix != null) {
+      signingContext.setDefaultNamespacePrefix(signConfiguration.digSigPrefix);
+    }
+    signingContext.putNamespacePrefix("http://www.w3.org/2001/10/xml-exc-c14n#", "ec");
+
     SignedInfo signedInfo =
         signatureFactory.newSignedInfo(canonicalizationMethod, signatureMethod, references);
     KeyInfoFactory kif = signatureFactory.getKeyInfoFactory();
@@ -312,8 +356,8 @@ public class Sign extends WssecCalloutBase implements Execution {
       // <X509Certificate>MIICAjCCAWugAwIBAgIQwZyW5YOCXZxHg1MBV2CpvDANBgkhkiG9w0BAQnEdD9tI7IYAAoK4O+35EOzcXbvc4Kzz7BQnulQ=</X509Certificate>
       //   </X509Data>
       // </KeyInfo>
-      Element x509Data = doc.createElementNS(Namespaces.XMLDSIG, "X509Data");
-      Element x509Certificate = doc.createElementNS(Namespaces.XMLDSIG, "X509Certificate");
+      Element x509Data = doc.createElementNS(Namespaces.XMLDSIG, dsPrefix.apply("X509Data"));
+      Element x509Certificate = doc.createElementNS(Namespaces.XMLDSIG, dsPrefix.apply("X509Certificate"));
       x509Certificate.setTextContent(
           Base64.getEncoder().encodeToString(signConfiguration.certificate.getEncoded()));
       x509Data.appendChild(x509Certificate);
@@ -328,10 +372,10 @@ public class Sign extends WssecCalloutBase implements Execution {
       //     </RSAKeyValue>
       //   </KeyValue>
       // </KeyInfo>
-      Element keyValue = doc.createElementNS(Namespaces.XMLDSIG, "KeyValue");
-      Element rsaKeyValue = doc.createElementNS(Namespaces.XMLDSIG, "RSAKeyValue");
-      Element modulus = doc.createElementNS(Namespaces.XMLDSIG, "Modulus");
-      Element exponent = doc.createElementNS(Namespaces.XMLDSIG, "Exponent");
+      Element keyValue = doc.createElementNS(Namespaces.XMLDSIG, dsPrefix.apply("KeyValue"));
+      Element rsaKeyValue = doc.createElementNS(Namespaces.XMLDSIG, dsPrefix.apply("RSAKeyValue"));
+      Element modulus = doc.createElementNS(Namespaces.XMLDSIG, dsPrefix.apply("Modulus"));
+      Element exponent = doc.createElementNS(Namespaces.XMLDSIG, dsPrefix.apply("Exponent"));
       modulus.setTextContent(encodedCertModulus);
       final byte[] certExponent = certPublicKey.getPublicExponent().toByteArray();
       String encodedCertExponent = Base64.getEncoder().encodeToString(certExponent);
@@ -354,9 +398,12 @@ public class Sign extends WssecCalloutBase implements Execution {
       // </KeyInfo>
       Element secTokenRef =
           doc.createElementNS(Namespaces.WSSEC, wssePrefix + ":SecurityTokenReference");
-      Element x509Data = doc.createElementNS(Namespaces.XMLDSIG, "X509Data");
-      Element x509IssuerSerial = doc.createElementNS(Namespaces.XMLDSIG, "X509IssuerSerial");
-      Element x509IssuerName = doc.createElementNS(Namespaces.XMLDSIG, "X509IssuerName");
+      wsuId.apply(secTokenRef, "STR");
+      Element x509Data = doc.createElementNS(Namespaces.XMLDSIG, dsPrefix.apply("X509Data"));
+      Element x509IssuerSerial =
+          doc.createElementNS(Namespaces.XMLDSIG, dsPrefix.apply("X509IssuerSerial"));
+      Element x509IssuerName =
+          doc.createElementNS(Namespaces.XMLDSIG, dsPrefix.apply("X509IssuerName"));
 
       if (signConfiguration.issuerNameStyle == IssuerNameStyle.SHORT) {
         x509IssuerName.setTextContent(
@@ -366,7 +413,8 @@ public class Sign extends WssecCalloutBase implements Execution {
         x509IssuerName.setTextContent(signConfiguration.certificate.getSubjectDN().getName());
       }
 
-      Element x509SerialNumber = doc.createElementNS(Namespaces.XMLDSIG, "X509SerialNumber");
+      Element x509SerialNumber =
+          doc.createElementNS(Namespaces.XMLDSIG, dsPrefix.apply("X509SerialNumber"));
       x509SerialNumber.setTextContent(signConfiguration.certificate.getSerialNumber().toString());
 
       x509IssuerSerial.appendChild(x509IssuerName);
@@ -498,6 +546,31 @@ public class Sign extends WssecCalloutBase implements Execution {
     return toSign;
   }
 
+  private List<String> getInclusiveNamespaces(String label, MessageContext msgCtxt)
+      throws Exception {
+    String nsList = getSimpleOptionalProperty(label, msgCtxt);
+    if (nsList == null) return null;
+    List<String> namespaces =
+        Arrays.asList(nsList.split(",[ ]*")).stream()
+            .map(String::toLowerCase)
+            .distinct()
+            .collect(Collectors.toList());
+    return namespaces;
+  }
+
+  private List<String> getC14nInclusiveNamespaces(MessageContext msgCtxt) throws Exception {
+    return getInclusiveNamespaces("c14n-inclusive-namespaces", msgCtxt);
+  }
+
+  private List<String> getTransformInclusiveNamespaces(MessageContext msgCtxt) throws Exception {
+    return getInclusiveNamespaces("transform-inclusive-namespaces", msgCtxt);
+  }
+
+  private String getDigSigPrefix(MessageContext msgCtxt) throws Exception {
+    String dsPrefix = getSimpleOptionalProperty("ds-prefix", msgCtxt);
+    return dsPrefix;
+  }
+
   enum KeyIdentifierType {
     NOT_SPECIFIED,
     THUMBPRINT,
@@ -536,6 +609,9 @@ public class Sign extends WssecCalloutBase implements Execution {
     public IssuerNameStyle issuerNameStyle;
     public KeyIdentifierType keyIdentifierType;
     public List<String> elementsToSign;
+    public List<String> c14nInclusiveNamespaces;
+    public List<String> transformInclusiveNamespaces;
+    public String digSigPrefix;
 
     public SignConfiguration() {
       keyIdentifierType = KeyIdentifierType.BST_DIRECT_REFERENCE;
@@ -585,6 +661,21 @@ public class Sign extends WssecCalloutBase implements Execution {
       this.elementsToSign = elementsToSign;
       return this;
     }
+
+    public SignConfiguration withC14nInclusiveNamespaces(List<String> inclusiveNamespaces) {
+      this.c14nInclusiveNamespaces = inclusiveNamespaces;
+      return this;
+    }
+
+    public SignConfiguration withTransformInclusiveNamespaces(List<String> inclusiveNamespaces) {
+      this.transformInclusiveNamespaces = inclusiveNamespaces;
+      return this;
+    }
+
+    public SignConfiguration withDigSigPrefix(String prefix) {
+      this.digSigPrefix = prefix;
+      return this;
+    }
   }
 
   public ExecutionResult execute(final MessageContext msgCtxt, final ExecutionContext execContext) {
@@ -601,7 +692,10 @@ public class Sign extends WssecCalloutBase implements Execution {
               .withExpiresIn(getExpiresIn(msgCtxt))
               .withSigningMethod(getSigningMethod(msgCtxt))
               .withDigestMethod(getDigestMethod(msgCtxt))
-              .withElementsToSign(getElementsToSign(msgCtxt));
+              .withElementsToSign(getElementsToSign(msgCtxt))
+              .withC14nInclusiveNamespaces(getC14nInclusiveNamespaces(msgCtxt))
+              .withTransformInclusiveNamespaces(getTransformInclusiveNamespaces(msgCtxt))
+              .withDigSigPrefix(getDigSigPrefix(msgCtxt));
 
       String resultingXmlString = sign_RSA(document, signConfiguration);
       String outputVar = getOutputVar(msgCtxt);

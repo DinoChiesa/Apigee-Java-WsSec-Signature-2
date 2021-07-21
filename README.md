@@ -52,7 +52,7 @@ environment-wide or organization-wide jar via the Apigee administrative API.
 
 ## Details
 
-There is a single jar, apigee-wssecdsig-20210409.jar . Within that jar, there are two callout classes,
+There is a single jar, apigee-wssecdsig-20210721.jar . Within that jar, there are two callout classes,
 
 * com.google.apigee.callouts.wssecdsig.Sign - signs the input SOAP document.
 * com.google.apigee.callouts.wssecdsig.Validate - validates the signed SOAP document
@@ -100,11 +100,14 @@ Configure the policy this way:
     <Property name='certificate'>{my_certificate}</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Sign</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20210409.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20210721.jar</ResourceURL>
 </JavaCallout>
 ```
 
-The available properties for the Sign callout are:
+There are a number of available properties for configuring the Sign callout, to
+affect the shape of the signed document. This affects things like what elements
+to sign, which signature method to use, the desired format of the Key
+Information, and much more. These properties are described in detail here:
 
 | name                 | description |
 | -------------------- | ------------ |
@@ -120,6 +123,9 @@ The available properties for the Sign callout are:
 | digest-method        | optional. Takes value sha1 or sha256. Defaults to sha1. If you have the flexibility to do so, it's preferred that you use sha256. |
 | elements-to-sign     | optional. Takes a comma-separated value. parts can include "timestamp" and "body". Nothing else. Default: the signer signs both the Timestamp and the soap:Body. |
 | expiry               | optional. Takes a string like 120s, 10m, 4d, etc to imply 120 seconds, 10 minutes, 4 days. Default: no expiry. |
+| c14-inclusive-elements | optional. Takes a comma-separated value of namespace _URIs_ (not prefixes). Used to add an InclusiveElements element to the CanonicalizationMethod element.  |
+| transform-inclusive-elements | optional. Takes a comma-separated value of namespace _URIs_ (not prefixes). Used to add an InclusiveElements element to the Transform element.  |
+| ds-prefix            | optional. A simple string, to be used as the prefix for the namespace "http://www.w3.org/2000/09/xmldsig#". Some users have expressed a desire to control this, and this callout makes it possible. This property affects the aesthetics of the document only, does not affect the XML InfoSet. |
 
 This policy will sign the entire document and embed a Signature element as a child of the root element.
 
@@ -223,7 +229,7 @@ Configure the policy this way:
     <Property name='accept-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20210409.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20210721.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -246,7 +252,7 @@ To verify a signature and NOT require an expiry, and also enforce subject common
     <Property name='accept-subject-cns'>host.example.com</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20210409.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20210721.jar</ResourceURL>
 </JavaCallout>
 ```
 

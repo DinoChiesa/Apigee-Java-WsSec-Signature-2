@@ -47,4 +47,5 @@ public class Namespaces {
     }
     return Collections.unmodifiableMap(knownNamespaces); // key:namespace, value:prefix
   }
+
 }

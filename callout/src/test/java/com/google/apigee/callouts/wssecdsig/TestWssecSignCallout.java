@@ -436,7 +436,7 @@ public class TestWssecSignCallout extends CalloutTestBase {
     Assert.assertEquals(nl.getLength(), 1, method + "Reference element");
     Element reference = (Element) nl.item(0);
     String referenceUri = reference.getAttribute("URI");
-    Assert.assertTrue(referenceUri.startsWith("#Timestamp"));
+    Assert.assertTrue(referenceUri.startsWith("#TS"), "expected URI prefix");
 
     // SignatureValue
     nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "SignatureValue");
@@ -1055,6 +1055,71 @@ public class TestWssecSignCallout extends CalloutTestBase {
     Assert.assertEquals(errorOutput, "invalid value for soap-version");
     Object stacktrace = msgCtxt.getVariable("wssec_stacktrace");
     Assert.assertNull(stacktrace, method + "stacktrace");
+  }
+
+  @Test
+  public void inclusiveNamespaces() throws Exception {
+    String method = "inclusiveNamespaces() ";
+    msgCtxt.setVariable("message.content", simpleSoap11);
+    msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
+    msgCtxt.setVariable("my-certificate", pairs[2].certificate);
+
+    Map<String, String> props = new HashMap<String, String>();
+    props.put("debug", "true");
+    props.put("elements-to-sign", "body");
+    props.put("source", "message.content");
+    props.put("c14n-inclusive-namespaces", "http://ws.example.com/");
+    props.put("transform-inclusive-namespaces", "http://ws.example.com/");
+    props.put("ds-prefix", "ds");
+    props.put("expiry", "10m");
+    props.put("key-identifier-type", "issuer_serial");
+    props.put("private-key", "{my-private-key}");
+    props.put("certificate", "{my-certificate}");
+    props.put("output-variable", "output");
+
+    Sign callout = new Sign(props);
+
+    // execute and retrieve output
+    ExecutionResult actualResult = callout.execute(msgCtxt, exeCtxt);
+    Assert.assertEquals(actualResult, ExecutionResult.SUCCESS, "result not as expected");
+    Object exception = msgCtxt.getVariable("wssec_exception");
+    Assert.assertNull(exception, method + "exception");
+    Object errorOutput = msgCtxt.getVariable("wssec_error");
+    Assert.assertNull(errorOutput, "error not as expected");
+    Object stacktrace = msgCtxt.getVariable("wssec_stacktrace");
+    Assert.assertNull(stacktrace, method + "stacktrace");
+
+    String output = (String) msgCtxt.getVariable("output");
+    // System.out.printf("** Output:\n" + output + "\n");
+
+    Document doc = docFromStream(new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8)));
+
+    // signature
+    NodeList nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "Signature");
+    Assert.assertEquals(nl.getLength(), 1, method + "Signature element");
+
+    // c14n
+    nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "CanonicalizationMethod");
+    Assert.assertEquals(nl.getLength(), 1, method + "CanonicalizationMethod element");
+    Element element = (Element) nl.item(0);
+    String CanonicalizationMethodAlgorithm = element.getAttribute("Algorithm");
+    Assert.assertEquals(CanonicalizationMethodAlgorithm, "http://www.w3.org/2001/10/xml-exc-c14n#");
+    nl = element.getChildNodes();
+    Assert.assertEquals(nl.getLength(), 1, method + "c14n element children");
+
+    // InclusiveNamespaces
+    Element incNamespaces = (Element) nl.item(0);
+    String nsUri = incNamespaces.getNamespaceURI();
+    Assert.assertEquals(nsUri, "http://www.w3.org/2001/10/xml-exc-c14n#", "InclusiveNamespaces");
+    Assert.assertEquals(incNamespaces.getAttribute("PrefixList"), "ns1", "PrefixList");
+
+    // References
+    nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "Reference");
+    Assert.assertEquals(nl.getLength(), 1, method + "Reference element");
+
+    // SignatureValue
+    nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "SignatureValue");
+    Assert.assertEquals(nl.getLength(), 1, method + "SignatureValue element");
   }
 
 }
