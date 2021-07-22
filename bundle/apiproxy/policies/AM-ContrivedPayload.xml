@@ -1,0 +1,18 @@
+<AssignMessage name='AM-ContrivedPayload'>
+  <AssignVariable>
+    <Name>contrived_payload</Name>
+    <Value><![CDATA[
+    <s:Envelope xmlns:ns1='http://example.com/foons'
+        xmlns:xsd='http://www.w3.org/2001/XMLSchema'
+        xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
+        xmlns:s='http://schemas.xmlsoap.org/soap/envelope/'>
+       <s:Body>
+         <ns1:sumResponse>
+           <ns1:return xsi:type="xsd:number">9</ns1:return>
+         </ns1:sumResponse>
+       </s:Body>
+    </s:Envelope>
+    ]]>
+    </Value>
+  </AssignVariable>
+  </AssignMessage>

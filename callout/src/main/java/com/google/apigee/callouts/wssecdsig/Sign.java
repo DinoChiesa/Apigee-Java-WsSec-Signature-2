@@ -93,11 +93,11 @@ public class Sign extends WssecCalloutBase implements Execution {
     super(properties);
   }
 
-  private int nsCounter = 1;
-
-  private String declareXmlnsPrefix(
+  private static String declareXmlnsPrefix(
       Element elt, Map<String, String> knownNamespaces, String namespaceURIToAdd) {
-    // search here for an existing prefix with the specified URI.
+    // Search here for an existing prefix with the specified URI.
+    // It is assumed that the knownNamespaces has been initialized with namespaces
+    // and prefixes already defined in the document.
     String prefix = knownNamespaces.get(namespaceURIToAdd);
     if (prefix != null) {
       return prefix;
@@ -106,7 +106,8 @@ public class Sign extends WssecCalloutBase implements Execution {
     // find the default prefix for the specified URI.
     prefix = Namespaces.defaultPrefixes.get(namespaceURIToAdd);
     if (prefix == null) {
-      prefix = "ns" + nsCounter++;
+      throw new IllegalStateException(
+          String.format("%s is not a well-known namespace URI", namespaceURIToAdd));
     }
 
     if (elt != null) {
@@ -118,9 +119,6 @@ public class Sign extends WssecCalloutBase implements Execution {
   private static String randomId() {
     return java.util.UUID.randomUUID().toString().replaceAll("[-]", "");
   }
-
-  // private static String applyWsuId(Element elt, String prefix) {
-  // }
 
   private static String getISOTimestamp(int offsetFromNow) {
     ZonedDateTime zdt = ZonedDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS);
@@ -153,7 +151,6 @@ public class Sign extends WssecCalloutBase implements Execution {
     Map<String, String> knownNamespaces = Namespaces.getExistingNamespaces(envelope);
     String wsuPrefix = declareXmlnsPrefix(envelope, knownNamespaces, Namespaces.WSU);
     String soapPrefix = declareXmlnsPrefix(envelope, knownNamespaces, soapns);
-    String wssePrefix = declareXmlnsPrefix(envelope, knownNamespaces, Namespaces.WSSEC);
 
     BiFunction<Element, String, String> wsuId =
         (elt, prefix) -> {
@@ -189,13 +186,24 @@ public class Sign extends WssecCalloutBase implements Execution {
 
     // 3. create or get the WS-Security element within the header
     Element wssecHeader = null;
+    String wssePrefix = null;
+
     nodes = header.getElementsByTagNameNS(Namespaces.WSSEC, "Security");
     if (nodes.getLength() == 0) {
+      String knownWssePrefix = knownNamespaces.get(Namespaces.WSSEC);
+      wssePrefix =
+          (knownWssePrefix != null)
+              ? knownWssePrefix
+              : Namespaces.defaultPrefixes.get(Namespaces.WSSEC);
       wssecHeader = doc.createElementNS(Namespaces.WSSEC, wssePrefix + ":Security");
       wssecHeader.setAttributeNS(soapns, soapPrefix + ":mustUnderstand", "1");
+      if (knownWssePrefix == null) {
+        wssecHeader.setAttributeNS(Namespaces.XMLNS, "xmlns:" + wssePrefix, Namespaces.WSSEC);
+      }
       header.appendChild(wssecHeader);
     } else {
       wssecHeader = (Element) nodes.item(0);
+      wssePrefix = declareXmlnsPrefix(wssecHeader, knownNamespaces, Namespaces.WSSEC);
     }
 
     // 4. embed a Timestamp element under the wssecHeader element
@@ -250,6 +258,7 @@ public class Sign extends WssecCalloutBase implements Execution {
             ? new ExcC14NParameterSpec(
                 signConfiguration.transformInclusiveNamespaces.stream()
                     .map(s -> knownNamespaces.get(s))
+                    .filter(s -> s != null)
                     .collect(Collectors.toList()))
             : null;
 
@@ -284,7 +293,6 @@ public class Sign extends WssecCalloutBase implements Execution {
 
     C14NMethodParameterSpec c14nParamSpec = null;
     if (signConfiguration.c14nInclusiveNamespaces != null) {
-      //
       // <ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#">
       //   <ec:InclusiveNamespaces
       //                xmlns:ec="http://www.w3.org/2001/10/xml-exc-c14n#"
@@ -294,6 +302,7 @@ public class Sign extends WssecCalloutBase implements Execution {
       List<String> prefixes =
           signConfiguration.c14nInclusiveNamespaces.stream()
               .map(s -> knownNamespaces.get(s))
+              .filter(s -> s != null)
               .collect(Collectors.toList());
 
       c14nParamSpec = new ExcC14NParameterSpec(prefixes);
@@ -357,7 +366,8 @@ public class Sign extends WssecCalloutBase implements Execution {
       //   </X509Data>
       // </KeyInfo>
       Element x509Data = doc.createElementNS(Namespaces.XMLDSIG, dsPrefix.apply("X509Data"));
-      Element x509Certificate = doc.createElementNS(Namespaces.XMLDSIG, dsPrefix.apply("X509Certificate"));
+      Element x509Certificate =
+          doc.createElementNS(Namespaces.XMLDSIG, dsPrefix.apply("X509Certificate"));
       x509Certificate.setTextContent(
           Base64.getEncoder().encodeToString(signConfiguration.certificate.getEncoded()));
       x509Data.appendChild(x509Certificate);
@@ -552,7 +562,6 @@ public class Sign extends WssecCalloutBase implements Execution {
     if (nsList == null) return null;
     List<String> namespaces =
         Arrays.asList(nsList.split(",[ ]*")).stream()
-            .map(String::toLowerCase)
             .distinct()
             .collect(Collectors.toList());
     return namespaces;
@@ -701,6 +710,10 @@ public class Sign extends WssecCalloutBase implements Execution {
       String outputVar = getOutputVar(msgCtxt);
       msgCtxt.setVariable(outputVar, resultingXmlString);
       return ExecutionResult.SUCCESS;
+    } catch (org.xml.sax.SAXParseException saxpe) {
+      // bad input document
+      setExceptionVariables(saxpe, msgCtxt);
+      return ExecutionResult.ABORT;
     } catch (IllegalStateException exc1) {
       setExceptionVariables(exc1, msgCtxt);
       return ExecutionResult.ABORT;

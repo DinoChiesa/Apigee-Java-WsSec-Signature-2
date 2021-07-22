@@ -1060,7 +1060,7 @@ public class TestWssecSignCallout extends CalloutTestBase {
   @Test
   public void inclusiveNamespaces() throws Exception {
     String method = "inclusiveNamespaces() ";
-    msgCtxt.setVariable("message.content", simpleSoap11);
+    msgCtxt.setVariable("message.content", altSoap11);
     msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
     msgCtxt.setVariable("my-certificate", pairs[2].certificate);
 
@@ -1068,8 +1068,8 @@ public class TestWssecSignCallout extends CalloutTestBase {
     props.put("debug", "true");
     props.put("elements-to-sign", "body");
     props.put("source", "message.content");
-    props.put("c14n-inclusive-namespaces", "http://ws.example.com/");
-    props.put("transform-inclusive-namespaces", "http://ws.example.com/");
+    props.put("c14n-inclusive-namespaces", "http://ws.example.com/, http://schemas.xmlsoap.org/soap/envelope/, http://www.w3.org/2001/XMLSchema, http://www.w3.org/2001/XMLSchema-instance");
+    props.put("transform-inclusive-namespaces", "http://ws.example.com/, http://www.w3.org/2001/XMLSchema, http://www.w3.org/2001/XMLSchema-instance");
     props.put("ds-prefix", "ds");
     props.put("expiry", "10m");
     props.put("key-identifier-type", "issuer_serial");
@@ -1111,7 +1111,10 @@ public class TestWssecSignCallout extends CalloutTestBase {
     Element incNamespaces = (Element) nl.item(0);
     String nsUri = incNamespaces.getNamespaceURI();
     Assert.assertEquals(nsUri, "http://www.w3.org/2001/10/xml-exc-c14n#", "InclusiveNamespaces");
-    Assert.assertEquals(incNamespaces.getAttribute("PrefixList"), "ns1", "PrefixList");
+    Assert.assertNotNull(incNamespaces.getAttribute("PrefixList"), "PrefixList");
+    Assert.assertTrue(incNamespaces.getAttribute("PrefixList").indexOf("ns1")>=0, "PrefixList ns1");
+    Assert.assertTrue(incNamespaces.getAttribute("PrefixList").indexOf("xsi")>=0, "PrefixList xsi");
+    Assert.assertTrue(incNamespaces.getAttribute("PrefixList").indexOf("xsd")>=0, "PrefixList xsd");
 
     // References
     nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "Reference");

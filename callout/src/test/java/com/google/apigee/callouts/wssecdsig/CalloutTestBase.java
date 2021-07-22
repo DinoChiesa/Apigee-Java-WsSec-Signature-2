@@ -30,6 +30,18 @@ public abstract class CalloutTestBase {
     + "  </soapenv:Body>"
     + "</soapenv:Envelope>";
 
+  static final String altSoap11 =
+    "<soapenv:Envelope xmlns:ns1='http://ws.example.com/'\n"
+    + "    xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'\n"
+    + "    xmlns:xsd='http://www.w3.org/2001/XMLSchema'\n"
+    + "    xmlns:soapenv='http://schemas.xmlsoap.org/soap/envelope/'>\n"
+    + "  <soapenv:Body>\n"
+    + "    <ns1:sumResponse>\n"
+    + "      <ns1:return>9</ns1:return>\n"
+    + "    </ns1:sumResponse>\n"
+    + "  </soapenv:Body>\n"
+    + "</soapenv:Envelope>\n";
+
   static final String simpleSoap12 = ""
     +"<soap:Envelope \n"
     +"    xmlns:soap='http://www.w3.org/2003/05/soap-envelope'\n"

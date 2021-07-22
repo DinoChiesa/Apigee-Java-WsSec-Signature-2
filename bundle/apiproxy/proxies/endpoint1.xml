@@ -126,6 +126,18 @@
       <Condition>(proxy.pathsuffix ~ "/sign7") and (request.verb = "POST")</Condition>
     </Flow>
 
+    <Flow name='sign8'>
+      <Request>
+      </Request>
+      <Response>
+        <Step><Name>AM-ContrivedPayload</Name></Step>
+        <Step><Name>AM-KeyAndCert</Name></Step>
+        <Step><Name>Java-WSSEC-Sign-8</Name></Step>
+        <Step><Name>AM-SignatureResponse</Name></Step>
+      </Response>
+      <Condition>(proxy.pathsuffix ~ "/sign8") and (request.verb = "GET")</Condition>
+    </Flow>
+
     <Flow name='validate1'>
       <Request>
         <Step>
