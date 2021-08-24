@@ -237,7 +237,7 @@ This will verify a WS-Security signature on the specified document. It will by
 default require a Timestamp and an Expires element. It will validate only a
 signed document that includes an embedded certificate. It will check that the
 embedded cert is valid (not expired and not being used before its not-before
-date).  It will also check that the base16-encoded (aka hex-encoded) SHA1
+date). It will also check that the base16-encoded (aka hex-encoded) SHA1
 thumbprint on the embedded certificate matches that specified in the
 `accept-thumbprints` property.
 
@@ -333,50 +333,51 @@ There are some sample SOAP request documents included in this repo that you can 
    ```
    ORG=myorgname
    ENV=myenv
-   curl -i https://${ORG}-${ENV}.apigee.net/wssec/sign1  -H content-type:application/xml \
+   endpoint=https://${ORG}-${ENV}.apigee.net
+   curl -i $endpoint/wssec/sign1  -H content-type:application/xml \
        --data-binary @./sample-data/request1.xml
    ```
 
 * Signing with Timestamp that includes an expiry, with BinarySecurityToken
 
    ```
-   curl -i https://${ORG}-${ENV}.apigee.net/wssec/sign2  -H content-type:application/xml \
+   curl -i $endpoint/wssec/sign2  -H content-type:application/xml \
        --data-binary @./sample-data/request1.xml
    ```
 * Signing with Timestamp and expiry, emitting KeyInfo containing X509IssuerSerial
 
    ```
-   curl -i https://${ORG}-${ENV}.apigee.net/wssec/sign3  -H content-type:application/xml \
+   curl -i $endpoint/wssec/sign3  -H content-type:application/xml \
        --data-binary @./sample-data/request1.xml
    ```
 * Signing with Timestamp and expiry, emitting KeyInfo containing X509Data (raw certificate)
 
    ```
-   curl -i https://${ORG}-${ENV}.apigee.net/wssec/sign4  -H content-type:application/xml \
+   curl -i $endpoint/wssec/sign4  -H content-type:application/xml \
        --data-binary @./sample-data/request1.xml
    ```
 * Signing with Timestamp and expiry, emitting KeyInfo containing Thumbprint
 
    ```
-   curl -i https://${ORG}-${ENV}.apigee.net/wssec/sign5  -H content-type:application/xml \
+   curl -i $endpoint/wssec/sign5  -H content-type:application/xml \
        --data-binary @./sample-data/request1.xml
    ```
 * Signing, emitting KeyInfo with raw RSA Key
 
    ```
-   curl -i https://${ORG}-${ENV}.apigee.net/wssec/sign6  -H content-type:application/xml \
+   curl -i $endpoint/wssec/sign6  -H content-type:application/xml \
        --data-binary @./sample-data/request1.xml
    ```
 * Signing with SHA256 and RSA-SHA256 digest and signature methods
 
    ```
-   curl -i https://${ORG}-${ENV}.apigee.net/wssec/sign7  -H content-type:application/xml \
+   curl -i $endpoint/wssec/sign7  -H content-type:application/xml \
        --data-binary @./sample-data/request1.xml
    ```
 * Validating with hardcoded Common Name
 
    ```
-   curl -i https://${ORG}-${ENV}.apigee.net/wssec/validate1  -H content-type:application/xml \
+   curl -i $endpoint/wssec/validate1  -H content-type:application/xml \
        --data-binary @./sample-data/signed-request.xml
    ```
    The output of the above should indicate that the signature on the document is
@@ -385,7 +386,7 @@ There are some sample SOAP request documents included in this repo that you can 
 * Validating with hardcoded Common Name, and a message with an expiry
 
    ```
-   curl -i https://${ORG}-${ENV}.apigee.net/wssec/validate1  -H content-type:application/xml \
+   curl -i $endpoint/wssec/validate1  -H content-type:application/xml \
        --data-binary @./sample-data/signed-expiring-request.xml
    ```
    The output of the above should indicate that the message is expired.
@@ -393,7 +394,7 @@ There are some sample SOAP request documents included in this repo that you can 
 * Validating with parameterized Thumbprint
 
    ```
-   curl -i https://${ORG}-${ENV}.apigee.net/wssec/validate2?thumbprint=xxxyyyyzzz \
+   curl -i $endpoint/wssec/validate2?thumbprint=xxxyyyyzzz \
        -H content-type:application/xml \
        --data-binary @./sample-data/signed-request.xml
    ```
@@ -402,7 +403,7 @@ There are some sample SOAP request documents included in this repo that you can 
    the cert used to sign the document.
 
    ```
-   curl -i https://${ORG}-${ENV}.apigee.net/wssec/validate2?thumbprint=ada3a946669ad4e6e2c9f81360c3249e49a57a7d \
+   curl -i $endpoint/wssec/validate2?thumbprint=ada3a946669ad4e6e2c9f81360c3249e49a57a7d \
        -H content-type:application/xml \
        --data-binary @./sample-data/signed-request.xml
    ```
@@ -413,7 +414,7 @@ There are some sample SOAP request documents included in this repo that you can 
 * Validating with specified digest and signing method
 
    ```
-   curl -i https://${ORG}-${ENV}.apigee.net/wssec/validate3  -H content-type:application/xml \
+   curl -i $endpoint/wssec/validate3  -H content-type:application/xml \
        --data-binary @./sample-data/signed-request-nonexpiring-sha256.xml
    ```
    The output of the above should indicate that the message is valid.

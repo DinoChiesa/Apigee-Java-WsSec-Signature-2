@@ -1,7 +1,4 @@
 <AssignMessage name='AM-SignatureResponse'>
-  <Remove>
-    <Headers/>
-  </Remove>
   <Set>
     <Payload contentType='application/xml'>
 {output}</Payload>
