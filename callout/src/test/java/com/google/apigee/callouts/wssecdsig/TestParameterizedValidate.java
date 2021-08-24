@@ -133,7 +133,7 @@ public class TestParameterizedValidate extends CalloutTestBase {
       msgCtxt.setVariable(key, value);
     }
 
-    messageContentStream = getInputStream(tc);
+    msgCtxt.getMessage().setContent(getInputStream(tc));
 
     Validate callout = new Validate(tc.getProperties());
 
