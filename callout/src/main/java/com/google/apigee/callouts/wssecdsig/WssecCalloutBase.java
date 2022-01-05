@@ -42,7 +42,7 @@ import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 import javax.security.auth.x500.X500Principal;
-import javax.xml.bind.DatatypeConverter;
+//import javax.xml.bind.DatatypeConverter;
 import javax.xml.crypto.dsig.DigestMethod;
 import org.w3c.dom.Document;
 
@@ -207,13 +207,26 @@ public abstract class WssecCalloutBase {
   }
 
   protected IssuerNameStyle getIssuerNameStyle(MessageContext msgCtxt) {
-    String kitString = getSimpleOptionalProperty("issuer-name-style", msgCtxt);
-    if (kitString == null) return IssuerNameStyle.SHORT;
-    kitString = kitString.trim().toUpperCase();
-    if (kitString.equals("SHORT")) return IssuerNameStyle.SHORT;
-    if (kitString.equals("SUBJECT_DN")) return IssuerNameStyle.SUBJECT_DN;
-    msgCtxt.setVariable(varName("warning"), "unrecognized issuer-name-style");
-    return IssuerNameStyle.SHORT;
+    String insString = getSimpleOptionalProperty("issuer-name-style", msgCtxt);
+    IssuerNameStyle style;
+    if (insString == null) {
+      style = IssuerNameStyle.SHORT;
+    }
+    else {
+      insString = insString.trim().toUpperCase();
+      if (insString.equals("SHORT")) {
+        style = IssuerNameStyle.SHORT;
+      }
+      else if (insString.equals("SUBJECT_DN")) {
+        style = IssuerNameStyle.SUBJECT_DN;
+      }
+      else {
+        msgCtxt.setVariable(varName("warning"), "unrecognized issuer-name-style");
+        style = IssuerNameStyle.SHORT;
+      }
+    }
+    msgCtxt.setVariable(varName("issuerNameStyle"), style.toString());
+    return style;
   }
 
   private String signingMethodToUri(String shortName) {
@@ -231,7 +244,7 @@ public abstract class WssecCalloutBase {
 
   protected String getSigningMethod(MessageContext msgCtxt) throws Exception {
     String signingMethod = getSimpleOptionalProperty("signing-method", msgCtxt);
-    if (signingMethod == null) return null; // SIGNING_METHOD_RSA_SHA1; // default
+    if (signingMethod == null) return null; // default
     signingMethod = signingMethodToUri(signingMethod.trim());
     // warn on unrecognized values
     if (!signingMethod.equals(Constants.SIGNING_METHOD_RSA_SHA1)
@@ -290,7 +303,6 @@ public abstract class WssecCalloutBase {
     LdapName ldapDN = new LdapName(principal.getName());
     String cn = null;
     for (Rdn rdn : ldapDN.getRdns()) {
-      // System.out.println(rdn.getType() + " -> " + rdn.getValue());
       if (rdn.getType().equals("CN")) {
         cn = rdn.getValue().toString();
       }
@@ -304,11 +316,22 @@ public abstract class WssecCalloutBase {
 
   }
 
+  private static final byte[] HEX_ARRAY = "0123456789abcdef".getBytes(StandardCharsets.US_ASCII);
+  private static String bytesToHex(byte[] bytes) {
+    byte[] hexChars = new byte[bytes.length * 2];
+    for (int j = 0; j < bytes.length; j++) {
+      int v = bytes[j] & 0xFF;
+      hexChars[j * 2] = HEX_ARRAY[v >>> 4];
+      hexChars[j * 2 + 1] = HEX_ARRAY[v & 0x0F];
+    }
+    return new String(hexChars, StandardCharsets.UTF_8);
+  }
+
   protected static String getThumbprintHex(X509Certificate certificate)
     throws NoSuchAlgorithmException, CertificateEncodingException {
-    return DatatypeConverter.printHexBinary(
-        MessageDigest.getInstance("SHA-1").digest(
-                certificate.getEncoded())).toLowerCase();
+    return bytesToHex(
+        MessageDigest.getInstance("SHA-1")
+        .digest(certificate.getEncoded()));
   }
 
   protected static String getStackTraceAsString(Throwable t) {

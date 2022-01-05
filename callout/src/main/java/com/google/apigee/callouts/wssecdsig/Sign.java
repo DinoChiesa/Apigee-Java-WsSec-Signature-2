@@ -30,6 +30,7 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
+import java.security.Provider;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateKey;
@@ -131,8 +132,13 @@ public class Sign extends WssecCalloutBase implements Execution {
   private String sign_RSA(Document doc, SignConfiguration signConfiguration)
       throws InstantiationException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
           KeyException, MarshalException, XMLSignatureException, TransformerException,
-          CertificateEncodingException, InvalidNameException {
-    XMLSignatureFactory signatureFactory = XMLSignatureFactory.getInstance("DOM");
+             CertificateEncodingException, InvalidNameException, ClassNotFoundException,
+             IllegalAccessException {
+    // dino - 20210827-1615
+    //XMLSignatureFactory signatureFactory = XMLSignatureFactory.getInstance("DOM");
+    final String providerName = "org.jcp.xml.dsig.internal.dom.XMLDSigRI";
+    XMLSignatureFactory signatureFactory = XMLSignatureFactory.getInstance("DOM",
+             (Provider) Class.forName(providerName).newInstance());
 
     String soapns =
         (signConfiguration.soapVersion.equals("soap1.2")) ? Namespaces.SOAP1_2 : Namespaces.SOAP1_1;
@@ -598,13 +604,19 @@ public class Sign extends WssecCalloutBase implements Execution {
 
   private KeyIdentifierType getKeyIdentifierType(MessageContext msgCtxt) throws Exception {
     String kitString = getSimpleOptionalProperty("key-identifier-type", msgCtxt);
-    if (kitString == null) return KeyIdentifierType.BST_DIRECT_REFERENCE;
-    kitString = kitString.trim().toUpperCase();
-    KeyIdentifierType t = KeyIdentifierType.fromString(kitString);
-    if (t == KeyIdentifierType.NOT_SPECIFIED) {
-      msgCtxt.setVariable(varName("warning"), "unrecognized key-identifier-type");
-      return KeyIdentifierType.BST_DIRECT_REFERENCE;
+    KeyIdentifierType t;
+    if (kitString == null) {
+      t = KeyIdentifierType.BST_DIRECT_REFERENCE;
     }
+    else {
+      kitString = kitString.trim().toUpperCase();
+      t = KeyIdentifierType.fromString(kitString);
+      if (t == KeyIdentifierType.NOT_SPECIFIED) {
+        msgCtxt.setVariable(varName("warning"), String.format("unrecognized key-identifier-type (%s)", kitString));
+        t = KeyIdentifierType.BST_DIRECT_REFERENCE;
+      }
+    }
+    msgCtxt.setVariable(varName("kit"), t.toString());
     return t;
   }
 

@@ -34,6 +34,44 @@
       <artifactId>bcpkix-jdk15on</artifactId>
       <version>${bouncycastle.version}</version>
     </dependency>
+
+
+<!--
+    <dependency>
+      <groupId>javax.xml.bind</groupId>
+      <artifactId>jaxb-api</artifactId>
+      <version>${jaxb.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.sun.xml.bind</groupId>
+      <artifactId>jaxb-impl</artifactId>
+      <version>${jaxb.version}</version>
+      <scope>provided</scope>
+    </dependency>
+
+-->
+<!--
+
+    <dependency>
+      <groupId>jakarta.xml.bind</groupId>
+      <artifactId>jakarta.xml.bind-api</artifactId>
+      <version>${jaxb.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.sun.xml.bind</groupId>
+      <artifactId>jaxb-impl</artifactId>
+      <version>${jaxb.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+-->
+
+    <dependency>
+      <groupId>com.apigee.util</groupId>
+      <artifactId>xml-dsig</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+
 <!--
 
 The following 2 jar dependencies from Apigee are not avaiable in any
@@ -60,17 +98,6 @@ do it manually by running these commands:
    -Dpackaging=jar \
    -DgeneratePom=true
 -->
-
-    <dependency>
-      <groupId>javax.xml.bind</groupId>
-      <artifactId>jaxb-api</artifactId>
-      <version>${jaxb.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.sun.xml.bind</groupId>
-      <artifactId>jaxb-impl</artifactId>
-      <version>${jaxb.version}</version>
-    </dependency>
 
     <dependency>
       <groupId>com.apigee.edge</groupId>
@@ -176,9 +203,26 @@ do it manually by running these commands:
         <artifactId>maven-antrun-plugin</artifactId>
         <executions>
           <execution>
+            <id>ant1</id>
+            <phase>clean</phase>
+            <configuration>
+              <tasks>
+                <delete>
+                  <fileset dir="${apiproxy.java.rsrc.dir}"
+                           includes="*.jar" />
+                </delete>
+              </tasks>
+            </configuration>
+          </execution>
+          <execution>
+            <id>ant2</id>
             <phase>package</phase>
             <configuration>
               <tasks>
+                <delete>
+                  <fileset dir="${apiproxy.java.rsrc.dir}"
+                           includes="*.jar" />
+                </delete>
                 <copy todir="${apiproxy.java.rsrc.dir}">
                   <fileset dir="${project.build.directory}">
                     <include name="${project.build.finalName}.jar"/>
@@ -189,8 +233,7 @@ do it manually by running these commands:
                     <exclude name="lib/message-flow-1.0.0.jar"/>
                     <exclude name="lib/expressions-1.0.0.jar"/>
                     <exclude name="lib/slf4j-api-${slf4j.version}.jar"/>
-                    <exclude name="lib/bcpkix-jdk15on-${bouncycastle.version}.jar"/>
-                    <exclude name="lib/bcprov-jdk15on-${bouncycastle.version}.jar"/>
+                    <exclude name="lib/bc*-jdk15on-*.jar"/>
                   </fileset>
                   <mapper type="flatten"/>
                 </copy>
