@@ -70,10 +70,13 @@ The Sign callout has these constraints and features:
 * uses a digest mode of sha1 (default) or sha256
 * has various options for embedding the KeyInfo for the certificate in the signed document: directly embedding the certificate, embedding a thumprint, a serial number, or embedding a public RSA key.
 
-The Verify callout has these constraints and features:
-* supports RSA algorithms - rsa-sha1 (default) or rsa-sha256
+The Validate callout has these constraints and features:
+* supports RSA algorithms - rsa-sha1 (default) or rsa-sha256 (recommended)
 * supports soap1.1. (Not tested with soap 1.2; might work!)
 * If a Timestamp is present in the WS-Security header, validates expiry.
+* Optionally _require_ that a Timestamp is present in the WS-Security header, with an Expires element.
+* Optionally enforce a maximum lifetime of the signature. This is the difference between Created and Expires within the Timestamp. You may wish to limit this to 5 minutes, for example.
+* verify that a specific digest method - sha-1 or sha-256 - is used when signing.
 
 ## Dependencies
 
@@ -280,7 +283,7 @@ The properties available for the Validate callout are:
 | source                 | optional. the variable name in which to obtain the source signed document to validate. Defaults to message.content |
 | signing-method         | optional. Takes value rsa-sha1 or rsa-sha256. Checks that the signing method on the document is as specified. If this property is not present, there is no check on the algorithm. |
 | digest-method          | optional. Takes value sha1 or sha256. Checks that the digest method for each reference is as specified. If this property is not present, there is no check on the algorithm. |
-| accept-thumbprints     | optional. a comma-separated list of thumbprints of the certs which are acceptable signers. If any signature is from a cert that has a thumbprint other than that specified, the verification fails. Required if the `certificate` property is not provided.  |
+| accept-thumbprints     | optional. a comma-separated list of SHA-1 thumbprints of the certs which are acceptable signers. If any signature is from a cert that has a thumbprint other than that specified, the verification fails. Required if the `certificate` property is not provided.  |
 | accept-subject-cns     | optional. a comma-separated list of common names (CNs) for the subject which are acceptable signers. If any signature is from a CN other than that specified, the verification fails. |
 | require-expiry         | optional. true or false, defaults true. Whether to require an expiry in the timestamp.  It is highly recommended that you use 'true' here, or just omit this property and accept the default. |
 | required-signed-elements | optional. a comma-separated list of elements that must be signed. Defaults to "body,timestamp" . To require only a signature on the Timestamp and not the Body when validating, set this to "timestamp". (You probably don't want to do this.) To require only a signature on the Body and not the Timestamp when validating, set this to "body". (You probably don't want to do this, either.) Probably you want to just leave this element out of your configuration and accept the default. |
@@ -535,3 +538,4 @@ certificate, is as easy as 1, 2, 3:
 ## Bugs
 
 * The Sign callout always uses XML Canonicalization, never uses Transform.ENVELOPED.
+* The Validate callout cannot check the SHA-256 thumbprint of a signing certificate, only SHA-1.
