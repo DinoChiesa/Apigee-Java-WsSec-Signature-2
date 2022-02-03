@@ -1,0 +1,18 @@
+{
+  "description" : "Signed, but with modified BinarySecurityToken",
+  "input" : "08-modified-BST-invalid.xml",
+  "note" : "this test is enabled",
+  "enabled" : true,
+  "context" : {
+  },
+  "properties" : {
+    "debug" : "true",
+    "accept-thumbprints": "ada3a946669ad4e6e2c9f81360c3249e49a57a7d",
+    "ignore-expiry" : "true"
+  },
+  "expected" : {
+    "success" : "true",
+    "isValid" : "false",
+    "error" : "signature did not verify"
+  }
+}

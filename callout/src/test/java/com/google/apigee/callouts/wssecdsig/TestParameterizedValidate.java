@@ -1,4 +1,4 @@
-// Copyright 2017-2021 Google LLC.
+// Copyright 2017-2022 Google LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -77,12 +78,16 @@ public class TestParameterizedValidate extends CalloutTestBase {
       throw new IllegalStateException("no tests found.");
     }
     Arrays.sort(jsons);
-    Function<File, Object[]> toTestCase = (jsonFile) -> {
+    Function<File, TestCase> toTestCase = (jsonFile) -> {
       try {
           String name = jsonFile.getName();
+          System.out.printf("loading: %s\n", name);
+          if (name.indexOf("#")>=0) {
+            return null;
+          }
           TestCase tc = om.readValue(jsonFile, TestCase.class);
           tc.setTestName(name.substring(0, name.length() - 5));
-          return new Object[]{tc};
+          return tc;
       }
       catch (java.lang.Exception exc1) {
         exc1.printStackTrace();
@@ -90,8 +95,23 @@ public class TestParameterizedValidate extends CalloutTestBase {
       }
     };
 
+    Function<String, Function<TestCase, TestCase>> diag = (stage) -> {
+      return (tc) -> {
+        if (tc!=null) {
+          System.out.printf("stage:%s tc:%s (enabled:%s)\n", stage, tc.getTestName(), tc.getEnabled());
+        }
+        else {
+          System.out.printf("stage:%s tc is null\n", stage);
+        }
+        return tc;
+      };
+    };
+
     return Arrays.stream(jsons)
         .map(toTestCase)
+        .map( diag.apply("A") )
+        .filter( tc -> tc!=null )
+        .map( tc -> new Object[]{tc} )
         .toArray(Object[][]::new);
   }
 
@@ -123,6 +143,10 @@ public class TestParameterizedValidate extends CalloutTestBase {
       System.out.printf("  %10s - %s\n", tc.getTestName(), tc.getDescription());
     else System.out.printf("  %10s\n", tc.getTestName());
 
+    if (!tc.getEnabled()) {
+      System.out.printf("  SKIPPING, not enabled\n");
+      return;
+    }
     // set variables into message context
     for (Map.Entry<String, String> entry : tc.getContext().entrySet()) {
       String key = entry.getKey();
@@ -153,11 +177,18 @@ public class TestParameterizedValidate extends CalloutTestBase {
         String expectedIsValid = tc.getExpected().get("isValid");
         Assert.assertNotNull(expectedIsValid, tc.getTestName() + " misconfigured test: missing isValid");
         Assert.assertEquals(actualIsValid, expectedIsValid, tc.getTestName());
+        String expectedError = tc.getExpected().get("error");
+        if (expectedError != null) {
+          String actualError = msgCtxt.getVariable("wssec_error");
+          Assert.assertEquals(actualError, expectedError, tc.getTestName() + " error");
+        }
       }
+      else {
         String expectedError = tc.getExpected().get("error");
         Assert.assertNotNull(expectedError, tc.getTestName() + " misconfigured test: no expected error specified");
         String actualError = msgCtxt.getVariable("wssec_error");
         Assert.assertEquals(actualError, expectedError, tc.getTestName() + " error");
+      }
     } else {
       String observedError = msgCtxt.getVariable("wssec_error");
       System.err.printf("    observed error: %s\n", observedError);

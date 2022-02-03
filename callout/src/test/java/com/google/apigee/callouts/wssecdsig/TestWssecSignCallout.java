@@ -1,3 +1,18 @@
+// Copyright © 2018-2022 Google LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
 package com.google.apigee.callouts.wssecdsig;
 
 import com.apigee.flow.execution.ExecutionResult;
@@ -16,7 +31,6 @@ import javax.xml.crypto.dsig.XMLSignature;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import org.testng.Assert;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -359,7 +373,8 @@ public class TestWssecSignCallout extends CalloutTestBase {
     Assert.assertEquals(nl.getLength(), 1, method + "SignatureMethod element");
     Element element = (Element) nl.item(0);
     String signatureMethodAlgorithm = element.getAttribute("Algorithm");
-    Assert.assertEquals(signatureMethodAlgorithm, "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256");
+    Assert.assertEquals(
+        signatureMethodAlgorithm, "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256");
 
     // c14n
     nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "CanonicalizationMethod");
@@ -552,7 +567,6 @@ public class TestWssecSignCallout extends CalloutTestBase {
     Assert.assertEquals(minutesTilExpiry, (long) (minutesExpiry - 1)); // rounding down
   }
 
-
   @Test
   public void thumbprint() throws Exception {
     String method = "thumbprint() ";
@@ -589,10 +603,10 @@ public class TestWssecSignCallout extends CalloutTestBase {
     NodeList nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "KeyInfo");
     Assert.assertEquals(nl.getLength(), 1, method + "KeyInfo element");
 
-    nl = ((Element)nl.item(0)).getElementsByTagNameNS(Namespaces.WSSEC, "SecurityTokenReference");
+    nl = ((Element) nl.item(0)).getElementsByTagNameNS(Namespaces.WSSEC, "SecurityTokenReference");
     Assert.assertEquals(nl.getLength(), 1, method + "SecurityTokenReference element");
 
-    nl = ((Element)nl.item(0)).getElementsByTagNameNS(Namespaces.WSSEC, "KeyIdentifier");
+    nl = ((Element) nl.item(0)).getElementsByTagNameNS(Namespaces.WSSEC, "KeyIdentifier");
     Assert.assertEquals(nl.getLength(), 1, method + "KeyIdentifier element");
     String thumbprint = nl.item(0).getTextContent();
     Assert.assertEquals(thumbprint, "raOpRmaa1ObiyfgTYMMknkmlen0=");
@@ -634,17 +648,17 @@ public class TestWssecSignCallout extends CalloutTestBase {
     NodeList nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "KeyInfo");
     Assert.assertEquals(nl.getLength(), 1, method + "KeyInfo element");
 
-    Element keyInfo = (Element)(nl.item(0));
+    Element keyInfo = (Element) (nl.item(0));
     nl = keyInfo.getChildNodes();
     Assert.assertEquals(nl.getLength(), 1, method + "X509Data element");
 
-    Element x509Data = (Element)(nl.item(0));
-    Assert.assertEquals(x509Data.getNodeName(),"X509Data");
+    Element x509Data = (Element) (nl.item(0));
+    Assert.assertEquals(x509Data.getNodeName(), "X509Data");
     nl = x509Data.getChildNodes();
     Assert.assertEquals(nl.getLength(), 1, method + "X509Certificate element");
 
-    Element x509Cert = (Element)(nl.item(0));
-    Assert.assertEquals(x509Cert.getNodeName(),"X509Certificate");
+    Element x509Cert = (Element) (nl.item(0));
+    Assert.assertEquals(x509Cert.getNodeName(), "X509Certificate");
     String certText = x509Cert.getTextContent();
     Assert.assertTrue(certText.startsWith("MIIDpDCCAowCCQDsXkZg"));
     Assert.assertTrue(certText.endsWith("InG8/oOz5ib"));
@@ -685,11 +699,11 @@ public class TestWssecSignCallout extends CalloutTestBase {
     Document doc = docFromStream(new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8)));
     NodeList nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "KeyInfo");
     Assert.assertEquals(nl.getLength(), 1, method + "KeyInfo element");
-    nl = ((Element)nl.item(0)).getElementsByTagNameNS(XMLSignature.XMLNS, "KeyValue");
+    nl = ((Element) nl.item(0)).getElementsByTagNameNS(XMLSignature.XMLNS, "KeyValue");
     Assert.assertEquals(nl.getLength(), 1, method + "KeyValue element");
-    nl = ((Element)nl.item(0)).getElementsByTagNameNS(XMLSignature.XMLNS, "RSAKeyValue");
+    nl = ((Element) nl.item(0)).getElementsByTagNameNS(XMLSignature.XMLNS, "RSAKeyValue");
     Assert.assertEquals(nl.getLength(), 1, method + "RSAKeyValue element");
-    Element rsaKeyValue = (Element)(nl.item(0));
+    Element rsaKeyValue = (Element) (nl.item(0));
 
     nl = rsaKeyValue.getElementsByTagNameNS(XMLSignature.XMLNS, "Modulus");
     Assert.assertEquals(nl.getLength(), 1, method + "Modulus element");
@@ -737,11 +751,11 @@ public class TestWssecSignCallout extends CalloutTestBase {
     Document doc = docFromStream(new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8)));
     NodeList nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "KeyInfo");
     Assert.assertEquals(nl.getLength(), 1, method + "KeyInfo element");
-    nl = ((Element)nl.item(0)).getElementsByTagNameNS(XMLSignature.XMLNS, "X509Data");
+    nl = ((Element) nl.item(0)).getElementsByTagNameNS(XMLSignature.XMLNS, "X509Data");
     Assert.assertEquals(nl.getLength(), 1, method + "X509Data element");
-    nl = ((Element)nl.item(0)).getElementsByTagNameNS(XMLSignature.XMLNS, "X509IssuerSerial");
+    nl = ((Element) nl.item(0)).getElementsByTagNameNS(XMLSignature.XMLNS, "X509IssuerSerial");
     Assert.assertEquals(nl.getLength(), 1, method + "X509IssuerSerial element");
-    Element issuerSerial = (Element)(nl.item(0));
+    Element issuerSerial = (Element) (nl.item(0));
 
     nl = issuerSerial.getElementsByTagNameNS(XMLSignature.XMLNS, "X509IssuerName");
     Assert.assertEquals(nl.getLength(), 1, method + "X509IssuerName element");
@@ -790,16 +804,18 @@ public class TestWssecSignCallout extends CalloutTestBase {
     Document doc = docFromStream(new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8)));
     NodeList nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "KeyInfo");
     Assert.assertEquals(nl.getLength(), 1, method + "KeyInfo element");
-    nl = ((Element)nl.item(0)).getElementsByTagNameNS(XMLSignature.XMLNS, "X509Data");
+    nl = ((Element) nl.item(0)).getElementsByTagNameNS(XMLSignature.XMLNS, "X509Data");
     Assert.assertEquals(nl.getLength(), 1, method + "X509Data element");
-    nl = ((Element)nl.item(0)).getElementsByTagNameNS(XMLSignature.XMLNS, "X509IssuerSerial");
+    nl = ((Element) nl.item(0)).getElementsByTagNameNS(XMLSignature.XMLNS, "X509IssuerSerial");
     Assert.assertEquals(nl.getLength(), 1, method + "X509IssuerSerial element");
-    Element issuerSerial = (Element)(nl.item(0));
+    Element issuerSerial = (Element) (nl.item(0));
 
     nl = issuerSerial.getElementsByTagNameNS(XMLSignature.XMLNS, "X509IssuerName");
     Assert.assertEquals(nl.getLength(), 1, method + "X509IssuerName element");
     String nameString = nl.item(0).getTextContent();
-    Assert.assertEquals(nameString, "C=US,ST=Washington,L=Kirkland,O=Google,OU=Apigee,CN=apigee.google.com,E=dino@apigee.com");
+    Assert.assertEquals(
+        nameString,
+        "C=US,ST=Washington,L=Kirkland,O=Google,OU=Apigee,CN=apigee.google.com,E=dino@apigee.com");
 
     nl = issuerSerial.getElementsByTagNameNS(XMLSignature.XMLNS, "X509SerialNumber");
     Assert.assertEquals(nl.getLength(), 1, method + "X509SerialNumber element");
@@ -1049,8 +1065,9 @@ public class TestWssecSignCallout extends CalloutTestBase {
     ExecutionResult actualResult = callout.execute(msgCtxt, exeCtxt);
     Assert.assertEquals(actualResult, ExecutionResult.ABORT, "result not as expected");
     Object exception = msgCtxt.getVariable("wssec_exception");
-    //Assert.assertNotNull(exception, method + "exception");
-    Assert.assertEquals(exception, "java.lang.IllegalStateException: invalid value for soap-version");
+    // Assert.assertNotNull(exception, method + "exception");
+    Assert.assertEquals(
+        exception, "java.lang.IllegalStateException: invalid value for soap-version");
     Object errorOutput = msgCtxt.getVariable("wssec_error");
     Assert.assertEquals(errorOutput, "invalid value for soap-version");
     Object stacktrace = msgCtxt.getVariable("wssec_stacktrace");
@@ -1068,8 +1085,12 @@ public class TestWssecSignCallout extends CalloutTestBase {
     props.put("debug", "true");
     props.put("elements-to-sign", "body");
     props.put("source", "message.content");
-    props.put("c14n-inclusive-namespaces", "http://ws.example.com/, http://schemas.xmlsoap.org/soap/envelope/, http://www.w3.org/2001/XMLSchema, http://www.w3.org/2001/XMLSchema-instance");
-    props.put("transform-inclusive-namespaces", "http://ws.example.com/, http://www.w3.org/2001/XMLSchema, http://www.w3.org/2001/XMLSchema-instance");
+    props.put(
+        "c14n-inclusive-namespaces",
+        "http://ws.example.com/, http://schemas.xmlsoap.org/soap/envelope/, http://www.w3.org/2001/XMLSchema, http://www.w3.org/2001/XMLSchema-instance");
+    props.put(
+        "transform-inclusive-namespaces",
+        "http://ws.example.com/, http://www.w3.org/2001/XMLSchema, http://www.w3.org/2001/XMLSchema-instance");
     props.put("ds-prefix", "ds");
     props.put("expiry", "10m");
     props.put("key-identifier-type", "issuer_serial");
@@ -1112,9 +1133,12 @@ public class TestWssecSignCallout extends CalloutTestBase {
     String nsUri = incNamespaces.getNamespaceURI();
     Assert.assertEquals(nsUri, "http://www.w3.org/2001/10/xml-exc-c14n#", "InclusiveNamespaces");
     Assert.assertNotNull(incNamespaces.getAttribute("PrefixList"), "PrefixList");
-    Assert.assertTrue(incNamespaces.getAttribute("PrefixList").indexOf("ns1")>=0, "PrefixList ns1");
-    Assert.assertTrue(incNamespaces.getAttribute("PrefixList").indexOf("xsi")>=0, "PrefixList xsi");
-    Assert.assertTrue(incNamespaces.getAttribute("PrefixList").indexOf("xsd")>=0, "PrefixList xsd");
+    Assert.assertTrue(
+        incNamespaces.getAttribute("PrefixList").indexOf("ns1") >= 0, "PrefixList ns1");
+    Assert.assertTrue(
+        incNamespaces.getAttribute("PrefixList").indexOf("xsi") >= 0, "PrefixList xsi");
+    Assert.assertTrue(
+        incNamespaces.getAttribute("PrefixList").indexOf("xsd") >= 0, "PrefixList xsd");
 
     // References
     nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "Reference");
@@ -1124,5 +1148,4 @@ public class TestWssecSignCallout extends CalloutTestBase {
     nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "SignatureValue");
     Assert.assertEquals(nl.getLength(), 1, method + "SignatureValue element");
   }
-
 }

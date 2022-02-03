@@ -213,10 +213,11 @@ do it manually by running these commands:
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.0.0-M5</version>
         <configuration>
-          <!-- exclude the STR tests, I don't have valid test cases -->
+          <!--
           <excludes>
             <exclude>**/TestParameterizedValidate.java</exclude>
           </excludes>
+          -->
           <!-- debug logging for tests -->
           <systemProperties>
             <property>

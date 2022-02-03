@@ -1,6 +1,8 @@
 {
-  "description" : "STR-Transform from community",
+  "description" : "STR-Transform from community.",
   "input" : "02-STR-transform.xml",
+  "note" : "this test is not enabled because it's invalid",
+  "enabled" : false,
   "context" : {
   },
   "properties" : {
