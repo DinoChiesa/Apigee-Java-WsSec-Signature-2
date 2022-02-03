@@ -20,9 +20,12 @@ referenced. This callout in particular supports:
 
 This _replaces_ the previous version of the callout, which can still be found at
 [this link](https://github.com/DinoChiesa/ApigeeEdge-Java-WsSec-Signature) .
-The previous version of the callout was not parameterizable, and depended upon
-wss4j.  The latter prevented the use of the callout in Apigee cloud. This
-callout does not exhibit those limitations.
+The previous version of the callout was not parameterizable, and also depended
+upon wss4j. The wss4j dependency prevented the use of the callout in Apigee Edge
+or Apigee X (cloud hosted versions of Apigee). This callout does not have a
+dependency on wss4j, and can run in the cloud-hosted versions of Apigee.  Also,
+this callout is much more flexible and parameterizable.
+
 
 ## Disclaimer
 
@@ -30,7 +33,7 @@ This example is not an official Google product, nor is it part of an official Go
 
 ## License
 
-This material is Copyright 2018-2021, Google LLC.
+This material is Copyright 2018-2022, Google LLC.
 and is licensed under the Apache 2.0 license. See the [LICENSE](LICENSE) file.
 
 This code is open source but you don't need to compile it in order to use it.
@@ -38,7 +41,7 @@ This code is open source but you don't need to compile it in order to use it.
 ## Building
 
 You do not need to build this callout in order to use it. You can build it if
-you wish. To do so, use maven. You need maven v3.5 at a minimum.
+you wish. To do so, use [Apache Maven](https://maven.apache.org/). You need maven v3.5 at a minimum.
 
 ```
 mvn clean package
@@ -80,7 +83,7 @@ Make sure these JARs are available as resources in the  proxy or in the environm
 
 This Callout does not depend on WSS4J.  The WSS4J is prohibited from use within
 Apigee SaaS, due to Java permissions settings. This callout is intended to be
-usable in Apigee SaaS, OPDK, or hybrid.
+usable in Apigee SaaS (Edge or X), OPDK, or hybrid.
 
 ## Usage
 
@@ -234,14 +237,28 @@ Configure the policy this way:
 ```
 
 This will verify a WS-Security signature on the specified document. It will by
-default require a Timestamp and an Expires element. It will validate only a
+default _require_ a Timestamp and an Expires element. It will validate only a
 signed document that includes an embedded certificate. It will check that the
 embedded cert is valid (not expired and not being used before its not-before
 date).  It will also check that the base16-encoded (aka hex-encoded) SHA1
 thumbprint on the embedded certificate matches that specified in the
 `accept-thumbprints` property.
 
-To verify a signature and NOT require an expiry, and also enforce subject common name, use this:
+To verify a signature and NOT require a Timestamp and Expires element, use this:
+
+```xml
+<JavaCallout name='Java-WSSEC-Validate'>
+  <Properties>
+    <Property name='source'>message.content</Property>
+    <Property name='require-expiry'>false</Property>
+    <Property name='accept-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
+  </Properties>
+  <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
+  <ResourceURL>java://apigee-wssecdsig-20210721-2.jar</ResourceURL>
+</JavaCallout>
+```
+
+To verify a signature and NOT require a Timestamp and Expires element, and _also_ enforce a subject common name on the certificate, use this:
 
 ```xml
 <JavaCallout name='Java-WSSEC-Validate'>
@@ -285,17 +302,21 @@ Further comments:
 * The Validate callout verifies signatures using x509v3 certificates that
   contain RSA public keys. The callout is not able to validate a signature using
   an embedded RSA key found in the signed document. (This is a reasonable
-  feature enhancement; hasn't been requested yet.)
+  feature enhancement; but it hasn't been requested yet.)
 
 * Every certificate has a "thumbprint", which is just a SHA-1 hash of the
   encoded certificate data. This thumbprint is unique among certificates.  If
   the certificate is embedded within the signed document, then the Validate
   callout checks for certificate trust via these thumbprints. In that case,
   `accept-thumbprints` is required; You must configure it when using the
-  Validate callout on a signed document that embeds the certificate. If you
-  explicitly provide a certificate to the Validate callout via the `certificate`
-  property, then this property is ignored, because the assumption is that if you
-  specify the certificate, you trust it.
+  Validate callout on a signed document that embeds the certificate. When
+  validating a signed document that does not embed the certificate, you must
+  explicitly provide the certificate in the callout configuration via the
+  `certificate` property. In that case the `accept-thumbprints` property is
+  ignored, because the assumption is that if you specify the certificate, you
+  trust it. It is not possible to check the SHA-256 thumbprint at this
+  time. This is a reasonable feature enhancement; but it hasn't been requested
+  yet.
 
 * With the `max-lifetime` property, you can configure the policy to reject a
   signature that has a lifetime greater, say, 5 minutes. The maximum lifetime of
