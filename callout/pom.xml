@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.google.apigee.edgecallouts</groupId>
   <artifactId>apigee-wssecdsig</artifactId>
-  <version>20210721-2</version>
+  <version>20220204</version>
   <name>ApigeeJavaWssecSignature</name>
   <url>http://maven.apache.org</url>
   <packaging>jar</packaging>
@@ -170,13 +170,13 @@ do it manually by running these commands:
               <goal>run</goal>
             </goals>
             <configuration>
-              <target>
+              <tasks>
                 <delete>
                   <fileset dir="${apiproxy.java.rsrc.dir}">
                     <include name="*.jar" />
                   </fileset>
                 </delete>
-              </target>
+              </tasks>
             </configuration>
           </execution>
           <execution>
@@ -186,23 +186,22 @@ do it manually by running these commands:
               <goal>run</goal>
             </goals>
             <configuration>
-              <target>
+              <tasks>
                 <copy todir="${apiproxy.java.rsrc.dir}">
                   <fileset dir="${project.build.directory}">
                     <include name="${project.build.finalName}.jar"/>
+                    <include name="*.jar"/>
                     <!-- copy any required dependencies that are not
                     already included in the Edge runtime:
                     -->
-                    <include name="lib/*.jar"/>
                     <exclude name="lib/message-flow-1.0.0.jar"/>
                     <exclude name="lib/expressions-1.0.0.jar"/>
                     <exclude name="lib/slf4j-api-${slf4j.version}.jar"/>
-                    <exclude name="lib/bcpkix-jdk15on-${bouncycastle.version}.jar"/>
-                    <exclude name="lib/bcprov-jdk15on-${bouncycastle.version}.jar"/>
+                    <exclude name="lib/bc*-jdk15on-*.jar"/>
                   </fileset>
                   <mapper type="flatten"/>
                 </copy>
-              </target>
+              </tasks>
             </configuration>
           </execution>
         </executions>
