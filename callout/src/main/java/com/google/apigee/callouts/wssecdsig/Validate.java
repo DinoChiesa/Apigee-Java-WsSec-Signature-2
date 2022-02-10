@@ -1,4 +1,4 @@
-// Copyright 2018-2021 Google LLC
+// Copyright 2018-2022 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import com.google.apigee.util.XmlUtils;
 import com.google.apigee.xml.Constants;
 import com.google.apigee.xml.Namespaces;
 import java.security.KeyException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
@@ -37,12 +38,14 @@ import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.naming.InvalidNameException;
 import javax.security.auth.x500.X500Principal;
+import javax.xml.bind.DatatypeConverter;
 import javax.xml.crypto.KeySelector;
 import javax.xml.crypto.MarshalException;
 import javax.xml.crypto.dsig.XMLSignature;
@@ -369,11 +372,40 @@ public class Validate extends WssecCalloutBase implements Execution {
 
   static class ValidationResult {
     private boolean _isValid;
+    private Map<X509Certificate, String> _thumbprints;
     private List<X509Certificate> _certificates;
 
-    public ValidationResult(boolean isValid, List<X509Certificate> certificates) {
+    private ValidationResult() {}
+
+    public static ValidationResult emptyValidationResult() {
+      ValidationResult vresult = new ValidationResult();
+      vresult._thumbprints = new HashMap<X509Certificate, String>();
+      return vresult;
+    }
+
+    public ValidationResult lock() {
+      _certificates =
+          Collections.unmodifiableList(new ArrayList<X509Certificate>(_thumbprints.keySet()));
+      return this;
+    }
+
+    public String getCertThumbprint(X509Certificate certificate) {
+      return _thumbprints.get(certificate);
+    }
+
+    public String addCertificate(X509Certificate certificate)
+        throws NoSuchAlgorithmException, CertificateEncodingException {
+      String thumbprint =
+          DatatypeConverter.printHexBinary(
+                  MessageDigest.getInstance("SHA-1").digest(certificate.getEncoded()))
+              .toLowerCase();
+      _thumbprints.put(certificate, thumbprint);
+      return thumbprint;
+    }
+
+    public ValidationResult setValid(boolean isValid) {
       this._isValid = isValid;
-      this._certificates = Collections.unmodifiableList(certificates);
+      return this;
     }
 
     public boolean isValid() {
@@ -501,15 +533,15 @@ public class Validate extends WssecCalloutBase implements Execution {
       throws MarshalException, XMLSignatureException, KeyException, CertificateExpiredException,
           CertificateNotYetValidException, NoSuchAlgorithmException, InvalidNameException,
           CertificateEncodingException {
+
     NodeList signatures = getSignatures(doc, validationConfig.soapNs);
     if (signatures.getLength() == 0) {
       throw new RuntimeException("No element: Signature");
     }
-
+    ValidationResult result = ValidationResult.emptyValidationResult();
     markIdAttributes(doc, validationConfig.soapNs);
 
     boolean isValid = true;
-    List<X509Certificate> certs = new ArrayList<X509Certificate>();
     XMLSignatureFactory signatureFactory = XMLSignatureFactory.getInstance("DOM");
     logger.debug("Security Provider: {}", signatureFactory.getProvider().getName());
 
@@ -533,9 +565,8 @@ public class Validate extends WssecCalloutBase implements Execution {
         sourcedCert.certificate.checkValidity(); // throws if expired or not yet valid
         logger.debug("validate_RSA() cert is valid");
         if (sourcedCert.source == CertificateSource.DOCUMENT) {
-          certs.add(sourcedCert.certificate);
-          // msgCtxt.setVariable(varName(String.format("cert_thumbprint_%d", i+1)),
-          //                     getThumbprintHex(sourcedCert.certificate));
+          String thumbprint = result.addCertificate(sourcedCert.certificate);
+          msgCtxt.setVariable(varName("cert_" + i + "_thumbprint"), thumbprint);
         }
         KeySelector ks = KeySelector.singletonKeySelector(sourcedCert.certificate.getPublicKey());
         DOMValidateContext vc = new DOMValidateContext(ks, signatureElement);
@@ -562,7 +593,7 @@ public class Validate extends WssecCalloutBase implements Execution {
       }
     }
 
-    return new ValidationResult(isValid, certs);
+    return result.setValid(isValid).lock();
   }
 
   private static Element getTimestamp(Document doc, String soapNs) {
@@ -778,15 +809,15 @@ public class Validate extends WssecCalloutBase implements Execution {
       }
 
       if (isValid) {
-        // check CNs of certs that were embedded in the document
+        // check thumbprints of certs that were embedded in the document
         List<X509Certificate> certs = validationResult.getCertificates();
         if (certs.size() > 0) {
           List<String> acceptableThumbprints = getAcceptableThumbprints(msgCtxt);
           List<String> acceptableSubjectCNs = getAcceptableSubjectCommonNames(msgCtxt);
           for (int i = 0; i < certs.size(); i++) {
             X509Certificate certificate = certs.get(i);
-            String thumbprint = getThumbprintHex(certificate);
-            msgCtxt.setVariable(varName("cert_" + i + "_thumbprint"), thumbprint);
+            String thumbprint = validationResult.getCertThumbprint(certificate);
+            // msgCtxt.setVariable(varName("cert_" + i + "_thumbprint"), thumbprint);
 
             if (!acceptableThumbprints.contains(thumbprint)) {
               msgCtxt.setVariable(varName("error"), "certificate thumbprint not accepted");
@@ -797,10 +828,11 @@ public class Validate extends WssecCalloutBase implements Execution {
             X500Principal principal = certificate.getIssuerX500Principal();
             String commonName = getCommonName(principal);
             msgCtxt.setVariable(varName("cert_" + i + "_issuer_cn"), commonName);
-            // then record and subject
+            // record subject
             principal = certificate.getSubjectX500Principal();
             commonName = getCommonName(principal);
             msgCtxt.setVariable(varName("cert_" + i + "_subject_cn"), commonName);
+            // and check CN
             if (acceptableSubjectCNs != null && isValid) {
               if (!acceptableSubjectCNs.contains(commonName)) {
                 msgCtxt.setVariable(varName("error"), "subject common name not accepted");
