@@ -11,8 +11,7 @@
     "ignore-expiry" : "true"
   },
   "expected" : {
-    "success" : "true",
-    "isValid" : "true",
-    "error" : null
+    "success" : "false",
+    "error" : "certificate expired on 20220505225825GMT+00:00"
   }
 }

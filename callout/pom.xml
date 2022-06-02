@@ -161,7 +161,9 @@ do it manually by running these commands:
       </plugin>
 
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-antrun-plugin</artifactId>
+        <version>3.1.0</version>
         <executions>
           <execution>
             <id>ant1</id>
@@ -170,13 +172,13 @@ do it manually by running these commands:
               <goal>run</goal>
             </goals>
             <configuration>
-              <tasks>
+              <target>
                 <delete>
                   <fileset dir="${apiproxy.java.rsrc.dir}">
                     <include name="*.jar" />
                   </fileset>
                 </delete>
-              </tasks>
+              </target>
             </configuration>
           </execution>
           <execution>
@@ -186,11 +188,11 @@ do it manually by running these commands:
               <goal>run</goal>
             </goals>
             <configuration>
-              <tasks>
+              <target>
                 <copy todir="${apiproxy.java.rsrc.dir}">
                   <fileset dir="${project.build.directory}">
                     <include name="${project.build.finalName}.jar"/>
-                    <include name="*.jar"/>
+                    <include name="lib/*.jar"/>
                     <!-- copy any required dependencies that are not
                     already included in the Edge runtime:
                     -->
@@ -201,7 +203,7 @@ do it manually by running these commands:
                   </fileset>
                   <mapper type="flatten"/>
                 </copy>
-              </tasks>
+              </target>
             </configuration>
           </execution>
         </executions>
