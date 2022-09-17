@@ -341,8 +341,20 @@ Further comments:
   It will give you some additional information about the validation failure.
 
 
+
 See [the example API proxy included here](./bundle) for a working example of these policy configurations.
 
+#### About Signature Wrapping attacks
+
+There is a well-described technique for attacking XML signatures, called
+["signature wrapping"](https://www.ws-attacks.org/XML_Signature_Wrapping).  It
+involves modifying the signed document in such a way that the verifier still
+verifies a signature, but the signature is on the wrong element in the document.
+The actual body gets replaced with malicious content.
+
+This callout is not vulnerable to the signature wrapping attack, because it
+verifies that the Body and Timestamp are signed, and that they appear in the
+expected places in the XML document.
 
 ## Example API Proxy Bundle
 
