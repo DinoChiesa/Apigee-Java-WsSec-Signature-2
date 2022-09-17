@@ -56,6 +56,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 public class Validate extends WssecCalloutBase implements Execution {
@@ -476,12 +477,36 @@ public class Validate extends WssecCalloutBase implements Execution {
           String ns = referent.getNamespaceURI();
           if (tagName != null && ns != null) {
             if (tagName.equals("Timestamp") && ns.equals(Namespaces.WSU)) {
-              foundTags.add("timestamp");
-              foundOne = true;
+              // check for signature wrapping
+              Node parent = referent.getParentNode();
+              if (parent.getNodeType() == Node.ELEMENT_NODE &&
+                  parent.getLocalName().equals("Security") &&
+                  parent.getNamespaceURI().equals(Namespaces.WSSEC)) {
+                Node securityParent = parent.getParentNode();
+                if (securityParent.getNodeType() == Node.ELEMENT_NODE &&
+                    securityParent.getLocalName().equals("Header") &&
+                    securityParent.getNamespaceURI().equals(soapNs)) {
+                  Node headerParent = securityParent.getParentNode();
+                  if (headerParent.getNodeType() == Node.ELEMENT_NODE &&
+                      headerParent.getLocalName().equals("Envelope") &&
+                      headerParent.getNamespaceURI().equals(soapNs) &&
+                      headerParent.getOwnerDocument().getDocumentElement().equals(headerParent)) {
+                    foundTags.add("timestamp");
+                    foundOne = true;
+                  }
+                }
+              }
             }
             if (tagName.equals("Body") && ns.equals(soapNs)) {
-              foundTags.add("body");
-              foundOne = true;
+              // check for signature wrapping
+              Node parent = referent.getParentNode();
+              if (parent.getNodeType() == Node.ELEMENT_NODE &&
+                  parent.getLocalName().equals("Envelope") &&
+                  parent.getNamespaceURI().equals(soapNs) &&
+                  parent.getOwnerDocument().getDocumentElement().equals(parent)) {
+                foundTags.add("body");
+                foundOne = true;
+              }
             }
           }
         }
