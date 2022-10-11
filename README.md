@@ -55,7 +55,7 @@ environment-wide or organization-wide jar via the Apigee administrative API.
 
 ## Details
 
-There is a single jar, apigee-wssecdsig-20220916.jar . Within that jar, there are two callout classes,
+There is a single jar, apigee-wssecdsig-20221011.jar . Within that jar, there are two callout classes,
 
 * com.google.apigee.callouts.wssecdsig.Sign - signs the input SOAP document.
 * com.google.apigee.callouts.wssecdsig.Validate - validates the signed SOAP document
@@ -100,13 +100,13 @@ Configure the policy this way:
     <Property name='source'>message.content</Property>
     <Property name='output-variable'>output</Property>
     <Property name='expiry'>180s</Property>
-    <Property name='signing-method'>rsa-sha156</Property>
+    <Property name='signing-method'>rsa-sha256</Property>
     <Property name='digest-method'>sha256</Property>
     <Property name='private-key'>{my_private_key}</Property>
     <Property name='certificate'>{my_certificate}</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Sign</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20220916.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20221011.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -235,7 +235,7 @@ Configure the policy this way:
     <Property name='accept-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20220916.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20221011.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -257,7 +257,7 @@ To verify a signature and NOT require a Timestamp and Expires element, use this:
     <Property name='accept-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20220916.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20221011.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -272,7 +272,7 @@ To verify a signature and NOT require a Timestamp and Expires element, and _also
     <Property name='accept-subject-cns'>host.example.com</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20220916.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20221011.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -281,8 +281,8 @@ The properties available for the Validate callout are:
 | name                   | description |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | source                 | optional. the variable name in which to obtain the source signed document to validate. Defaults to message.content |
-| signing-method         | optional. Takes value rsa-sha1 or rsa-sha256. Checks that the signing method on the document is as specified. If this property is not present, there is no check on the algorithm. |
-| digest-method          | optional. Takes value sha1 or sha256. Checks that the digest method for each reference is as specified. If this property is not present, there is no check on the algorithm. |
+| signing-method         | optional. Takes value `rsa-sha1` or `rsa-sha256`. Checks that the signing method on the document is as specified. If this property is not present, there is no check on the algorithm. |
+| digest-method          | optional. Takes value `sha1` or `sha256`. Checks that the digest method for each reference is as specified. If this property is not present, there is no check on the algorithm. |
 | accept-thumbprints     | optional. a comma-separated list of SHA-1 thumbprints of the certs which are acceptable signers. If any signature is from a cert that has a thumbprint other than that specified, the verification fails. Required if the `certificate` property is not provided.  |
 | accept-subject-cns     | optional. a comma-separated list of common names (CNs) for the subject which are acceptable signers. If any signature is from a CN other than that specified, the verification fails. |
 | require-expiry         | optional. true or false, defaults true. Whether to require an expiry in the timestamp.  It is highly recommended that you use 'true' here, or just omit this property and accept the default. |
@@ -367,52 +367,56 @@ There are some sample SOAP request documents included in this repo that you can 
 * Signing with Timestamp but no expiry, using BinarySecurityToken
 
    ```
-   ORG=myorgname
-   ENV=myenv
-   curl -i https://${ORG}-${ENV}.apigee.net/wssec/sign1  -H content-type:application/xml \
+   # Apigee Edge
+   endpoint=https://${ORG}-${ENV}.apigee.net
+
+   # Apigee X or hybrid
+   endpoint=https://my-api-endpoint.net
+
+   curl -i $endpoint/wssec/sign1  -H content-type:application/xml \
        --data-binary @./sample-data/request1.xml
    ```
 
 * Signing with Timestamp that includes an expiry, with BinarySecurityToken
 
    ```
-   curl -i https://${ORG}-${ENV}.apigee.net/wssec/sign2  -H content-type:application/xml \
+   curl -i $endpoint/wssec/sign2  -H content-type:application/xml \
        --data-binary @./sample-data/request1.xml
    ```
 * Signing with Timestamp and expiry, emitting KeyInfo containing X509IssuerSerial
 
    ```
-   curl -i https://${ORG}-${ENV}.apigee.net/wssec/sign3  -H content-type:application/xml \
+   curl -i $endpoint/wssec/sign3  -H content-type:application/xml \
        --data-binary @./sample-data/request1.xml
    ```
 * Signing with Timestamp and expiry, emitting KeyInfo containing X509Data (raw certificate)
 
    ```
-   curl -i https://${ORG}-${ENV}.apigee.net/wssec/sign4  -H content-type:application/xml \
+   curl -i $endpoint/wssec/sign4  -H content-type:application/xml \
        --data-binary @./sample-data/request1.xml
    ```
 * Signing with Timestamp and expiry, emitting KeyInfo containing Thumbprint
 
    ```
-   curl -i https://${ORG}-${ENV}.apigee.net/wssec/sign5  -H content-type:application/xml \
+   curl -i $endpoint/wssec/sign5  -H content-type:application/xml \
        --data-binary @./sample-data/request1.xml
    ```
 * Signing, emitting KeyInfo with raw RSA Key
 
    ```
-   curl -i https://${ORG}-${ENV}.apigee.net/wssec/sign6  -H content-type:application/xml \
+   curl -i $endpoint/wssec/sign6  -H content-type:application/xml \
        --data-binary @./sample-data/request1.xml
    ```
 * Signing with SHA256 and RSA-SHA256 digest and signature methods
 
    ```
-   curl -i https://${ORG}-${ENV}.apigee.net/wssec/sign7  -H content-type:application/xml \
+   curl -i $endpoint/wssec/sign7  -H content-type:application/xml \
        --data-binary @./sample-data/request1.xml
    ```
 * Validating with hardcoded Common Name
 
    ```
-   curl -i https://${ORG}-${ENV}.apigee.net/wssec/validate1  -H content-type:application/xml \
+   curl -i $endpoint/wssec/validate1  -H content-type:application/xml \
        --data-binary @./sample-data/signed-request.xml
    ```
    The output of the above should indicate that the signature on the document is
@@ -421,7 +425,7 @@ There are some sample SOAP request documents included in this repo that you can 
 * Validating with hardcoded Common Name, and a message with an expiry
 
    ```
-   curl -i https://${ORG}-${ENV}.apigee.net/wssec/validate1  -H content-type:application/xml \
+   curl -i $endpoint/wssec/validate1  -H content-type:application/xml \
        --data-binary @./sample-data/signed-expiring-request.xml
    ```
    The output of the above should indicate that the message is expired.
@@ -429,7 +433,7 @@ There are some sample SOAP request documents included in this repo that you can 
 * Validating with parameterized Thumbprint
 
    ```
-   curl -i https://${ORG}-${ENV}.apigee.net/wssec/validate2?thumbprint=xxxyyyyzzz \
+   curl -i $endpoint/wssec/validate2?thumbprint=xxxyyyyzzz \
        -H content-type:application/xml \
        --data-binary @./sample-data/signed-request.xml
    ```
@@ -438,7 +442,7 @@ There are some sample SOAP request documents included in this repo that you can 
    the cert used to sign the document.
 
    ```
-   curl -i https://${ORG}-${ENV}.apigee.net/wssec/validate2?thumbprint=ada3a946669ad4e6e2c9f81360c3249e49a57a7d \
+   curl -i $endpoint/wssec/validate2?thumbprint=ada3a946669ad4e6e2c9f81360c3249e49a57a7d \
        -H content-type:application/xml \
        --data-binary @./sample-data/signed-request.xml
    ```
@@ -449,7 +453,7 @@ There are some sample SOAP request documents included in this repo that you can 
 * Validating with specified digest and signing method
 
    ```
-   curl -i https://${ORG}-${ENV}.apigee.net/wssec/validate3  -H content-type:application/xml \
+   curl -i $endpoint/wssec/validate3  -H content-type:application/xml \
        --data-binary @./sample-data/signed-request-nonexpiring-sha256.xml
    ```
    The output of the above should indicate that the message is valid.

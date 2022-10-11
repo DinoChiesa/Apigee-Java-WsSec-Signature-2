@@ -4,7 +4,7 @@
   </Remove>
   <Set>
     <Payload contentType='application/xml'>
-<result>
+<validation-result>
   <valid>{wssec_valid}</valid>
   <signing-cert>
     <thumbprint>{wssec_cert_0_thumbprint}</thumbprint>
@@ -12,7 +12,7 @@
     <issuer-cn>{wssec_cert_0_issuer_cn}</issuer-cn>
   </signing-cert>
   <error>{wssec_error}</error>
-</result>
+</validation-result>
 </Payload>
     <StatusCode>200</StatusCode>
     <ReasonPhrase>OK</ReasonPhrase>

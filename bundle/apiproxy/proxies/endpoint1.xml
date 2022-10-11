@@ -1,4 +1,4 @@
-<ProxyEndpoint name='endpoint1'>
+<ProxyEndpoint name="endpoint1">
   <Description>Proxy for Java callout for WS-Security signing</Description>
   <HTTPProxyConnection>
     <BasePath>/wssec</BasePath>
@@ -7,21 +7,35 @@
   </HTTPProxyConnection>
 
   <FaultRules/>
+  <DefaultFaultRule>
+    <AlwaysEnforce>true</AlwaysEnforce>
+    <Step>
+      <Name>AM-Inject-Proxy-Revision-Header</Name>
+    </Step>
+  </DefaultFaultRule>
 
   <PreFlow name="PreFlow">
-      <Request/>
-      <Response>
-      </Response>
+    <Request/>
+    <Response>
+
+      <Step>
+        <Name>AM-Clean-Request-Headers-From-Response</Name>
+      </Step>
+    </Response>
   </PreFlow>
 
   <PostFlow name="PostFlow">
-      <Request/>
-      <Response>
-      </Response>
+    <Request/>
+    <Response>
+
+      <Step>
+        <Name>AM-Inject-Proxy-Revision-Header</Name>
+      </Step>
+    </Response>
   </PostFlow>
 
   <Flows>
-    <Flow name='sign1'>
+    <Flow name="sign1">
       <Request>
         <Step>
           <Condition>NOT((request.header.content-type =| "text/xml") OR (request.header.content-type =| "application/xml" ))</Condition>
@@ -29,14 +43,20 @@
         </Step>
       </Request>
       <Response>
-        <Step><Name>AM-KeyAndCert</Name></Step>
-        <Step><Name>Java-WSSEC-Sign-1</Name></Step>
-        <Step><Name>AM-SignatureResponse</Name></Step>
+        <Step>
+          <Name>AM-KeyAndCert</Name>
+        </Step>
+        <Step>
+          <Name>Java-WSSEC-Sign-1</Name>
+        </Step>
+        <Step>
+          <Name>AM-SignatureResponse</Name>
+        </Step>
       </Response>
       <Condition>(proxy.pathsuffix ~ "/sign1") and (request.verb = "POST")</Condition>
     </Flow>
 
-    <Flow name='sign2'>
+    <Flow name="sign2">
       <Request>
         <Step>
           <Condition>NOT((request.header.content-type =| "text/xml") OR (request.header.content-type =| "application/xml" ))</Condition>
@@ -44,14 +64,20 @@
         </Step>
       </Request>
       <Response>
-        <Step><Name>AM-KeyAndCert</Name></Step>
-        <Step><Name>Java-WSSEC-Sign-2</Name></Step>
-        <Step><Name>AM-SignatureResponse</Name></Step>
+        <Step>
+          <Name>AM-KeyAndCert</Name>
+        </Step>
+        <Step>
+          <Name>Java-WSSEC-Sign-2</Name>
+        </Step>
+        <Step>
+          <Name>AM-SignatureResponse</Name>
+        </Step>
       </Response>
       <Condition>(proxy.pathsuffix ~ "/sign2") and (request.verb = "POST")</Condition>
     </Flow>
 
-    <Flow name='sign3'>
+    <Flow name="sign3">
       <Request>
         <Step>
           <Condition>NOT((request.header.content-type =| "text/xml") OR (request.header.content-type =| "application/xml" ))</Condition>
@@ -59,14 +85,20 @@
         </Step>
       </Request>
       <Response>
-        <Step><Name>AM-KeyAndCert</Name></Step>
-        <Step><Name>Java-WSSEC-Sign-3</Name></Step>
-        <Step><Name>AM-SignatureResponse</Name></Step>
+        <Step>
+          <Name>AM-KeyAndCert</Name>
+        </Step>
+        <Step>
+          <Name>Java-WSSEC-Sign-3</Name>
+        </Step>
+        <Step>
+          <Name>AM-SignatureResponse</Name>
+        </Step>
       </Response>
       <Condition>(proxy.pathsuffix ~ "/sign3") and (request.verb = "POST")</Condition>
     </Flow>
 
-    <Flow name='sign4'>
+    <Flow name="sign4">
       <Request>
         <Step>
           <Condition>NOT((request.header.content-type =| "text/xml") OR (request.header.content-type =| "application/xml" ))</Condition>
@@ -74,14 +106,20 @@
         </Step>
       </Request>
       <Response>
-        <Step><Name>AM-KeyAndCert</Name></Step>
-        <Step><Name>Java-WSSEC-Sign-4</Name></Step>
-        <Step><Name>AM-SignatureResponse</Name></Step>
+        <Step>
+          <Name>AM-KeyAndCert</Name>
+        </Step>
+        <Step>
+          <Name>Java-WSSEC-Sign-4</Name>
+        </Step>
+        <Step>
+          <Name>AM-SignatureResponse</Name>
+        </Step>
       </Response>
       <Condition>(proxy.pathsuffix ~ "/sign4") and (request.verb = "POST")</Condition>
     </Flow>
 
-    <Flow name='sign5'>
+    <Flow name="sign5">
       <Request>
         <Step>
           <Condition>NOT((request.header.content-type =| "text/xml") OR (request.header.content-type =| "application/xml" ))</Condition>
@@ -89,14 +127,20 @@
         </Step>
       </Request>
       <Response>
-        <Step><Name>AM-KeyAndCert</Name></Step>
-        <Step><Name>Java-WSSEC-Sign-5</Name></Step>
-        <Step><Name>AM-SignatureResponse</Name></Step>
+        <Step>
+          <Name>AM-KeyAndCert</Name>
+        </Step>
+        <Step>
+          <Name>Java-WSSEC-Sign-5</Name>
+        </Step>
+        <Step>
+          <Name>AM-SignatureResponse</Name>
+        </Step>
       </Response>
       <Condition>(proxy.pathsuffix ~ "/sign5") and (request.verb = "POST")</Condition>
     </Flow>
 
-    <Flow name='sign6'>
+    <Flow name="sign6">
       <Request>
         <Step>
           <Condition>NOT((request.header.content-type =| "text/xml") OR (request.header.content-type =| "application/xml" ))</Condition>
@@ -104,14 +148,20 @@
         </Step>
       </Request>
       <Response>
-        <Step><Name>AM-KeyAndCert</Name></Step>
-        <Step><Name>Java-WSSEC-Sign-6</Name></Step>
-        <Step><Name>AM-SignatureResponse</Name></Step>
+        <Step>
+          <Name>AM-KeyAndCert</Name>
+        </Step>
+        <Step>
+          <Name>Java-WSSEC-Sign-6</Name>
+        </Step>
+        <Step>
+          <Name>AM-SignatureResponse</Name>
+        </Step>
       </Response>
       <Condition>(proxy.pathsuffix ~ "/sign6") and (request.verb = "POST")</Condition>
     </Flow>
 
-    <Flow name='sign7'>
+    <Flow name="sign7">
       <Request>
         <Step>
           <Condition>NOT((request.header.content-type =| "text/xml") OR (request.header.content-type =| "application/xml" ))</Condition>
@@ -119,26 +169,40 @@
         </Step>
       </Request>
       <Response>
-        <Step><Name>AM-KeyAndCert</Name></Step>
-        <Step><Name>Java-WSSEC-Sign-7</Name></Step>
-        <Step><Name>AM-SignatureResponse</Name></Step>
+        <Step>
+          <Name>AM-KeyAndCert</Name>
+        </Step>
+        <Step>
+          <Name>Java-WSSEC-Sign-7</Name>
+        </Step>
+        <Step>
+          <Name>AM-SignatureResponse</Name>
+        </Step>
       </Response>
       <Condition>(proxy.pathsuffix ~ "/sign7") and (request.verb = "POST")</Condition>
     </Flow>
 
-    <Flow name='sign8'>
+    <Flow name="sign8">
       <Request>
       </Request>
       <Response>
-        <Step><Name>AM-ContrivedPayload</Name></Step>
-        <Step><Name>AM-KeyAndCert</Name></Step>
-        <Step><Name>Java-WSSEC-Sign-8</Name></Step>
-        <Step><Name>AM-SignatureResponse</Name></Step>
+        <Step>
+          <Name>AM-ContrivedPayload</Name>
+        </Step>
+        <Step>
+          <Name>AM-KeyAndCert</Name>
+        </Step>
+        <Step>
+          <Name>Java-WSSEC-Sign-8</Name>
+        </Step>
+        <Step>
+          <Name>AM-SignatureResponse</Name>
+        </Step>
       </Response>
       <Condition>(proxy.pathsuffix ~ "/sign8") and (request.verb = "GET")</Condition>
     </Flow>
 
-    <Flow name='validate1'>
+    <Flow name="validate1">
       <Request>
         <Step>
           <Condition>NOT((request.header.content-type =| "text/xml") OR (request.header.content-type =| "application/xml" ))</Condition>
@@ -146,13 +210,17 @@
         </Step>
       </Request>
       <Response>
-        <Step><Name>Java-WSSEC-Validate-1</Name></Step>
-        <Step><Name>AM-ValidationResponse</Name></Step>
+        <Step>
+          <Name>Java-WSSEC-Validate-1</Name>
+        </Step>
+        <Step>
+          <Name>AM-ValidationResponse</Name>
+        </Step>
       </Response>
       <Condition>(proxy.pathsuffix ~ "/validate1") and (request.verb = "POST")</Condition>
     </Flow>
 
-    <Flow name='validate2'>
+    <Flow name="validate2">
       <Request>
         <Step>
           <Condition>NOT((request.header.content-type =| "text/xml") OR (request.header.content-type =| "application/xml" ))</Condition>
@@ -164,13 +232,17 @@
         </Step>
       </Request>
       <Response>
-        <Step><Name>Java-WSSEC-Validate-2</Name></Step>
-        <Step><Name>AM-ValidationResponse</Name></Step>
+        <Step>
+          <Name>Java-WSSEC-Validate-2</Name>
+        </Step>
+        <Step>
+          <Name>AM-ValidationResponse</Name>
+        </Step>
       </Response>
       <Condition>(proxy.pathsuffix ~ "/validate2") and (request.verb = "POST")</Condition>
     </Flow>
 
-    <Flow name='validate3'>
+    <Flow name="validate3">
       <Request>
         <Step>
           <Condition>NOT((request.header.content-type =| "text/xml") OR (request.header.content-type =| "application/xml" ))</Condition>
@@ -178,28 +250,47 @@
         </Step>
       </Request>
       <Response>
-        <Step><Name>Java-WSSEC-Validate-3</Name></Step>
-        <Step><Name>AM-ValidationResponse</Name></Step>
+        <Step>
+          <Name>Java-WSSEC-Validate-3</Name>
+        </Step>
+        <Step>
+          <Name>AM-ValidationResponse</Name>
+        </Step>
       </Response>
       <Condition>(proxy.pathsuffix ~ "/validate3") and (request.verb = "POST")</Condition>
     </Flow>
 
-    <Flow name='unknown'>
-      <!--
-           applies as a "default" flow, in case none of the conditions
-           for the above flows evaluated to true.
-      -->
+    <Flow name="validate4">
+      <Request>
+        <Step>
+          <Condition>NOT((request.header.content-type =| "text/xml") OR (request.header.content-type =| "application/xml" ))</Condition>
+          <Name>RF-InvalidRequest</Name>
+        </Step>
+      </Request>
+      <Response>
+        <Step>
+          <Name>Java-WSSEC-Validate-4</Name>
+        </Step>
+        <Step>
+          <Name>AM-ValidationResponse</Name>
+        </Step>
+      </Response>
+      <Condition>(proxy.pathsuffix ~ "/validate4") and (request.verb = "POST")</Condition>
+    </Flow>
+
+    <Flow name="unknown">
       <Description>Unknown request</Description>
       <Request>
-        <Step><Name>RF-UnknownRequest</Name></Step>
+        <Step>
+          <Name>RF-UnknownRequest</Name>
+        </Step>
       </Request>
       <Response/>
     </Flow>
 
   </Flows>
 
-  <RouteRule name='LoopbackRoute'>
-    <!-- no target! no backend call -->
+  <RouteRule name="LoopbackRoute">
   </RouteRule>
 
 </ProxyEndpoint>

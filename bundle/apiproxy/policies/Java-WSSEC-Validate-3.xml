@@ -1,5 +1,6 @@
-<JavaCallout name='Java-WSSEC-Validate-3'>
+<JavaCallout name='Java-WSSEC-Validate-3' continueOnError='true'>
   <Properties>
+    <Property name='debug'>true</Property>
     <Property name='source'>message.content</Property>
     <Property name='require-expiry'>false</Property>
     <Property name='digest-method'>sha256</Property>
@@ -8,5 +9,5 @@
     <Property name='accept-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20220916.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20221011.jar</ResourceURL>
 </JavaCallout>

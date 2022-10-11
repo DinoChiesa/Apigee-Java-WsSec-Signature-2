@@ -1,0 +1,17 @@
+{
+  "description" : "Signed, from SOAPUI",
+  "input" : "10-not-a-signed-document.xml",
+  "note" : "this test is enabled",
+  "enabled" : true,
+  "context" : {
+  },
+  "properties" : {
+    "debug" : "false",
+    "accept-thumbprints": "d363602bb909f92a1b811e2ef3fa1918ca78711a",
+    "ignore-expiry" : "true"
+  },
+  "expected" : {
+    "success" : "false",
+    "error" : "No element: soap:Header"
+  }
+}

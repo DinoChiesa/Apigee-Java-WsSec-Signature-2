@@ -690,12 +690,11 @@ public class Validate extends WssecCalloutBase implements Execution {
     return (secondsRemaining <= 0L);
   }
 
-  private boolean wantFaultOnInvalid(MessageContext msgCtxt) throws Exception {
-    String wantFault = getSimpleOptionalProperty("throw-fault-on-invalid", msgCtxt);
-    if (wantFault == null) return false;
-    wantFault = wantFault.trim();
-    if (wantFault.trim().toLowerCase().equals("true")) return true;
-    return false;
+  private boolean wantFaultOnInvalid() {
+    String value = (String) this.properties.get("throw-fault-on-invalid");
+    if (value == null) return true; // default true
+    if (value.trim().toLowerCase().equals("false")) return false;
+    return true;
   }
 
   private int getMaxLifetime(MessageContext msgCtxt) throws Exception {
@@ -873,17 +872,17 @@ public class Validate extends WssecCalloutBase implements Execution {
       if (isValid) {
         return ExecutionResult.SUCCESS;
       }
-      return (wantFaultOnInvalid(msgCtxt)) ? ExecutionResult.ABORT : ExecutionResult.SUCCESS;
+      return (wantFaultOnInvalid()) ? ExecutionResult.ABORT : ExecutionResult.SUCCESS;
     } catch (IllegalStateException exc1) {
       setExceptionVariables(exc1, msgCtxt);
-      return ExecutionResult.ABORT;
+      return (wantFaultOnInvalid()) ? ExecutionResult.ABORT : ExecutionResult.SUCCESS;
     } catch (Exception e) {
       if (getDebug()) {
         String stacktrace = getStackTraceAsString(e);
         msgCtxt.setVariable(varName("stacktrace"), stacktrace);
       }
       setExceptionVariables(e, msgCtxt);
-      return ExecutionResult.ABORT;
+      return (wantFaultOnInvalid()) ? ExecutionResult.ABORT : ExecutionResult.SUCCESS;
     }
   }
 }

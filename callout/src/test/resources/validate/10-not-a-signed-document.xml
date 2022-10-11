@@ -1,0 +1,10 @@
+<soap:Envelope
+    xmlns:ns1='http://ws.example.com/'
+    xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/'>
+  <soap:Body>
+    <ns1:sumRequest>
+      <ns1:addend>9</ns1:addend>
+      <ns1:addend>21</ns1:addend>
+    </ns1:sumRequest>
+  </soap:Body>
+</soap:Envelope>

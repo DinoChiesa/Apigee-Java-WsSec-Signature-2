@@ -8,7 +8,8 @@
   "properties" : {
     "debug" : "true",
     "accept-thumbprints": "ada3a946669ad4e6e2c9f81360c3249e49a57a7d",
-    "ignore-expiry" : "true"
+    "ignore-expiry" : "true",
+    "throw-fault-on-invalid": "false"
   },
   "expected" : {
     "success" : "true",

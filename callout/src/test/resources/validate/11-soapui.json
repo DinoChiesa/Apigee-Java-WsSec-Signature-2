@@ -1,0 +1,17 @@
+{
+  "description" : "Signed, from SOAPUI",
+  "input" : "11-soapui.xml",
+  "note" : "this test is enabled",
+  "enabled" : true,
+  "context" : {
+  },
+  "properties" : {
+    "debug" : "false",
+    "accept-thumbprints": "0542c43794bd41375ae2abde5f390049900ff889",
+    "ignore-expiry" : "true"
+  },
+  "expected" : {
+    "success" : "true",
+    "isValid" : "true"
+  }
+}

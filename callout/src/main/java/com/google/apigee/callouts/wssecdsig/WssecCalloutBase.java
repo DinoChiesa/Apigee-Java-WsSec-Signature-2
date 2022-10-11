@@ -83,7 +83,7 @@ public abstract class WssecCalloutBase {
 
 
   private static final String _varprefix = "wssec_";
-  private Map properties; // read-only
+  protected Map properties; // read-only
   private static final Pattern variableReferencePattern =
       Pattern.compile("(.*?)\\{([^\\{\\} ]+?)\\}(.*?)");
 

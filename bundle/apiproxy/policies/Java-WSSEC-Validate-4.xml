@@ -1,10 +1,12 @@
-<JavaCallout name='Java-WSSEC-Validate-2'>
+<JavaCallout name='Java-WSSEC-Validate-4' continueOnError='true'>
   <Properties>
+    <Property name='debug'>true</Property>
     <Property name='source'>message.content</Property>
     <Property name='require-expiry'>false</Property>
+    <Property name='digest-method'>sha1</Property>
+    <Property name='signing-method'>rsa-sha1</Property>
     <Property name='throw-fault-on-invalid'>false</Property>
-    <!-- specify the acceptable thumbprint in a query param -->
-    <Property name='accept-thumbprints'>{request.queryparam.thumbprint}</Property>
+    <Property name='accept-thumbprints'>0542c43794bd41375ae2abde5f390049900ff889</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
   <ResourceURL>java://apigee-wssecdsig-20221011.jar</ResourceURL>
