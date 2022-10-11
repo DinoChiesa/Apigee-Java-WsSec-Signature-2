@@ -10,8 +10,9 @@ signatures are generated and embedded into a document, and how keys are
 referenced. This callout in particular supports:
 
 - RSA key pairs
-- Signing or validating with RSA-SHA1 or RSA-SHA256. The latter is highly recommended.
-- When signing, signing either the soap:Body, or the wssec:Security/wsu:Timestamp element, or both.
+- Signing or validating with RSA-SHA1 (http://www.w3.org/2000/09/xmldsig#rsa-sha1 ) or RSA-SHA256 (http://www.w3.org/2001/04/xmldsig-more#rsa-sha256 ). The latter is highly recommended.
+- When signing, signing either the soap:Body, or the wssec:Security/wsu:Timestamp element, or both. Signing both is highly recommended.
+- using a digest method of sha1 (http://www.w3.org/2000/09/xmldsig#sha1) or sha256 (http://www.w3.org/2001/04/xmlenc#sha256) . The latter is highly recommended.
 - When validating, validating either the Body, or the Timestamp, or both.
 - Validating signatures via public keys embedded in X509v3 certificates.
 - Obtaining the certificates to use to Validate in one of two ways: either in the signed document itself, or as configuration to the Validate step.
