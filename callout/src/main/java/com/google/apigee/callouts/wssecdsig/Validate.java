@@ -734,6 +734,7 @@ public class Validate extends WssecCalloutBase implements Execution {
     String nameList = getSimpleRequiredProperty("accept-thumbprints", msgCtxt);
     return Arrays.asList(nameList.split(",[ ]*")).stream()
         .map(String::toLowerCase)
+        .map(x -> x.replaceAll(":",""))
         .collect(Collectors.toList());
   }
 
@@ -801,7 +802,10 @@ public class Validate extends WssecCalloutBase implements Execution {
       ValidationResult validationResult = validate_RSA(document, validationConfig, msgCtxt);
       boolean isValid = validationResult.isValid();
       if (!isValid) {
-        msgCtxt.setVariable(varName("error"), "signature did not verify");
+        Object previouslySetError = msgCtxt.getVariable(varName("error"));
+        if (previouslySetError == null) {
+          msgCtxt.setVariable(varName("error"), "signature did not verify");
+        }
       }
 
       if (isValid && requireExpiry(msgCtxt)) {

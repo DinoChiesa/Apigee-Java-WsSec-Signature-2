@@ -1,0 +1,18 @@
+{
+  "description" : "Signed by SOAPUI, provided by third-party",
+  "input" : "12-soapui.xml",
+  "note" : "this test is enabled. Only the Body element is signed",
+  "enabled" : true,
+  "context" : {
+  },
+  "properties" : {
+    "debug" : "true",
+    "accept-thumbprints": "4feade38f5e3849a3284e093070ff59cbcc5aaff",
+    "ignore-expiry" : "true"
+  },
+  "expected" : {
+    "success" : "false",
+    "isValid" : "false",
+    "error" : "did not find signature for wsu:Timestamp"
+  }
+}
