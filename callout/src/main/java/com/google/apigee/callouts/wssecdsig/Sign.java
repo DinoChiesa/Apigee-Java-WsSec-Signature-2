@@ -1,4 +1,4 @@
-// Copyright 2018-2021 Google LLC
+// Copyright 2018-2023 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -89,6 +89,9 @@ import org.w3c.dom.NodeList;
 
 public class Sign extends WssecCalloutBase implements Execution {
 
+  java.util.concurrent.atomic.AtomicInteger counter =
+      new java.util.concurrent.atomic.AtomicInteger(100);
+
   public Sign(Map properties) {
     super(properties);
   }
@@ -116,8 +119,9 @@ public class Sign extends WssecCalloutBase implements Execution {
     return prefix;
   }
 
-  private static String randomId() {
-    return java.util.UUID.randomUUID().toString().replaceAll("[-]", "");
+  private /* static */ String randomId() {
+    return String.valueOf(counter.getAndIncrement());
+    // return java.util.UUID.randomUUID().toString().replaceAll("[-]", "");
   }
 
   private static String getISOTimestamp(int offsetFromNow) {
@@ -129,9 +133,15 @@ public class Sign extends WssecCalloutBase implements Execution {
   }
 
   private String sign_RSA(Document doc, SignConfiguration signConfiguration)
-      throws InstantiationException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
-          KeyException, MarshalException, XMLSignatureException, TransformerException,
-          CertificateEncodingException, InvalidNameException {
+      throws InstantiationException,
+          NoSuchAlgorithmException,
+          InvalidAlgorithmParameterException,
+          KeyException,
+          MarshalException,
+          XMLSignatureException,
+          TransformerException,
+          CertificateEncodingException,
+          InvalidNameException {
     XMLSignatureFactory signatureFactory = XMLSignatureFactory.getInstance("DOM");
 
     String soapns =
@@ -148,11 +158,11 @@ public class Sign extends WssecCalloutBase implements Execution {
       throw new IllegalStateException("No soap:Body found");
     }
 
-    Map<String, String> knownNamespaces = Namespaces.getExistingNamespaces(envelope);
-    String wsuPrefix = declareXmlnsPrefix(envelope, knownNamespaces, Namespaces.WSU);
-    String soapPrefix = declareXmlnsPrefix(envelope, knownNamespaces, soapns);
+    Map<String, String> knownNamespacesAtRoot = Namespaces.getExistingNamespaces(envelope);
+    String wsuPrefix = declareXmlnsPrefix(envelope, knownNamespacesAtRoot, Namespaces.WSU);
+    String soapPrefix = declareXmlnsPrefix(envelope, knownNamespacesAtRoot, soapns);
 
-    BiFunction<Element, String, String> wsuId =
+    BiFunction<Element, String, String> wsuIdInjector =
         (elt, prefix) -> {
           String id = prefix + "-" + randomId();
           elt.setAttributeNS(Namespaces.WSU, wsuPrefix + ":Id", id);
@@ -172,7 +182,7 @@ public class Sign extends WssecCalloutBase implements Execution {
     String bodyId =
         (body.hasAttributeNS(Namespaces.WSU, "Id"))
             ? body.getAttributeNS(Namespaces.WSU, "Id")
-            : wsuId.apply(body, "Body");
+            : wsuIdInjector.apply(body, "Body");
 
     // 2. create or get the soap:Header
     Element header = null;
@@ -190,7 +200,7 @@ public class Sign extends WssecCalloutBase implements Execution {
 
     nodes = header.getElementsByTagNameNS(Namespaces.WSSEC, "Security");
     if (nodes.getLength() == 0) {
-      String knownWssePrefix = knownNamespaces.get(Namespaces.WSSEC);
+      String knownWssePrefix = knownNamespacesAtRoot.get(Namespaces.WSSEC);
       wssePrefix =
           (knownWssePrefix != null)
               ? knownWssePrefix
@@ -203,12 +213,15 @@ public class Sign extends WssecCalloutBase implements Execution {
       header.appendChild(wssecHeader);
     } else {
       wssecHeader = (Element) nodes.item(0);
-      wssePrefix = declareXmlnsPrefix(wssecHeader, knownNamespaces, Namespaces.WSSEC);
+      if (!wssecHeader.hasAttributeNS(soapns, "mustUnderstand")) {
+        wssecHeader.setAttributeNS(soapns, soapPrefix + ":mustUnderstand", "1");
+      }
+      wssePrefix = declareXmlnsPrefix(wssecHeader, knownNamespacesAtRoot, Namespaces.WSSEC);
     }
 
-    // 4. embed a Timestamp element under the wssecHeader element
+    // 4. embed a Timestamp element under the wssecHeader element (always)
     Element timestamp = doc.createElementNS(Namespaces.WSU, wsuPrefix + ":Timestamp");
-    String timestampId = wsuId.apply(timestamp, "TS");
+    String timestampId = wsuIdInjector.apply(timestamp, "TS");
     wssecHeader.appendChild(timestamp);
 
     // 5a. embed a Created element into the Timestamp
@@ -223,7 +236,57 @@ public class Sign extends WssecCalloutBase implements Execution {
       timestamp.appendChild(expires);
     }
 
-    // 6. maybe embed the BinarySecurityToken
+    // 6. for each desired SignatureConfirmation, get or embed an element with a distinct Id
+    List<String> sigConfirmationIds = null;
+    if (signConfiguration.confirmations != null) {
+      sigConfirmationIds = new ArrayList<String>();
+      Map<String, String> knownNsAtSecurity = Namespaces.getExistingNamespaces(wssecHeader);
+      String wsse11Prefix = declareXmlnsPrefix(wssecHeader, knownNsAtSecurity, Namespaces.WSSEC_11);
+      NodeList existingConfirmations =
+          wssecHeader.getElementsByTagNameNS(Namespaces.WSSEC_11, "SignatureConfirmation");
+      int numExistingConfirmations = existingConfirmations.getLength();
+      if (signConfiguration.confirmations.size() == 1
+          && signConfiguration.confirmations.get(0).equals("*all*")) {
+        // sign them all
+        for (int i = 0; i < numExistingConfirmations; i++) {
+          Element confirmation = (Element) existingConfirmations.item(i);
+          sigConfirmationIds.add(
+              (confirmation.hasAttributeNS(Namespaces.WSU, "Id"))
+                  ? confirmation.getAttributeNS(Namespaces.WSU, "Id")
+                  : wsuIdInjector.apply(confirmation, "Conf"));
+        }
+      } else {
+        for (String value : signConfiguration.confirmations) {
+          // find existing SignatureConfirmation element with that value, or inject one
+          Element foundMatch = null;
+          for (int i = 0; i < numExistingConfirmations && foundMatch == null; i++) {
+            Element confirmation = (Element) nodes.item(i);
+            if (confirmation.hasAttribute("Value")
+                && value.equals(confirmation.getAttribute("Value"))) {
+              foundMatch = confirmation;
+            }
+          }
+          if (foundMatch != null) {
+            sigConfirmationIds.add(
+                (foundMatch.hasAttributeNS(Namespaces.WSU, "Id"))
+                    ? foundMatch.getAttributeNS(Namespaces.WSU, "Id")
+                    : wsuIdInjector.apply(foundMatch, "Conf"));
+          } else {
+            // inject a SignatureConfirmation element for the specified value
+            Element confirmation =
+                doc.createElementNS(Namespaces.WSSEC_11, wsse11Prefix + ":SignatureConfirmation");
+            if (!value.equals("")) {
+              // There is a special case of no Value attr at all.
+              confirmation.setAttribute("Value", value);
+            }
+            sigConfirmationIds.add(wsuIdInjector.apply(confirmation, "Conf"));
+            wssecHeader.appendChild(confirmation);
+          }
+        }
+      }
+    }
+
+    // 7. maybe embed the BinarySecurityToken
     // but first, verify that the cert signs the public key that corresponds to the private key
     RSAPublicKey certPublicKey = (RSAPublicKey) signConfiguration.certificate.getPublicKey();
     final byte[] certModulus = certPublicKey.getModulus().toByteArray();
@@ -233,13 +296,14 @@ public class Sign extends WssecCalloutBase implements Execution {
     String encodedKeyModulus = Base64.getEncoder().encodeToString(keyModulus);
     if (!encodedCertModulus.equals(encodedKeyModulus)) {
       throw new KeyException(
-          "public key mismatch. The public key contained in the certificate does not match the private key.");
+          "public key mismatch. The public key contained in the certificate does not match the"
+              + " private key.");
     }
 
     String bstId = "none";
     if (signConfiguration.keyIdentifierType == KeyIdentifierType.BST_DIRECT_REFERENCE) {
       Element bst = doc.createElementNS(Namespaces.WSSEC, wssePrefix + ":BinarySecurityToken");
-      bstId = wsuId.apply(bst, "ST");
+      bstId = wsuIdInjector.apply(bst, "ST");
       bst.setAttribute("EncodingType", Constants.BASE64_BINARY);
       bst.setAttribute("ValueType", Constants.X509_V3_TYPE);
       bst.setTextContent(
@@ -247,17 +311,12 @@ public class Sign extends WssecCalloutBase implements Execution {
       wssecHeader.appendChild(bst);
     }
 
-    String digestMethodUri =
-        (signConfiguration.digestMethod != null)
-            ? signConfiguration.digestMethod
-            : DigestMethod.SHA1;
-    DigestMethod digestMethod = signatureFactory.newDigestMethod(digestMethodUri, null);
-
+    // 8. specify the things to be signed, and how
     TransformParameterSpec tps =
         (signConfiguration.transformInclusiveNamespaces != null)
             ? new ExcC14NParameterSpec(
                 signConfiguration.transformInclusiveNamespaces.stream()
-                    .map(s -> knownNamespaces.get(s))
+                    .map(s -> knownNamespacesAtRoot.get(s))
                     .filter(s -> s != null)
                     .collect(Collectors.toList()))
             : null;
@@ -268,6 +327,12 @@ public class Sign extends WssecCalloutBase implements Execution {
     // Transform transform =
     //     signatureFactory.newTransform(Transform.ENVELOPED, (TransformParameterSpec) null);
 
+    // add signature references.
+    String digestMethodUri =
+        (signConfiguration.digestMethod != null)
+            ? signConfiguration.digestMethod
+            : DigestMethod.SHA1;
+    DigestMethod digestMethod = signatureFactory.newDigestMethod(digestMethodUri, null);
     List<Reference> references = new ArrayList<Reference>();
 
     if (signConfiguration.elementsToSign == null
@@ -283,8 +348,20 @@ public class Sign extends WssecCalloutBase implements Execution {
           signatureFactory.newReference(
               "#" + timestampId, digestMethod, Collections.singletonList(transform), null, null));
     }
+    // now any SignatureConfirmation elements
+    if (sigConfirmationIds != null) {
+      for (String confirmationId : sigConfirmationIds) {
+        references.add(
+            signatureFactory.newReference(
+                "#" + confirmationId,
+                digestMethod,
+                Collections.singletonList(transform),
+                null,
+                null));
+      }
+    }
 
-    // 7. add <SignatureMethod Algorithm="..."?>
+    // 9. add <SignatureMethod Algorithm="..."?>
     String signingMethodUri =
         (signConfiguration.signingMethod != null)
             ? signConfiguration.signingMethod
@@ -301,7 +378,7 @@ public class Sign extends WssecCalloutBase implements Execution {
 
       List<String> prefixes =
           signConfiguration.c14nInclusiveNamespaces.stream()
-              .map(s -> knownNamespaces.get(s))
+              .map(s -> knownNamespacesAtRoot.get(s))
               .filter(s -> s != null)
               .collect(Collectors.toList());
 
@@ -408,7 +485,7 @@ public class Sign extends WssecCalloutBase implements Execution {
       // </KeyInfo>
       Element secTokenRef =
           doc.createElementNS(Namespaces.WSSEC, wssePrefix + ":SecurityTokenReference");
-      wsuId.apply(secTokenRef, "STR");
+      wsuIdInjector.apply(secTokenRef, "STR");
       Element x509Data = doc.createElementNS(Namespaces.XMLDSIG, dsPrefix.apply("X509Data"));
       Element x509IssuerSerial =
           doc.createElementNS(Namespaces.XMLDSIG, dsPrefix.apply("X509IssuerSerial"));
@@ -437,10 +514,11 @@ public class Sign extends WssecCalloutBase implements Execution {
       // keyInfo = keyInfoFactory.newKeyInfo(Collections.singletonList(x509Data));
     }
 
+    // 9. sign
     XMLSignature signature = signatureFactory.newXMLSignature(signedInfo, keyInfo);
     signature.sign(signingContext);
 
-    // emit the resulting document
+    // 10. emit the resulting document
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     Transformer transformer = TransformerFactory.newInstance().newTransformer();
     transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
@@ -449,7 +527,10 @@ public class Sign extends WssecCalloutBase implements Execution {
   }
 
   private static RSAPrivateKey readKey(String privateKeyPemString, String password)
-      throws IOException, OperatorCreationException, PKCSException, InvalidKeySpecException,
+      throws IOException,
+          OperatorCreationException,
+          PKCSException,
+          InvalidKeySpecException,
           NoSuchAlgorithmException {
     if (privateKeyPemString == null) {
       throw new IllegalStateException("PEM String is null");
@@ -537,23 +618,57 @@ public class Sign extends WssecCalloutBase implements Execution {
   private List<String> getElementsToSign(MessageContext msgCtxt) throws Exception {
     String elementList = getSimpleOptionalProperty("elements-to-sign", msgCtxt);
     if (elementList == null) return null;
-    // warn on invalid values
-    List<String> toSign =
+
+    // normalize
+    List<String> desiredElementsToSign =
         Arrays.asList(elementList.split(",[ ]*")).stream()
             .map(String::toLowerCase)
-            .filter(c -> c.equals("body") || c.equals("timestamp"))
             .distinct()
             .collect(Collectors.toList());
 
-    if (!toSign.contains("timestamp") && !toSign.contains("body")) {
-      msgCtxt.setVariable(varName("WARNING"), "use timestamp or body or both in elements-to-sign");
+    List<String> allowedElements = Arrays.asList("body", "timestamp");
+
+    if (desiredElementsToSign.size() > allowedElements.size()
+        || desiredElementsToSign.size() == 0) {
+      msgCtxt.setVariable(
+          varName("WARNING"),
+          String.format("use one or more of %s in elements-to-sign", allowedElements.toString()));
+
       return null;
     }
-    if (toSign.size() > 2 || toSign.size() == 0) {
-      msgCtxt.setVariable(varName("WARNING"), "use timestamp or body or both in elements-to-sign");
+
+    // warn on invalid values
+    List<String> unsupportedElements =
+        desiredElementsToSign.stream()
+            .filter(c -> allowedElements.indexOf(c) == -1)
+            .collect(Collectors.toList());
+
+    if (unsupportedElements.size() > 0) {
+      msgCtxt.setVariable(
+          varName("WARNING"),
+          String.format("use one or more of %s in elements-to-sign", allowedElements.toString()));
       return null;
     }
-    return toSign;
+    return desiredElementsToSign;
+  }
+
+  private List<String> getConfirmations(MessageContext msgCtxt) throws Exception {
+    String value = (String) this.properties.get("confirmations");
+    if (value == null) {
+      return null;
+    }
+    value = value.trim();
+    if (value.equals("")) {
+      return Arrays.asList(""); // one blank element. Indicates no signature on initiator.
+    }
+    value = resolvePropertyValue(value, msgCtxt);
+    if (value == null || value.equals("")) {
+      return null;
+    }
+
+    // normalize
+    List<String> confirmationValues = Arrays.asList(value.split(",[ ]*"));
+    return confirmationValues;
   }
 
   private List<String> getInclusiveNamespaces(String label, MessageContext msgCtxt)
@@ -561,9 +676,7 @@ public class Sign extends WssecCalloutBase implements Execution {
     String nsList = getSimpleOptionalProperty(label, msgCtxt);
     if (nsList == null) return null;
     List<String> namespaces =
-        Arrays.asList(nsList.split(",[ ]*")).stream()
-            .distinct()
-            .collect(Collectors.toList());
+        Arrays.asList(nsList.split(",[ ]*")).stream().distinct().collect(Collectors.toList());
     return namespaces;
   }
 
@@ -618,6 +731,7 @@ public class Sign extends WssecCalloutBase implements Execution {
     public IssuerNameStyle issuerNameStyle;
     public KeyIdentifierType keyIdentifierType;
     public List<String> elementsToSign;
+    public List<String> confirmations = null;
     public List<String> c14nInclusiveNamespaces;
     public List<String> transformInclusiveNamespaces;
     public String digSigPrefix;
@@ -671,6 +785,11 @@ public class Sign extends WssecCalloutBase implements Execution {
       return this;
     }
 
+    public SignConfiguration withConfirmations(List<String> confirmations) {
+      this.confirmations = confirmations;
+      return this;
+    }
+
     public SignConfiguration withC14nInclusiveNamespaces(List<String> inclusiveNamespaces) {
       this.c14nInclusiveNamespaces = inclusiveNamespaces;
       return this;
@@ -702,6 +821,7 @@ public class Sign extends WssecCalloutBase implements Execution {
               .withSigningMethod(getSigningMethod(msgCtxt))
               .withDigestMethod(getDigestMethod(msgCtxt))
               .withElementsToSign(getElementsToSign(msgCtxt))
+              .withConfirmations(getConfirmations(msgCtxt))
               .withC14nInclusiveNamespaces(getC14nInclusiveNamespaces(msgCtxt))
               .withTransformInclusiveNamespaces(getTransformInclusiveNamespaces(msgCtxt))
               .withDigSigPrefix(getDigSigPrefix(msgCtxt));

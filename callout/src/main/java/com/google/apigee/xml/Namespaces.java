@@ -14,6 +14,8 @@ public class Namespaces {
   public static final String SOAP1_2 = "http://www.w3.org/2003/05/soap-envelope";
   public static final String WSSEC =
       "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd";
+  public static final String WSSEC_11 =
+      "http://docs.oasis-open.org/wss/oasis-wss-wssecurity-secext-1.1.xsd";
   public static final String XMLNS = "http://www.w3.org/2000/xmlns/";
   public static final String XMLDSIG = "http://www.w3.org/2000/09/xmldsig#";
 
@@ -25,13 +27,13 @@ public class Namespaces {
     map1.put(SOAP1_1, "soap1.1");
     map1.put(SOAP1_2, "soap1.2");
     map1.put(WSSEC, "wssec");
+    map1.put(WSSEC_11, "wssec1.1");
     map1.put(XMLDSIG, "ds");
 
     defaultPrefixes = Collections.synchronizedMap(map1);
   }
 
-  public static Map<String, String> getExistingNamespaces(Element element) {
-    Map<String, String> knownNamespaces = new HashMap<String, String>();
+  private static void fillExistingNamespaces(Map<String, String> known, Element element) {
     NamedNodeMap attributes = element.getAttributes();
     if (attributes != null) {
       for (int i = 0; i < attributes.getLength(); i++) {
@@ -40,12 +42,23 @@ public class Namespaces {
           String name = node.getNodeName();
           if (name.startsWith("xmlns:")) {
             String value = node.getNodeValue();
-            knownNamespaces.put(value, name.substring(6));
+            String prefix = name.substring(6);
+            if (!known.containsValue(prefix)) {
+              known.put(value, prefix);
+            }
           }
         }
       }
     }
-    return Collections.unmodifiableMap(knownNamespaces); // key:namespace, value:prefix
+    Node parent = element.getParentNode();
+    if (parent != null && parent instanceof Element) {
+      fillExistingNamespaces(known, (Element) parent);
+    }
   }
 
+  public static Map<String, String> getExistingNamespaces(Element element) {
+    Map<String, String> knownNamespaces = new HashMap<String, String>();
+    fillExistingNamespaces(knownNamespaces, element);
+    return Collections.unmodifiableMap(knownNamespaces); // key:namespace, value:prefix
+  }
 }

@@ -21,13 +21,10 @@ import com.google.apigee.xml.Constants;
 import java.io.ByteArrayInputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
-import java.security.AccessController;
 import java.security.KeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivilegedAction;
 import java.security.Provider;
 import java.security.Security;
 import java.security.cert.Certificate;
@@ -50,8 +47,7 @@ public abstract class WssecCalloutBase {
   static {
     try {
       initSTRTransform();
-    }
-    catch (Exception e) {
+    } catch (Exception e) {
       throw new ExceptionInInitializerError(e);
     }
   }
@@ -71,7 +67,7 @@ public abstract class WssecCalloutBase {
     // Provider provider = clazz.newInstance();
 
     Provider provider = new com.google.apigee.xml.STRTransformProvider();
-    //int ret = Security.addProvider(provider);
+    // int ret = Security.addProvider(provider);
     int ret = Security.insertProviderAt(provider, 2);
 
     // System.out.printf("Security Providers: \n");
@@ -80,7 +76,6 @@ public abstract class WssecCalloutBase {
     //   System.out.printf("%d: %s (%s)\n", i, provs[i].getName(), provs[i].getVersion());
     // }
   }
-
 
   private static final String _varprefix = "wssec_";
   protected Map properties; // read-only
@@ -136,8 +131,7 @@ public abstract class WssecCalloutBase {
     return soapVersion;
   }
 
-  protected String getSimpleOptionalProperty(String propName, MessageContext msgCtxt)
-       {
+  protected String getSimpleOptionalProperty(String propName, MessageContext msgCtxt) {
     String value = (String) this.properties.get(propName);
     if (value == null) {
       return null;
@@ -154,7 +148,7 @@ public abstract class WssecCalloutBase {
   }
 
   protected String getSimpleRequiredProperty(String propName, MessageContext msgCtxt)
-    throws IllegalStateException {
+      throws IllegalStateException {
     String value = (String) this.properties.get(propName);
     if (value == null) {
       throw new IllegalStateException(propName + " resolves to an empty string");
@@ -173,7 +167,7 @@ public abstract class WssecCalloutBase {
   // If the value of a property contains any pairs of curlies,
   // eg, {apiproxy.name}, then "resolve" the value by de-referencing
   // the context variables whose names appear between curlies.
-  private String resolvePropertyValue(String spec, MessageContext msgCtxt) {
+  protected String resolvePropertyValue(String spec, MessageContext msgCtxt) {
     Matcher matcher = variableReferencePattern.matcher(spec);
     StringBuffer sb = new StringBuffer();
     while (matcher.find()) {
@@ -190,7 +184,10 @@ public abstract class WssecCalloutBase {
   }
 
   protected X509Certificate getCertificateFromConfiguration(MessageContext msgCtxt)
-    throws NoSuchAlgorithmException, InvalidNameException, KeyException, CertificateEncodingException {
+      throws NoSuchAlgorithmException,
+          InvalidNameException,
+          KeyException,
+          CertificateEncodingException {
     String certificateString = getSimpleRequiredProperty("certificate", msgCtxt);
     certificateString = certificateString.trim();
     X509Certificate certificate = (X509Certificate) certificateFromPEM(certificateString);
@@ -217,14 +214,11 @@ public abstract class WssecCalloutBase {
   }
 
   private String signingMethodToUri(String shortName) {
-    if (shortName == null)
-      throw new IllegalStateException("signing method is null");
+    if (shortName == null) throw new IllegalStateException("signing method is null");
 
-    if (shortName.toLowerCase().equals("rsa-sha256"))
-      return Constants.SIGNING_METHOD_RSA_SHA256;
+    if (shortName.toLowerCase().equals("rsa-sha256")) return Constants.SIGNING_METHOD_RSA_SHA256;
 
-    if (shortName.toLowerCase().equals("rsa-sha1"))
-      return Constants.SIGNING_METHOD_RSA_SHA1;
+    if (shortName.toLowerCase().equals("rsa-sha1")) return Constants.SIGNING_METHOD_RSA_SHA1;
 
     return shortName; // unrecognized, but let's go with it.
   }
@@ -236,21 +230,19 @@ public abstract class WssecCalloutBase {
     // warn on unrecognized values
     if (!signingMethod.equals(Constants.SIGNING_METHOD_RSA_SHA1)
         && !signingMethod.equals(Constants.SIGNING_METHOD_RSA_SHA256)) {
-      msgCtxt.setVariable(varName("WARNING"),
-                          String.format("unrecognized value for signing-method: %s", signingMethod));
+      msgCtxt.setVariable(
+          varName("WARNING"),
+          String.format("unrecognized value for signing-method: %s", signingMethod));
     }
     return signingMethod;
   }
 
   private String digestMethodToUri(String shortName) {
-    if (shortName == null)
-      throw new IllegalStateException("digest method is null");
+    if (shortName == null) throw new IllegalStateException("digest method is null");
 
-    if (shortName.toLowerCase().equals("sha256"))
-      return DigestMethod.SHA256;
+    if (shortName.toLowerCase().equals("sha256")) return DigestMethod.SHA256;
 
-    if (shortName.toLowerCase().equals("sha1"))
-      return DigestMethod.SHA1;
+    if (shortName.toLowerCase().equals("sha1")) return DigestMethod.SHA1;
 
     return shortName; // unrecognized
   }
@@ -260,9 +252,9 @@ public abstract class WssecCalloutBase {
     if (digestMethod == null) return null;
     digestMethod = digestMethodToUri(digestMethod.trim());
     // warn on invalid values
-    if (!digestMethod.equals(DigestMethod.SHA1)
-        && !digestMethod.equals(DigestMethod.SHA256)) {
-      msgCtxt.setVariable(varName("WARNING"), String.format("invalid value for digest-method: %s", digestMethod));
+    if (!digestMethod.equals(DigestMethod.SHA1) && !digestMethod.equals(DigestMethod.SHA256)) {
+      msgCtxt.setVariable(
+          varName("WARNING"), String.format("invalid value for digest-method: %s", digestMethod));
     }
     return digestMethod;
   }
@@ -271,13 +263,12 @@ public abstract class WssecCalloutBase {
     return s.trim().replaceAll("([\\r|\\n|\\r\\n] *)", "\n");
   }
 
-  protected static Certificate certificateFromPEM(String certificateString)
-      throws KeyException {
+  protected static Certificate certificateFromPEM(String certificateString) throws KeyException {
     try {
       CertificateFactory certFactory = CertificateFactory.getInstance("X.509", "BC");
       certificateString = reformIndents(certificateString);
       Certificate certificate =
-        certFactory.generateCertificate(
+          certFactory.generateCertificate(
               new ByteArrayInputStream(certificateString.getBytes(StandardCharsets.UTF_8)));
       return certificate;
     } catch (Exception ex) {
@@ -285,8 +276,7 @@ public abstract class WssecCalloutBase {
     }
   }
 
-  protected static String getCommonName(X500Principal principal)
-    throws InvalidNameException {
+  protected static String getCommonName(X500Principal principal) throws InvalidNameException {
     LdapName ldapDN = new LdapName(principal.getName());
     String cn = null;
     for (Rdn rdn : ldapDN.getRdns()) {
@@ -299,16 +289,16 @@ public abstract class WssecCalloutBase {
   }
 
   protected static String getThumbprintBase64(X509Certificate certificate)
-    throws NoSuchAlgorithmException, CertificateEncodingException {
-    return Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-1").digest(certificate.getEncoded()));
-
+      throws NoSuchAlgorithmException, CertificateEncodingException {
+    return Base64.getEncoder()
+        .encodeToString(MessageDigest.getInstance("SHA-1").digest(certificate.getEncoded()));
   }
 
   protected static String getThumbprintHex(X509Certificate certificate)
-    throws NoSuchAlgorithmException, CertificateEncodingException {
+      throws NoSuchAlgorithmException, CertificateEncodingException {
     return DatatypeConverter.printHexBinary(
-        MessageDigest.getInstance("SHA-1").digest(
-                certificate.getEncoded())).toLowerCase();
+            MessageDigest.getInstance("SHA-1").digest(certificate.getEncoded()))
+        .toLowerCase();
   }
 
   protected static String getStackTraceAsString(Throwable t) {
@@ -319,13 +309,12 @@ public abstract class WssecCalloutBase {
   }
 
   protected void setExceptionVariables(Exception exc1, MessageContext msgCtxt) {
-    String error = exc1.toString().replaceAll("\n"," ");
+    String error = exc1.toString().replaceAll("\n", " ");
     msgCtxt.setVariable(varName("exception"), error);
     Matcher matcher = commonErrorPattern.matcher(error);
     if (matcher.matches()) {
       msgCtxt.setVariable(varName("error"), matcher.group(2));
-    }
-    else {
+    } else {
       msgCtxt.setVariable(varName("error"), error);
     }
   }

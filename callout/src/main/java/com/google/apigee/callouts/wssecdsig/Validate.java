@@ -1,4 +1,4 @@
-// Copyright 2018-2022 Google LLC
+// Copyright 2018-2023 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -587,7 +587,11 @@ public class Validate extends WssecCalloutBase implements Execution {
         // in case of multiple signatures with same cert.
         SourcedCert sourcedCert =
             getCertificate((Element) keyinfoList.item(0), doc, validationConfig.soapNs, msgCtxt);
-        sourcedCert.certificate.checkValidity(); // throws if expired or not yet valid
+
+        if (!validationConfig.ignoreCertificateExpiry) {
+          sourcedCert.certificate.checkValidity(); // throws if expired or not yet valid
+        }
+
         logger.debug("validate_RSA() cert is valid");
         if (sourcedCert.source == CertificateSource.DOCUMENT) {
           String thumbprint = result.addCertificate(sourcedCert.certificate);
@@ -722,6 +726,14 @@ public class Validate extends WssecCalloutBase implements Execution {
     return false;
   }
 
+  private boolean wantIgnoreCertificateExpiry(MessageContext msgCtxt) throws Exception {
+    String wantIgnore = getSimpleOptionalProperty("ignore-certificate-expiry", msgCtxt);
+    if (wantIgnore == null) return false;
+    wantIgnore = wantIgnore.trim();
+    if (wantIgnore.trim().toLowerCase().equals("true")) return true;
+    return false;
+  }
+
   private List<String> getAcceptableSubjectCommonNames(MessageContext msgCtxt) throws Exception {
     String nameList = getSimpleOptionalProperty("accept-subject-cns", msgCtxt);
     if (nameList == null) return null;
@@ -755,6 +767,7 @@ public class Validate extends WssecCalloutBase implements Execution {
     public String soapNs; // optional
     public String signingMethod;
     public String digestMethod;
+    public boolean ignoreCertificateExpiry;
 
     public ValidateConfiguration() {}
 
@@ -782,6 +795,10 @@ public class Validate extends WssecCalloutBase implements Execution {
       this.soapNs = soapNs;
       return this;
     }
+    public ValidateConfiguration setCertificateExpiryHandling(boolean wantIgnore) {
+      this.ignoreCertificateExpiry = wantIgnore;
+      return this;
+    }
   }
 
   public ExecutionResult execute(final MessageContext msgCtxt, final ExecutionContext execContext) {
@@ -797,7 +814,8 @@ public class Validate extends WssecCalloutBase implements Execution {
               .withSoapNamespace(
                   (getSoapVersion(msgCtxt).equals("soap1.2"))
                       ? Namespaces.SOAP1_2
-                      : Namespaces.SOAP1_1);
+                      : Namespaces.SOAP1_1)
+        .setCertificateExpiryHandling(wantIgnoreCertificateExpiry(msgCtxt));
 
       ValidationResult validationResult = validate_RSA(document, validationConfig, msgCtxt);
       boolean isValid = validationResult.isValid();

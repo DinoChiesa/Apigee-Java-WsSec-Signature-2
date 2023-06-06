@@ -25,7 +25,9 @@ import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAccessor;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import javax.xml.crypto.dsig.XMLSignature;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -152,26 +154,31 @@ public class TestWssecSignCallout extends CalloutTestBase {
 
     Document doc = docFromStream(new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8)));
 
+    // ws-sec header
+    NodeList nl = doc.getElementsByTagNameNS(Namespaces.WSSEC, "Security");
+    Assert.assertEquals(nl.getLength(), 1, method + "WS-Security header");
+    Element wssecHeader = (Element) nl.item(0);
+
     // signature
-    NodeList nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "Signature");
+    nl = wssecHeader.getElementsByTagNameNS(XMLSignature.XMLNS, "Signature");
     Assert.assertEquals(nl.getLength(), 1, method + "Signature element");
 
     // SignatureMethod (default)
-    nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "SignatureMethod");
+    nl = wssecHeader.getElementsByTagNameNS(XMLSignature.XMLNS, "SignatureMethod");
     Assert.assertEquals(nl.getLength(), 1, method + "SignatureMethod element");
     Element element = (Element) nl.item(0);
     String signatureMethodAlgorithm = element.getAttribute("Algorithm");
     Assert.assertEquals(signatureMethodAlgorithm, "http://www.w3.org/2000/09/xmldsig#rsa-sha1");
 
     // c14n
-    nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "CanonicalizationMethod");
+    nl = wssecHeader.getElementsByTagNameNS(XMLSignature.XMLNS, "CanonicalizationMethod");
     Assert.assertEquals(nl.getLength(), 1, method + "CanonicalizationMethod element");
     element = (Element) nl.item(0);
     String canonicalizationMethodAlgorithm = element.getAttribute("Algorithm");
     Assert.assertEquals(canonicalizationMethodAlgorithm, "http://www.w3.org/2001/10/xml-exc-c14n#");
 
-    // Reference
-    nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "Reference");
+    // References
+    nl = wssecHeader.getElementsByTagNameNS(XMLSignature.XMLNS, "Reference");
     Assert.assertEquals(nl.getLength(), 2, method + "Reference element");
 
     // DigestMethod
@@ -186,7 +193,81 @@ public class TestWssecSignCallout extends CalloutTestBase {
     }
 
     // SignatureValue
-    nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "SignatureValue");
+    nl = wssecHeader.getElementsByTagNameNS(XMLSignature.XMLNS, "SignatureValue");
+    Assert.assertEquals(nl.getLength(), 1, method + "SignatureValue element");
+  }
+
+  @Test
+  public void withExistingSecurityHeader() throws Exception {
+    String method = "withExistingSecurityHeader() ";
+    msgCtxt.setVariable("message.content", soapResponseWithEmptySecurityHeader);
+    msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
+    msgCtxt.setVariable("my-certificate", pairs[2].certificate);
+
+    Map<String, String> props = new HashMap<String, String>();
+    props.put("debug", "true");
+    props.put("source", "message.content");
+    props.put("private-key", "{my-private-key}");
+    props.put("certificate", "{my-certificate}");
+    props.put("output-variable", "output");
+
+    Sign callout = new Sign(props);
+
+    // execute and retrieve output
+    ExecutionResult actualResult = callout.execute(msgCtxt, exeCtxt);
+    Assert.assertEquals(actualResult, ExecutionResult.SUCCESS, "result not as expected");
+    Object exception = msgCtxt.getVariable("wssec_exception");
+    Assert.assertNull(exception, method + "exception");
+    Object errorOutput = msgCtxt.getVariable("wssec_error");
+    Assert.assertNull(errorOutput, "error not as expected");
+    Object stacktrace = msgCtxt.getVariable("wssec_stacktrace");
+    Assert.assertNull(stacktrace, method + "stacktrace");
+
+    String output = (String) msgCtxt.getVariable("output");
+    System.out.printf("** Output:\n" + output + "\n");
+
+    Document doc = docFromStream(new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8)));
+
+    // ws-sec header
+    NodeList nl = doc.getElementsByTagNameNS(Namespaces.WSSEC, "Security");
+    Assert.assertEquals(nl.getLength(), 1, method + "WS-Security header");
+    Element wssecHeader = (Element) nl.item(0);
+
+    // signature
+    nl = wssecHeader.getElementsByTagNameNS(XMLSignature.XMLNS, "Signature");
+    Assert.assertEquals(nl.getLength(), 1, method + "Signature element");
+
+    // SignatureMethod (default)
+    nl = wssecHeader.getElementsByTagNameNS(XMLSignature.XMLNS, "SignatureMethod");
+    Assert.assertEquals(nl.getLength(), 1, method + "SignatureMethod element");
+    Element element = (Element) nl.item(0);
+    String signatureMethodAlgorithm = element.getAttribute("Algorithm");
+    Assert.assertEquals(signatureMethodAlgorithm, "http://www.w3.org/2000/09/xmldsig#rsa-sha1");
+
+    // c14n
+    nl = wssecHeader.getElementsByTagNameNS(XMLSignature.XMLNS, "CanonicalizationMethod");
+    Assert.assertEquals(nl.getLength(), 1, method + "CanonicalizationMethod element");
+    element = (Element) nl.item(0);
+    String canonicalizationMethodAlgorithm = element.getAttribute("Algorithm");
+    Assert.assertEquals(canonicalizationMethodAlgorithm, "http://www.w3.org/2001/10/xml-exc-c14n#");
+
+    // References
+    nl = wssecHeader.getElementsByTagNameNS(XMLSignature.XMLNS, "Reference");
+    Assert.assertEquals(nl.getLength(), 2, method + "Reference element");
+
+    // DigestMethod
+    for (int i = 0; i < nl.getLength(); i++) {
+      element = (Element) nl.item(i);
+      NodeList digestMethodNodes =
+          element.getElementsByTagNameNS(XMLSignature.XMLNS, "DigestMethod");
+      Assert.assertEquals(digestMethodNodes.getLength(), 1, method + "DigestMethod element");
+      element = (Element) digestMethodNodes.item(0);
+      String digestAlg = element.getAttribute("Algorithm");
+      Assert.assertEquals(digestAlg, "http://www.w3.org/2000/09/xmldsig#sha1");
+    }
+
+    // SignatureValue
+    nl = wssecHeader.getElementsByTagNameNS(XMLSignature.XMLNS, "SignatureValue");
     Assert.assertEquals(nl.getLength(), 1, method + "SignatureValue element");
   }
 
@@ -921,7 +1002,8 @@ public class TestWssecSignCallout extends CalloutTestBase {
   public void mismatchedKeyAndCertificate() throws Exception {
     String method = "withCertificateMismatch() ";
     String expectedError =
-        "public key mismatch. The public key contained in the certificate does not match the private key.";
+        "public key mismatch. The public key contained in the certificate does not match the"
+            + " private key.";
     String expectedException = "java.security.KeyException: " + expectedError;
     msgCtxt.setVariable("message.content", simpleSoap11);
     msgCtxt.setVariable("my-private-key", pairs[2].privateKey); // mismatch
@@ -1087,10 +1169,12 @@ public class TestWssecSignCallout extends CalloutTestBase {
     props.put("source", "message.content");
     props.put(
         "c14n-inclusive-namespaces",
-        "http://ws.example.com/, http://schemas.xmlsoap.org/soap/envelope/, http://www.w3.org/2001/XMLSchema, http://www.w3.org/2001/XMLSchema-instance");
+        "http://ws.example.com/, http://schemas.xmlsoap.org/soap/envelope/,"
+            + " http://www.w3.org/2001/XMLSchema, http://www.w3.org/2001/XMLSchema-instance");
     props.put(
         "transform-inclusive-namespaces",
-        "http://ws.example.com/, http://www.w3.org/2001/XMLSchema, http://www.w3.org/2001/XMLSchema-instance");
+        "http://ws.example.com/, http://www.w3.org/2001/XMLSchema,"
+            + " http://www.w3.org/2001/XMLSchema-instance");
     props.put("ds-prefix", "ds");
     props.put("expiry", "10m");
     props.put("key-identifier-type", "issuer_serial");
@@ -1147,5 +1231,149 @@ public class TestWssecSignCallout extends CalloutTestBase {
     // SignatureValue
     nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "SignatureValue");
     Assert.assertEquals(nl.getLength(), 1, method + "SignatureValue element");
+  }
+
+  @Test
+  public void signatureConfirmations1() throws Exception {
+    String method = "signatureConfirmations1() ";
+    List<String> confirmationValues = Arrays.asList("abcdefg", "p12345");
+
+    msgCtxt.setVariable("message.content", simpleSoap11);
+    msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
+    msgCtxt.setVariable("my-certificate", pairs[2].certificate);
+
+    Map<String, String> props = new HashMap<String, String>();
+    props.put("debug", "true");
+    props.put("source", "message.content");
+    props.put("expiry", "2m");
+    props.put("key-identifier-type", "thumbprint");
+    props.put("private-key", "{my-private-key}");
+    props.put("certificate", "{my-certificate}");
+    // tell the signer to inject SignatureConfirmation elements
+    props.put("confirmations", String.join(", ", confirmationValues));
+    props.put("output-variable", "output");
+
+    Sign callout = new Sign(props);
+
+    // execute and retrieve output
+    ExecutionResult actualResult = callout.execute(msgCtxt, exeCtxt);
+    Assert.assertEquals(actualResult, ExecutionResult.SUCCESS, "result not as expected");
+    Object exception = msgCtxt.getVariable("wssec_exception");
+    Assert.assertNull(exception, method + "exception");
+    Object errorOutput = msgCtxt.getVariable("wssec_error");
+    Assert.assertNull(errorOutput, "error not as expected");
+    Object stacktrace = msgCtxt.getVariable("wssec_stacktrace");
+    Assert.assertNull(stacktrace, method + "stacktrace");
+
+    String output = (String) msgCtxt.getVariable("output");
+    System.out.printf("** Output:\n" + output + "\n");
+
+    Document doc = docFromStream(new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8)));
+    NodeList nl = doc.getElementsByTagNameNS(Namespaces.WSSEC, "Security");
+    Assert.assertEquals(nl.getLength(), 1, method + "Security element");
+
+    nl =
+        ((Element) nl.item(0)).getElementsByTagNameNS(Namespaces.WSSEC_11, "SignatureConfirmation");
+    Assert.assertEquals(nl.getLength(), 2, method + "SignatureConfirmation elements");
+
+    for (int i = 0; i < nl.getLength(); i++) {
+      Element signatureConfirmation = ((Element) nl.item(i));
+      Assert.assertTrue(signatureConfirmation.hasAttribute("Value"));
+      Assert.assertTrue(confirmationValues.contains(signatureConfirmation.getAttribute("Value")));
+    }
+  }
+
+  @Test
+  public void signatureConfirmations2() throws Exception {
+    String method = "signatureConfirmations2() ";
+
+    msgCtxt.setVariable("message.content", soapResponseWithUnsignedConfirmations);
+    msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
+    msgCtxt.setVariable("my-certificate", pairs[2].certificate);
+
+    Map<String, String> props = new HashMap<String, String>();
+    props.put("debug", "true");
+    props.put("source", "message.content");
+    props.put("expiry", "2m");
+    props.put("key-identifier-type", "thumbprint");
+    props.put("private-key", "{my-private-key}");
+    props.put("certificate", "{my-certificate}");
+    props.put("confirmations", "*all*");
+    props.put("output-variable", "output");
+
+    Sign callout = new Sign(props);
+
+    // execute and retrieve output
+    ExecutionResult actualResult = callout.execute(msgCtxt, exeCtxt);
+    Assert.assertEquals(actualResult, ExecutionResult.SUCCESS, "result not as expected");
+    Object exception = msgCtxt.getVariable("wssec_exception");
+    Assert.assertNull(exception, method + "exception");
+    Object errorOutput = msgCtxt.getVariable("wssec_error");
+    Assert.assertNull(errorOutput, "error not as expected");
+    Object stacktrace = msgCtxt.getVariable("wssec_stacktrace");
+    Assert.assertNull(stacktrace, method + "stacktrace");
+
+    String output = (String) msgCtxt.getVariable("output");
+    System.out.printf("** Output:\n" + output + "\n");
+
+    Document doc = docFromStream(new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8)));
+    NodeList nl = doc.getElementsByTagNameNS(Namespaces.WSSEC, "Security");
+    Assert.assertEquals(nl.getLength(), 1, method + "Security element");
+
+    nl =
+        ((Element) nl.item(0)).getElementsByTagNameNS(Namespaces.WSSEC_11, "SignatureConfirmation");
+    Assert.assertEquals(nl.getLength(), 2, method + "SignatureConfirmation elements");
+
+    for (int i = 0; i < nl.getLength(); i++) {
+      Element signatureConfirmation = ((Element) nl.item(i));
+      Assert.assertTrue(signatureConfirmation.hasAttribute("Value"));
+      Assert.assertTrue(signatureConfirmation.hasAttributeNS(Namespaces.WSU, "Id"));
+    }
+  }
+
+  @Test
+  public void emptySignatureConfirmation() throws Exception {
+    String method = "emptySignatureConfirmation() ";
+
+    msgCtxt.setVariable("message.content", soapResponseWithEmptySecurityHeader);
+    msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
+    msgCtxt.setVariable("my-certificate", pairs[2].certificate);
+
+    Map<String, String> props = new HashMap<String, String>();
+    props.put("debug", "true");
+    props.put("source", "message.content");
+    props.put("expiry", "2m");
+    props.put("key-identifier-type", "thumbprint");
+    props.put("private-key", "{my-private-key}");
+    props.put("certificate", "{my-certificate}");
+    props.put("confirmations", ""); // empty
+    props.put("output-variable", "output");
+
+    Sign callout = new Sign(props);
+
+    // execute and retrieve output
+    ExecutionResult actualResult = callout.execute(msgCtxt, exeCtxt);
+    Assert.assertEquals(actualResult, ExecutionResult.SUCCESS, "result not as expected");
+    Object exception = msgCtxt.getVariable("wssec_exception");
+    Assert.assertNull(exception, method + "exception");
+    Object errorOutput = msgCtxt.getVariable("wssec_error");
+    Assert.assertNull(errorOutput, "error not as expected");
+    Object stacktrace = msgCtxt.getVariable("wssec_stacktrace");
+    Assert.assertNull(stacktrace, method + "stacktrace");
+
+    String output = (String) msgCtxt.getVariable("output");
+    System.out.printf("** Output:\n" + output + "\n");
+
+    Document doc = docFromStream(new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8)));
+    NodeList nl = doc.getElementsByTagNameNS(Namespaces.WSSEC, "Security");
+    Assert.assertEquals(nl.getLength(), 1, method + "Security element");
+
+    // should have exactly one SignatureConfirmation element and it should have no Value attr
+    nl =
+        ((Element) nl.item(0)).getElementsByTagNameNS(Namespaces.WSSEC_11, "SignatureConfirmation");
+    Assert.assertEquals(nl.getLength(), 1, method + "SignatureConfirmation elements");
+
+    Element signatureConfirmation = ((Element) nl.item(0));
+    Assert.assertFalse(signatureConfirmation.hasAttribute("Value"));
   }
 }

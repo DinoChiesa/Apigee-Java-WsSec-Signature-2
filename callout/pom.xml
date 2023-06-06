@@ -3,9 +3,9 @@
          xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>com.google.apigee.edgecallouts</groupId>
+  <groupId>com.google.apigee.callouts</groupId>
   <artifactId>apigee-wssecdsig</artifactId>
-  <version>20221012</version>
+  <version>20230605</version>
   <name>ApigeeJavaWssecSignature</name>
   <url>http://maven.apache.org</url>
   <packaging>jar</packaging>
@@ -141,7 +141,7 @@ do it manually by running these commands:
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.8.1</version>
+        <version>3.11.0</version>
         <configuration>
           <source>${java.version}</source>
           <target>${java.version}</target>
@@ -151,7 +151,7 @@ do it manually by running these commands:
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
-        <version>3.2.0</version>
+        <version>3.3.0</version>
         <configuration>
           <archive>
             <!-- do not include the pom.xml file in the generated jar -->
@@ -212,7 +212,7 @@ do it manually by running these commands:
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>3.0.0-M5</version>
+        <version>3.1.0</version>
         <configuration>
           <!--
           <excludes>
@@ -220,19 +220,19 @@ do it manually by running these commands:
           </excludes>
           -->
           <!-- debug logging for tests -->
-          <systemProperties>
+          <systemPropertyVariables>
             <property>
               <name>org.slf4j.simpleLogger.defaultLogLevel</name>
               <value>debug</value>
             </property>
-          </systemProperties>
+          </systemPropertyVariables>
         </configuration>
       </plugin>
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
-        <version>3.0.0-M3</version>
+        <version>3.3.0</version>
         <executions>
           <execution>
             <id>enforce-maven</id>
@@ -253,7 +253,7 @@ do it manually by running these commands:
        <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>versions-maven-plugin</artifactId>
-        <version>2.8.1</version>
+        <version>2.15.0</version>
         <executions>
           <execution>
             <phase>compile</phase>

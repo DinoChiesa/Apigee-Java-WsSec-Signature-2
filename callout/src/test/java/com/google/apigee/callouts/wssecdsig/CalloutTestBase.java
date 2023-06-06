@@ -83,6 +83,38 @@ public abstract class CalloutTestBase {
     + "   </soapenv:Body>\n"
     + "</soapenv:Envelope>\n";
 
+  static final String soapResponseWithEmptySecurityHeader =
+    "<Envelope \n"
+    + "    xmlns='http://schemas.xmlsoap.org/soap/envelope/'>\n"
+    + "  <Header>\n"
+    + "    <Security \n"
+    + "        xmlns='http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd'/>\n"
+    + "  </Header>\n"
+    + "  <Body>\n"
+    + "    <sumResponse xmlns='http://ws.example.com/'>\n"
+    + "      <return>9</return>\n"
+    + "    </sumResponse>\n"
+    + "  </Body>\n"
+    + "</Envelope>\n";
+
+  static final String soapResponseWithUnsignedConfirmations =
+    "<Envelope xmlns:ns1='http://ws.example.com/'\n"
+    + "    xmlns='http://schemas.xmlsoap.org/soap/envelope/'>\n"
+    + "  <Header>\n"
+    + "    <Security \n"
+    + "        xmlns='http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd'\n"
+    + "        xmlns:wssec11='http://docs.oasis-open.org/wss/oasis-wss-wssecurity-secext-1.1.xsd'>\n"
+    + "      <wssec11:SignatureConfirmation Value='ragnarok2'/>\n"
+    + "      <wssec11:SignatureConfirmation Value='pikachu1'/>\n"
+    + "    </Security>\n"
+    + "  </Header>\n"
+    + "  <Body>\n"
+    + "    <ns1:sumResponse>\n"
+    + "      <ns1:return>9</ns1:return>\n"
+    + "    </ns1:sumResponse>\n"
+    + "  </Body>\n"
+    + "</Envelope>\n";
+
   static class KeyCertPair {
     public String privateKey;
     public String password;
