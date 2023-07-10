@@ -112,7 +112,28 @@ public class TestWssecValidateCallout extends CalloutTestBase {
     Assert.assertEquals(actualResult, ExecutionResult.ABORT, "result not as expected");
     Object errorOutput = msgCtxt.getVariable("wssec_error");
     Assert.assertNotNull(errorOutput, "errorOutput");
-    Assert.assertEquals(errorOutput, "accept-thumbprints resolves to an empty string");
+    Assert.assertEquals(errorOutput, "the configuration specified no acceptable thumbprints");
+  }
+
+  @Test
+  public void redundantAcceptableThumbprints() throws Exception {
+    msgCtxt.setVariable("message.content", signedSoapNoExpiry1);
+
+    Map<String, String> props = new HashMap<String, String>();
+    props.put("debug", "true");
+    props.put("require-expiry", "false");
+    props.put("accept-thumbprints", "ada3a946669ad4e6e2c9f81360c3249e49a57a7d");
+    props.put("accept-thumbprints-sha256", "ef3712c45743b3f4405f597a1f6173c4c7d0992eda38c0a3a42983d91a2cf489");
+    props.put("source", "message.content");
+
+    Validate callout = new Validate(props);
+
+    // execute and retrieve output
+    ExecutionResult actualResult = callout.execute(msgCtxt, exeCtxt);
+    Assert.assertEquals(actualResult, ExecutionResult.ABORT, "result not as expected");
+    Object errorOutput = msgCtxt.getVariable("wssec_error");
+    Assert.assertNotNull(errorOutput, "errorOutput");
+    Assert.assertEquals(errorOutput, "you should specify only one of acceptable-thumbprints or acceptable-thumbprints-sha256");
   }
 
   @Test
@@ -124,6 +145,33 @@ public class TestWssecValidateCallout extends CalloutTestBase {
     props.put("debug", "true");
     props.put("require-expiry", "false");
     props.put("accept-thumbprints", "ada3a946669ad4e6e2c9f81360c3249e49a57a7d");
+    props.put("source", "message.content");
+
+    Validate callout = new Validate(props);
+
+    // execute and retrieve output
+    ExecutionResult actualResult = callout.execute(msgCtxt, exeCtxt);
+    Assert.assertEquals(actualResult, ExecutionResult.SUCCESS, "result not as expected");
+    Object errorOutput = msgCtxt.getVariable("wssec_error");
+    Assert.assertNull(errorOutput, "errorOutput");
+    Object exception = msgCtxt.getVariable("wssec_exception");
+    Assert.assertNull(exception, method + "exception");
+    Object stacktrace = msgCtxt.getVariable("wssec_stacktrace");
+    Assert.assertNull(stacktrace, method + "stacktrace");
+    Boolean isValid = (Boolean) msgCtxt.getVariable("wssec_valid");
+
+    Assert.assertTrue(isValid, method + "valid");
+  }
+
+  @Test
+  public void validResult_sha256_thumb() throws Exception {
+    String method = "validResult() ";
+    msgCtxt.setVariable("message.content", signedSoapNoExpiry1);
+
+    Map<String, String> props = new HashMap<String, String>();
+    props.put("debug", "true");
+    props.put("require-expiry", "false");
+    props.put("accept-thumbprints-sha256", "ef3712c45743b3f4405f597a1f6173c4c7d0992eda38c0a3a42983d91a2cf489");
     props.put("source", "message.content");
 
     Validate callout = new Validate(props);

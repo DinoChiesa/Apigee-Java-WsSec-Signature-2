@@ -371,9 +371,19 @@ public class Validate extends WssecCalloutBase implements Execution {
     }
   }
 
+  static class ThumbprintPair {
+    public String sha1;
+    public String sha256;
+    public ThumbprintPair(String sha1, String sha256) {
+      this.sha1 = sha1;
+      this.sha256 = sha256;
+    }
+  }
+
   static class ValidationResult {
     private boolean _isValid;
     private Map<X509Certificate, String> _thumbprints;
+    private Map<X509Certificate, String> _thumbprints_sha256;
     private List<X509Certificate> _certificates;
 
     private ValidationResult() {}
@@ -381,6 +391,7 @@ public class Validate extends WssecCalloutBase implements Execution {
     public static ValidationResult emptyValidationResult() {
       ValidationResult vresult = new ValidationResult();
       vresult._thumbprints = new HashMap<X509Certificate, String>();
+      vresult._thumbprints_sha256 = new HashMap<X509Certificate, String>();
       return vresult;
     }
 
@@ -394,14 +405,23 @@ public class Validate extends WssecCalloutBase implements Execution {
       return _thumbprints.get(certificate);
     }
 
-    public String addCertificate(X509Certificate certificate)
+    public String getCertThumbprint_SHA256(X509Certificate certificate) {
+      return _thumbprints_sha256.get(certificate);
+    }
+
+    public ThumbprintPair addCertificate(X509Certificate certificate)
         throws NoSuchAlgorithmException, CertificateEncodingException {
-      String thumbprint =
+      String thumbprint_sha1 =
           DatatypeConverter.printHexBinary(
                   MessageDigest.getInstance("SHA-1").digest(certificate.getEncoded()))
               .toLowerCase();
-      _thumbprints.put(certificate, thumbprint);
-      return thumbprint;
+      _thumbprints.put(certificate, thumbprint_sha1);
+      String thumbprint_sha256 =
+          DatatypeConverter.printHexBinary(
+                  MessageDigest.getInstance("SHA-256").digest(certificate.getEncoded()))
+              .toLowerCase();
+      _thumbprints_sha256.put(certificate, thumbprint_sha256);
+      return new ThumbprintPair(thumbprint_sha1, thumbprint_sha256);
     }
 
     public ValidationResult setValid(boolean isValid) {
@@ -594,8 +614,9 @@ public class Validate extends WssecCalloutBase implements Execution {
 
         logger.debug("validate_RSA() cert is valid");
         if (sourcedCert.source == CertificateSource.DOCUMENT) {
-          String thumbprint = result.addCertificate(sourcedCert.certificate);
-          msgCtxt.setVariable(varName("cert_" + i + "_thumbprint"), thumbprint);
+          ThumbprintPair pair = result.addCertificate(sourcedCert.certificate);
+          msgCtxt.setVariable(varName("cert_" + i + "_thumbprint"), pair.sha1);
+          msgCtxt.setVariable(varName("cert_" + i + "_thumbprint_sha256"), pair.sha256);
         }
         KeySelector ks = KeySelector.singletonKeySelector(sourcedCert.certificate.getPublicKey());
         DOMValidateContext vc = new DOMValidateContext(ks, signatureElement);
@@ -742,8 +763,18 @@ public class Validate extends WssecCalloutBase implements Execution {
         .collect(Collectors.toList());
   }
 
+  private List<String> getAcceptableThumbprints_SHA256(MessageContext msgCtxt) throws Exception {
+    String nameList = getSimpleOptionalProperty("accept-thumbprints-sha256", msgCtxt);
+    if (nameList == null) return null;
+    return Arrays.asList(nameList.split(",[ ]*")).stream()
+        .map(String::toLowerCase)
+        .map(x -> x.replaceAll(":",""))
+        .collect(Collectors.toList());
+  }
+
   private List<String> getAcceptableThumbprints(MessageContext msgCtxt) throws Exception {
-    String nameList = getSimpleRequiredProperty("accept-thumbprints", msgCtxt);
+    String nameList = getSimpleOptionalProperty("accept-thumbprints", msgCtxt);
+    if (nameList == null) return null;
     return Arrays.asList(nameList.split(",[ ]*")).stream()
         .map(String::toLowerCase)
         .map(x -> x.replaceAll(":",""))
@@ -858,16 +889,36 @@ public class Validate extends WssecCalloutBase implements Execution {
         // check thumbprints of certs that were embedded in the document
         List<X509Certificate> certs = validationResult.getCertificates();
         if (certs.size() > 0) {
+          List<String> acceptableThumbprints_SHA256 = getAcceptableThumbprints_SHA256(msgCtxt);
           List<String> acceptableThumbprints = getAcceptableThumbprints(msgCtxt);
+          if (acceptableThumbprints_SHA256 == null && acceptableThumbprints == null) {
+            throw new IllegalStateException("the configuration specified no acceptable thumbprints");
+          }
+          else if (acceptableThumbprints_SHA256 != null && acceptableThumbprints != null) {
+            throw new IllegalStateException("you should specify only one of acceptable-thumbprints or acceptable-thumbprints-sha256");
+          }
           List<String> acceptableSubjectCNs = getAcceptableSubjectCommonNames(msgCtxt);
           for (int i = 0; i < certs.size(); i++) {
             X509Certificate certificate = certs.get(i);
-            String thumbprint = validationResult.getCertThumbprint(certificate);
-            // msgCtxt.setVariable(varName("cert_" + i + "_thumbprint"), thumbprint);
 
-            if (!acceptableThumbprints.contains(thumbprint)) {
-              msgCtxt.setVariable(varName("error"), "certificate thumbprint not accepted");
-              isValid = false;
+            if (acceptableThumbprints_SHA256!=null) {
+              String thumbprint_sha256 = validationResult.getCertThumbprint_SHA256(certificate);
+              if (!acceptableThumbprints_SHA256.contains(thumbprint_sha256)) {
+                msgCtxt.setVariable(varName("error"), "certificate thumbprint not accepted");
+                isValid = false;
+              }
+            }
+            else if (acceptableThumbprints!=null){
+              String thumbprint = validationResult.getCertThumbprint(certificate);
+              if (!acceptableThumbprints.contains(thumbprint)) {
+                msgCtxt.setVariable(varName("error"), "certificate thumbprint not accepted");
+                isValid = false;
+              }
+            }
+            else {
+              // should never happen
+                msgCtxt.setVariable(varName("error"), "no certificate thumbprints specified");
+                isValid = false;
             }
 
             // record issuer

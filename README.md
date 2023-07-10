@@ -65,7 +65,7 @@ environment-wide or organization-wide jar via the Apigee administrative API.
 
 ## Details
 
-There is a single jar, apigee-wssecdsig-20230605.jar . Within that jar, there are two callout classes,
+There is a single jar, apigee-wssecdsig-20230710.jar . Within that jar, there are two callout classes,
 
 * com.google.apigee.callouts.wssecdsig.Sign - signs the input SOAP document.
 * com.google.apigee.callouts.wssecdsig.Validate - validates the signed SOAP document
@@ -116,7 +116,7 @@ Configure the policy this way:
     <Property name='certificate'>{my_certificate}</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Sign</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20230605.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20230710.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -247,7 +247,7 @@ Here's an example policy configuration:
     <Property name='accept-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20230605.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20230710.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -277,7 +277,7 @@ but NOT require a Timestamp/Expires element, use this:
     <Property name='accept-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20230605.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20230710.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -294,7 +294,7 @@ name on the certificate, use this:
     <Property name='accept-subject-cns'>host.example.com</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20230605.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20230710.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -302,19 +302,20 @@ The properties available for the Validate callout are:
 
 | name                   | description |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| source                 | optional. the variable name in which to obtain the source signed document to validate. Defaults to message.content |
-| signing-method         | optional. Takes value `rsa-sha1` or `rsa-sha256`. Checks that the signing method on the document is as specified. If this property is not present, there is no check on the algorithm. |
-| digest-method          | optional. Takes value `sha1` or `sha256`. Checks that the digest method for each reference is as specified. If this property is not present, there is no check on the algorithm. |
-| accept-thumbprints     | optional. a comma-separated list of SHA-1 thumbprints of the certs which are acceptable signers. If any signature is from a cert that has a thumbprint other than that specified, the verification fails. Required if the `certificate` property is not provided. There is no support for validating SHA256 thumbprints at this time. |
-| accept-subject-cns     | optional. a comma-separated list of common names (CNs) for the subject which are acceptable signers. If any signature is from a CN other than that specified, the verification fails. |
-| require-expiry         | optional. true or false, defaults true. Whether to require an expiry in the timestamp.  It is highly recommended that you use 'true' here, or just omit this property and accept the default. |
-| required-signed-elements | optional. a comma-separated list of elements that must be signed. Defaults to `body,timestamp` . To require only a signature on the `wsu:Timestamp` and not the `soap:Body` when validating, set this to "timestamp". (You probably don't want to do this.) To require only a signature on the `Body` and not the `Timestamp` when validating, set this to `body`. (You probably don't want to do this, either.) Probably you want to just leave this element out of your configuration and accept the default. |
-| ignore-expiry          | optional. true or false. defaults false. When true, tells the validator to ignore the Timestamp/Expires field when evaluating validity of the soap message.  |
-| ignore-certificate-expiry | optional. true or false. defaults false. When true, tells the validator to ignore any validity dates on the provided certificate. Useful mostly for testing. |
-| max-lifetime           | optional. Takes a string like `120s`, `10m`, `4d`, etc to imply 120 seconds, 10 minutes, 4 days.  Use this to limit the acceptable lifetime of the signed document. This requires the Timestamp to include a Created as well as an Expires element. Default: no maximum lifetime. |
-| throw-fault-on-invalid | optional. true or false, defaults to false. Whether to throw a fault when the signature is invalid, or when validation fails for another reason (wrong elements signed, lifetime exceeds max, etc). |
-| certificate            | optional. The certificate that provides the public key to verify the signature. This is required (and used) only if the KeyInfo in the signed document does not explicitly provide the Certificate.  |
-| issuer-name-style      | optional. One of {`SHORT`, `SUBJECT_DN`}.  Used only if the signed document includes a KeyInfo that wraps X509IssuerSerial. See the description under the Sign callout for further details. |
+| `source`                 | optional. the variable name in which to obtain the source signed document to validate. Defaults to message.content |
+| `signing-method`         | optional. Takes value `rsa-sha1` or `rsa-sha256`. Checks that the signing method on the document is as specified. If this property is not present, there is no check on the algorithm. |
+| `digest-method`          | optional. Takes value `sha1` or `sha256`. Checks that the digest method for each reference is as specified. If this property is not present, there is no check on the algorithm. |
+| `accept-thumbprints`     | optional. a comma-separated list of SHA-1 thumbprints of the certs which are acceptable signers. If any signature is from a cert that has a thumbprint other than that specified, the verification fails. Either this property, or the similar `accept-thumbprints-sha256` is required if the `certificate` property is not provided. You should specify only one of `accept-thumbprints` or `accept-thumbprints-256`. |
+| `accept-thumbprints-sha256` | optional. a comma-separated list of SHA-256 thumbprints of the certs which are acceptable signers. If any signature is from a cert that has a thumbprint other than that specified, the verification fails. Either this property, or the similar `accept-thumbprints` is required if the `certificate` property is not provided. You should specify only one of `accept-thumbprints` or `accept-thumbprints-256`. |
+| `accept-subject-cns`     | optional. a comma-separated list of common names (CNs) for the subject which are acceptable signers. If any signature is from a CN other than that specified, the verification fails. |
+| `require-expiry`         | optional. true or false, defaults true. Whether to require an expiry in the timestamp.  It is highly recommended that you use 'true' here, or just omit this property and accept the default. |
+| `required-signed-elements` | optional. a comma-separated list of elements that must be signed. Defaults to `body,timestamp` . To require only a signature on the `wsu:Timestamp` and not the `soap:Body` when validating, set this to "timestamp". (You probably don't want to do this.) To require only a signature on the `Body` and not the `Timestamp` when validating, set this to `body`. (You probably don't want to do this, either.) Probably you want to just leave this element out of your configuration and accept the default. |
+| `ignore-expiry`          | optional. true or false. defaults false. When true, tells the validator to ignore the Timestamp/Expires field when evaluating validity of the soap message.  |
+| `ignore-certificate-expiry` | optional. true or false. defaults false. When true, tells the validator to ignore any validity dates on the provided certificate. Useful mostly for testing. |
+| `max-lifetime`           | optional. Takes a string like `120s`, `10m`, `4d`, etc to imply 120 seconds, 10 minutes, 4 days.  Use this to limit the acceptable lifetime of the signed document. This requires the Timestamp to include a Created as well as an Expires element. Default: no maximum lifetime. |
+| `throw-fault-on-invalid` | optional. true or false, defaults to false. Whether to throw a fault when the signature is invalid, or when validation fails for another reason (wrong elements signed, lifetime exceeds max, etc). |
+| `certificate`            | optional. The certificate that provides the public key to verify the signature. This is required (and used) only if the KeyInfo in the signed document does not explicitly provide the Certificate.  |
+| `issuer-name-style`      | optional. One of {`SHORT`, `SUBJECT_DN`}.  Used only if the signed document includes a KeyInfo that wraps X509IssuerSerial. See the description under the Sign callout for further details. |
 
 
 The result of the Validate callout is to set a single variable: wssec_valid.
@@ -577,4 +578,4 @@ certificate, is as easy as 1, 2, 3:
 ## Bugs
 
 * Limitation: The Sign callout always uses XML Canonicalization, never uses Transform.ENVELOPED.
-* The Validate callout cannot check the SHA-256 thumbprint of a signing certificate, only SHA-1.
+
