@@ -1,4 +1,4 @@
-// Copyright 2017-2022 Google LLC.
+// Copyright 2017-2023 Google LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,35 +15,22 @@
 
 package com.google.apigee.callouts.wssecdsig;
 
-import com.apigee.flow.execution.ExecutionContext;
 import com.apigee.flow.execution.ExecutionResult;
-import com.apigee.flow.message.Message;
-import com.apigee.flow.message.MessageContext;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Consumer;
+import java.util.Set;
 import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import mockit.Mock;
-import mockit.MockUp;
 import org.testng.Assert;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -52,6 +39,10 @@ public class TestParameterizedValidate extends CalloutTestBase {
 
   @DataProvider(name = "batch1")
   public static Object[][] getDataForBatch1() throws IOException, IllegalStateException {
+    return reallyLoad(false);
+  }
+
+  static Object[][] reallyLoad(boolean verbose) throws IOException, IllegalStateException {
 
     // @DataProvider requires the output to be a Object[][]. The inner
     // Object[] is the set of params that get passed to the test method.
@@ -78,46 +69,51 @@ public class TestParameterizedValidate extends CalloutTestBase {
       throw new IllegalStateException("no tests found.");
     }
     Arrays.sort(jsons);
-    Function<File, TestCase> toTestCase = (jsonFile) -> {
-      try {
-          String name = jsonFile.getName();
-          System.out.printf("loading: %s\n", name);
-          if (name.indexOf("#")>=0) {
-            return null;
+    Function<File, TestCase> toTestCase =
+        (jsonFile) -> {
+          try {
+            String name = jsonFile.getName();
+            if (verbose) {
+              System.out.printf("loading: %s\n", name);
+            }
+            if (name.indexOf("#") >= 0) {
+              return null;
+            }
+            TestCase tc = om.readValue(jsonFile, TestCase.class);
+            tc.setTestName(name.substring(0, name.length() - 5));
+            return tc;
+          } catch (java.lang.Exception exc1) {
+            exc1.printStackTrace();
+            throw new RuntimeException("uncaught exception", exc1);
           }
-          TestCase tc = om.readValue(jsonFile, TestCase.class);
-          tc.setTestName(name.substring(0, name.length() - 5));
-          return tc;
-      }
-      catch (java.lang.Exception exc1) {
-        exc1.printStackTrace();
-        throw new RuntimeException("uncaught exception", exc1);
-      }
-    };
+        };
 
-    Function<String, Function<TestCase, TestCase>> diag = (stage) -> {
-      return (tc) -> {
-        if (tc!=null) {
-          System.out.printf("stage:%s tc:%s (enabled:%s)\n", stage, tc.getTestName(), tc.getEnabled());
-        }
-        else {
-          System.out.printf("stage:%s tc is null\n", stage);
-        }
-        return tc;
-      };
-    };
+    Function<String, Function<TestCase, TestCase>> diag =
+        (stage) -> {
+          return (tc) -> {
+            if (verbose) {
+              if (tc != null) {
+                System.out.printf(
+                    "stage:%s tc:%s (enabled:%s)\n", stage, tc.getTestName(), tc.getEnabled());
+              } else {
+                System.out.printf("stage:%s tc is null\n", stage);
+              }
+            }
+            return tc;
+          };
+        };
 
     return Arrays.stream(jsons)
         .map(toTestCase)
-        .map( diag.apply("A") )
-        .filter( tc -> tc!=null )
-        .map( tc -> new Object[]{tc} )
+        .map(diag.apply("A"))
+        .filter(tc -> tc != null)
+        .map(tc -> new Object[] {tc})
         .toArray(Object[][]::new);
   }
 
   @Test
   public void testDataProviders() throws IOException {
-    Assert.assertTrue(getDataForBatch1().length > 0);
+    Assert.assertTrue(reallyLoad(true).length > 0);
   }
 
   private static String resolveFileReference(String ref) throws IOException {
@@ -171,28 +167,38 @@ public class TestParameterizedValidate extends CalloutTestBase {
             : ExecutionResult.ABORT;
     // check result and output
     if (expectedResult == actualResult) {
-      if (expectedResult == ExecutionResult.SUCCESS) {
-        String actualIsValid = Boolean.toString(msgCtxt.getVariable("wssec_valid"));
-        Assert.assertNotNull(actualIsValid, tc.getTestName());
-        String expectedIsValid = tc.getExpected().get("isValid");
-        Assert.assertNotNull(expectedIsValid, tc.getTestName() + " misconfigured test: missing isValid");
-        Assert.assertEquals(actualIsValid, expectedIsValid, tc.getTestName());
-        String expectedError = tc.getExpected().get("error");
-        if (expectedError != null) {
-          String actualError = msgCtxt.getVariable("wssec_error");
-          Assert.assertEquals(actualError, expectedError, tc.getTestName() + " error");
-        }
+      Set<String> expectedKeys = tc.getExpected().keySet();
+      if (expectedResult != ExecutionResult.SUCCESS) {
+        // must have an error if expectedResult is abort
+        Assert.assertTrue(
+            expectedKeys.contains("error"),
+            tc.getTestName() + " misconfigured test: missing error");
+      } else {
+        Assert.assertTrue(
+            expectedKeys.contains("valid"),
+            tc.getTestName() + " misconfigured test: missing valid");
       }
-      else {
-        String expectedError = tc.getExpected().get("error");
-        Assert.assertNotNull(expectedError, tc.getTestName() + " misconfigured test: no expected error specified");
-        String actualError = msgCtxt.getVariable("wssec_error");
-        Assert.assertEquals(actualError, expectedError, tc.getTestName() + " error");
+      // in all cases, check all expected stuff
+      for (String key : expectedKeys) {
+        if (!key.equals("success")) {
+          String expectedValue = tc.getExpected().get(key);
+          Object outputValue = msgCtxt.getVariable("wssec_" + key);
+          if (expectedValue != null) {
+            Assert.assertNotNull(
+                outputValue,
+                String.format("%s: context variable not found wssec_%s", tc.getTestName(), key));
+            String actualValueString = msgCtxt.getVariable("wssec_" + key).toString();
+            Assert.assertEquals(actualValueString, expectedValue, tc.getTestName() + " " + key);
+          } else {
+            Assert.assertNull(outputValue, tc.getTestName() + " " + key);
+          }
+        }
       }
     } else {
       String observedError = msgCtxt.getVariable("wssec_error");
       System.err.printf("    observed error: %s\n", observedError);
-      Assert.assertEquals(actualResult, expectedResult, tc.getTestName() + " result not as expected");
+      Assert.assertEquals(
+          actualResult, expectedResult, tc.getTestName() + " result not as expected");
     }
     System.out.println("=========================================================");
   }

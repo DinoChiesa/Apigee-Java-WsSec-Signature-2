@@ -1,0 +1,20 @@
+{
+  "description" : "Sigs on wsa:To and Timestamp, but policy also requires MessageID",
+  "input" : "15-soapui-signed-wsa-To.xml",
+  "note" : "should fail, requiring a signature on MessageID but that is not present in the document",
+  "enabled" : true,
+  "context" : {
+  },
+  "properties" : {
+    "debug" : "true",
+    "accept-thumbprints": "1bfc8a0d2a7bfe06d8833c11499a563386aef074",
+    "ignore-expiry" : "true",
+    "ignore-certificate-expiry" : "true",
+    "required-signed-elements": "wsu:Timestamp, wsa:To, wsa:MessageID"
+  },
+  "expected" : {
+    "success" : "false",
+    "error" : "signature did not verify",
+    "errors" : "did not find signature for wsa:MessageID"
+  }
+}

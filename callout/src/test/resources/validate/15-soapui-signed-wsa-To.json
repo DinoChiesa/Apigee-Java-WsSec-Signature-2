@@ -1,0 +1,19 @@
+{
+  "description" : "Signed, from SOAPUI with wsa:To and Timestamp",
+  "input" : "15-soapui-signed-wsa-To.xml",
+  "note" : "this test is enabled",
+  "enabled" : true,
+  "context" : {
+  },
+  "properties" : {
+    "debug" : "true",
+    "accept-thumbprints": "1bfc8a0d2a7bfe06d8833c11499a563386aef074",
+    "ignore-expiry" : "true",
+    "ignore-certificate-expiry" : "true",
+    "required-signed-elements": "wsu:Timestamp, wsa:To"
+  },
+  "expected" : {
+    "success" : "true",
+    "valid" : "true"
+  }
+}

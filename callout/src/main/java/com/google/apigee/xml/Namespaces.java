@@ -8,6 +8,7 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
 public class Namespaces {
+  public static final String WSA = "http://www.w3.org/2005/08/addressing";
   public static final String WSU =
       "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd";
   public static final String SOAP1_1 = "http://schemas.xmlsoap.org/soap/envelope/";
@@ -20,9 +21,11 @@ public class Namespaces {
   public static final String XMLDSIG = "http://www.w3.org/2000/09/xmldsig#";
 
   public static final Map<String, String> defaultPrefixes;
+  public static final Map<String, String> defaultNamespaces;
 
   static {
-    HashMap map1 = new HashMap<String, String>();
+    Map map1 = new HashMap<String, String>();
+    map1.put(WSA, "wsa");
     map1.put(WSU, "wsu");
     map1.put(SOAP1_1, "soap1.1");
     map1.put(SOAP1_2, "soap1.2");
@@ -31,6 +34,17 @@ public class Namespaces {
     map1.put(XMLDSIG, "ds");
 
     defaultPrefixes = Collections.synchronizedMap(map1);
+
+    Map map2 = new HashMap<String, String>();
+    map2.put("wsa", WSA);
+    map2.put("wsu", WSU);
+    map2.put("soap1.1", SOAP1_1);
+    map2.put("soap1.2", SOAP1_2);
+    map2.put("wssec", WSSEC);
+    map2.put("wssec1.1", WSSEC_11);
+    map2.put("ds", XMLDSIG);
+
+    defaultNamespaces = Collections.synchronizedMap(map2);
   }
 
   private static void fillExistingNamespaces(Map<String, String> known, Element element) {
@@ -59,6 +73,6 @@ public class Namespaces {
   public static Map<String, String> getExistingNamespaces(Element element) {
     Map<String, String> knownNamespaces = new HashMap<String, String>();
     fillExistingNamespaces(knownNamespaces, element);
-    return Collections.unmodifiableMap(knownNamespaces); // key:namespace, value:prefix
+    return knownNamespaces; // key:namespace, value:prefix
   }
 }

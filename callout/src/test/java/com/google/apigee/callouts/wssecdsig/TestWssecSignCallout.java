@@ -1,4 +1,4 @@
-// Copyright © 2018-2022 Google LLC.
+// Copyright © 2018-2023 Google LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -494,7 +494,7 @@ public class TestWssecSignCallout extends CalloutTestBase {
     Map<String, String> props = new HashMap<String, String>();
     props.put("debug", "true");
     props.put("source", "message.content");
-    props.put("elements-to-sign", "timestamp");
+    props.put("elements-to-sign", "wsu:Timestamp");
     props.put("private-key", "{my-private-key}");
     props.put("certificate", "{my-certificate}");
     props.put("output-variable", "output");
@@ -549,7 +549,7 @@ public class TestWssecSignCallout extends CalloutTestBase {
     Map<String, String> props = new HashMap<String, String>();
     props.put("debug", "true");
     props.put("source", "message.content");
-    props.put("elements-to-sign", "body");
+    props.put("elements-to-sign", "soapenv:Body");
     props.put("private-key", "{my-private-key}");
     props.put("certificate", "{my-certificate}");
     props.put("output-variable", "output");
@@ -1165,7 +1165,7 @@ public class TestWssecSignCallout extends CalloutTestBase {
 
     Map<String, String> props = new HashMap<String, String>();
     props.put("debug", "true");
-    props.put("elements-to-sign", "body");
+    props.put("elements-to-sign", "soapenv:Body");
     props.put("source", "message.content");
     props.put(
         "c14n-inclusive-namespaces",

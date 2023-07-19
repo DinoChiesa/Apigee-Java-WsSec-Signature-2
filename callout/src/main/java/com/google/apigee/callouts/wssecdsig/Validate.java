@@ -125,7 +125,9 @@ public class Validate extends WssecCalloutBase implements Execution {
 
   private SourcedCert getCertificate(
       Element keyInfo, Document doc, String soapNs, MessageContext msgCtxt)
-      throws KeyException, NoSuchAlgorithmException, InvalidNameException,
+      throws KeyException,
+          NoSuchAlgorithmException,
+          InvalidNameException,
           CertificateEncodingException {
     // There are 4 cases to handle:
     // 1. SecurityTokenReference pointing to a BinarySecurityToken
@@ -374,6 +376,7 @@ public class Validate extends WssecCalloutBase implements Execution {
   static class ThumbprintPair {
     public String sha1;
     public String sha256;
+
     public ThumbprintPair(String sha1, String sha256) {
       this.sha1 = sha1;
       this.sha256 = sha256;
@@ -475,6 +478,11 @@ public class Validate extends WssecCalloutBase implements Execution {
         maybeMarkIdAttribute.accept(
             security.getElementsByTagNameNS(Namespaces.WSSEC, "SecurityTokenReference"));
       }
+
+      // WSA elements
+      maybeMarkIdAttribute.accept(header.getElementsByTagNameNS(Namespaces.WSA, "To"));
+      maybeMarkIdAttribute.accept(header.getElementsByTagNameNS(Namespaces.WSA, "ReplyTo"));
+      maybeMarkIdAttribute.accept(header.getElementsByTagNameNS(Namespaces.WSA, "MessageID"));
     }
   }
 
@@ -496,35 +504,56 @@ public class Validate extends WssecCalloutBase implements Execution {
           String tagName = referent.getLocalName();
           String ns = referent.getNamespaceURI();
           if (tagName != null && ns != null) {
-            if (tagName.equals("Timestamp") && ns.equals(Namespaces.WSU)) {
+            if (ns.equals(Namespaces.WSU)) {
               // check for signature wrapping
               Node parent = referent.getParentNode();
-              if (parent.getNodeType() == Node.ELEMENT_NODE &&
-                  parent.getLocalName().equals("Security") &&
-                  parent.getNamespaceURI().equals(Namespaces.WSSEC)) {
+              if (parent.getNodeType() == Node.ELEMENT_NODE
+                  && parent.getLocalName().equals("Security")
+                  && parent.getNamespaceURI().equals(Namespaces.WSSEC)) {
                 Node securityParent = parent.getParentNode();
-                if (securityParent.getNodeType() == Node.ELEMENT_NODE &&
-                    securityParent.getLocalName().equals("Header") &&
-                    securityParent.getNamespaceURI().equals(soapNs)) {
+                if (securityParent.getNodeType() == Node.ELEMENT_NODE
+                    && securityParent.getLocalName().equals("Header")
+                    && securityParent.getNamespaceURI().equals(soapNs)) {
                   Node headerParent = securityParent.getParentNode();
-                  if (headerParent.getNodeType() == Node.ELEMENT_NODE &&
-                      headerParent.getLocalName().equals("Envelope") &&
-                      headerParent.getNamespaceURI().equals(soapNs) &&
-                      headerParent.getOwnerDocument().getDocumentElement().equals(headerParent)) {
-                    foundTags.add("timestamp");
+                  if (headerParent.getNodeType() == Node.ELEMENT_NODE
+                      && headerParent.getLocalName().equals("Envelope")
+                      && headerParent.getNamespaceURI().equals(soapNs)
+                      && headerParent
+                          .getOwnerDocument()
+                          .getDocumentElement()
+                          .equals(headerParent)) {
+                    // foundTags.add("wsu:Timestamp");
+                    foundTags.add("wsu:" + tagName);
                     foundOne = true;
                   }
                 }
               }
             }
-            if (tagName.equals("Body") && ns.equals(soapNs)) {
+            if (ns.equals(Namespaces.WSA)) {
               // check for signature wrapping
               Node parent = referent.getParentNode();
-              if (parent.getNodeType() == Node.ELEMENT_NODE &&
-                  parent.getLocalName().equals("Envelope") &&
-                  parent.getNamespaceURI().equals(soapNs) &&
-                  parent.getOwnerDocument().getDocumentElement().equals(parent)) {
-                foundTags.add("body");
+              if (parent.getNodeType() == Node.ELEMENT_NODE
+                  && parent.getLocalName().equals("Header")
+                  && parent.getNamespaceURI().equals(soapNs)) {
+                Node headerParent = parent.getParentNode();
+                if (headerParent.getNodeType() == Node.ELEMENT_NODE
+                    && headerParent.getLocalName().equals("Envelope")
+                    && headerParent.getNamespaceURI().equals(soapNs)
+                    && headerParent.getOwnerDocument().getDocumentElement().equals(headerParent)) {
+                  foundTags.add("wsa:" + tagName);
+                  foundOne = true;
+                }
+              }
+            }
+            if (ns.equals(soapNs)) {
+              // check for signature wrapping
+              Node parent = referent.getParentNode();
+              if (parent.getNodeType() == Node.ELEMENT_NODE
+                  && parent.getLocalName().equals("Envelope")
+                  && parent.getNamespaceURI().equals(soapNs)
+                  && parent.getOwnerDocument().getDocumentElement().equals(parent)) {
+                // foundTags.add("soap:Body");
+                foundTags.add("soap:" + tagName);
                 foundOne = true;
               }
             }
@@ -575,8 +604,13 @@ public class Validate extends WssecCalloutBase implements Execution {
 
   private ValidationResult validate_RSA(
       Document doc, ValidateConfiguration validationConfig, MessageContext msgCtxt)
-      throws MarshalException, XMLSignatureException, KeyException, CertificateExpiredException,
-          CertificateNotYetValidException, NoSuchAlgorithmException, InvalidNameException,
+      throws MarshalException,
+          XMLSignatureException,
+          KeyException,
+          CertificateExpiredException,
+          CertificateNotYetValidException,
+          NoSuchAlgorithmException,
+          InvalidNameException,
           CertificateEncodingException {
 
     NodeList signatures = getSignatures(doc, validationConfig.soapNs);
@@ -627,19 +661,18 @@ public class Validate extends WssecCalloutBase implements Execution {
     }
 
     // check for presence of signed elements
-    if (isValid) {
+    if (isValid && validationConfig.requiredSignedElements.size() > 0) {
+      msgCtxt.setVariable(varName("found_signed_elements"), String.join(",", signedElements));
       List<String> errors = new ArrayList<String>();
-      if (validationConfig.requiredSignedElements.contains("timestamp")
-          && !signedElements.contains("timestamp")) {
-        errors.add("did not find signature for wsu:Timestamp");
-      }
-      if (validationConfig.requiredSignedElements.contains("body")
-          && !signedElements.contains("body")) {
-        errors.add("did not find signature for soap:Body");
-      }
+      validationConfig.requiredSignedElements.forEach(
+          element -> {
+            if (!signedElements.contains(element)) {
+              errors.add(String.format("did not find signature for %s", element));
+            }
+          });
       if (errors.size() > 0) {
         isValid = false;
-        msgCtxt.setVariable(varName("error"), String.join(";", errors));
+        msgCtxt.setVariable(varName("errors"), String.join(",", errors));
       }
     }
 
@@ -768,7 +801,7 @@ public class Validate extends WssecCalloutBase implements Execution {
     if (nameList == null) return null;
     return Arrays.asList(nameList.split(",[ ]*")).stream()
         .map(String::toLowerCase)
-        .map(x -> x.replaceAll(":",""))
+        .map(x -> x.replaceAll(":", ""))
         .collect(Collectors.toList());
   }
 
@@ -777,17 +810,15 @@ public class Validate extends WssecCalloutBase implements Execution {
     if (nameList == null) return null;
     return Arrays.asList(nameList.split(",[ ]*")).stream()
         .map(String::toLowerCase)
-        .map(x -> x.replaceAll(":",""))
+        .map(x -> x.replaceAll(":", ""))
         .collect(Collectors.toList());
   }
 
   private List<String> getRequiredSignedElements(MessageContext msgCtxt) throws Exception {
     String elementList = getSimpleOptionalProperty("required-signed-elements", msgCtxt);
-    if (elementList == null) elementList = "body,timestamp";
+    if (elementList == null) elementList = "soap:Body, wsu:Timestamp";
 
     return Arrays.asList(elementList.split(",[ ]*")).stream()
-        .map(String::toLowerCase)
-        .filter(c -> c.equals("body") || c.equals("timestamp"))
         .distinct()
         .collect(Collectors.toList());
   }
@@ -826,6 +857,7 @@ public class Validate extends WssecCalloutBase implements Execution {
       this.soapNs = soapNs;
       return this;
     }
+
     public ValidateConfiguration setCertificateExpiryHandling(boolean wantIgnore) {
       this.ignoreCertificateExpiry = wantIgnore;
       return this;
@@ -846,7 +878,7 @@ public class Validate extends WssecCalloutBase implements Execution {
                   (getSoapVersion(msgCtxt).equals("soap1.2"))
                       ? Namespaces.SOAP1_2
                       : Namespaces.SOAP1_1)
-        .setCertificateExpiryHandling(wantIgnoreCertificateExpiry(msgCtxt));
+              .setCertificateExpiryHandling(wantIgnoreCertificateExpiry(msgCtxt));
 
       ValidationResult validationResult = validate_RSA(document, validationConfig, msgCtxt);
       boolean isValid = validationResult.isValid();
@@ -892,33 +924,33 @@ public class Validate extends WssecCalloutBase implements Execution {
           List<String> acceptableThumbprints_SHA256 = getAcceptableThumbprints_SHA256(msgCtxt);
           List<String> acceptableThumbprints = getAcceptableThumbprints(msgCtxt);
           if (acceptableThumbprints_SHA256 == null && acceptableThumbprints == null) {
-            throw new IllegalStateException("the configuration specified no acceptable thumbprints");
-          }
-          else if (acceptableThumbprints_SHA256 != null && acceptableThumbprints != null) {
-            throw new IllegalStateException("you should specify only one of acceptable-thumbprints or acceptable-thumbprints-sha256");
+            throw new IllegalStateException(
+                "the configuration specified no acceptable thumbprints");
+          } else if (acceptableThumbprints_SHA256 != null && acceptableThumbprints != null) {
+            throw new IllegalStateException(
+                "you should specify only one of acceptable-thumbprints or"
+                    + " acceptable-thumbprints-sha256");
           }
           List<String> acceptableSubjectCNs = getAcceptableSubjectCommonNames(msgCtxt);
           for (int i = 0; i < certs.size(); i++) {
             X509Certificate certificate = certs.get(i);
 
-            if (acceptableThumbprints_SHA256!=null) {
+            if (acceptableThumbprints_SHA256 != null) {
               String thumbprint_sha256 = validationResult.getCertThumbprint_SHA256(certificate);
               if (!acceptableThumbprints_SHA256.contains(thumbprint_sha256)) {
                 msgCtxt.setVariable(varName("error"), "certificate thumbprint not accepted");
                 isValid = false;
               }
-            }
-            else if (acceptableThumbprints!=null){
+            } else if (acceptableThumbprints != null) {
               String thumbprint = validationResult.getCertThumbprint(certificate);
               if (!acceptableThumbprints.contains(thumbprint)) {
                 msgCtxt.setVariable(varName("error"), "certificate thumbprint not accepted");
                 isValid = false;
               }
-            }
-            else {
+            } else {
               // should never happen
-                msgCtxt.setVariable(varName("error"), "no certificate thumbprints specified");
-                isValid = false;
+              msgCtxt.setVariable(varName("error"), "no certificate thumbprints specified");
+              isValid = false;
             }
 
             // record issuer

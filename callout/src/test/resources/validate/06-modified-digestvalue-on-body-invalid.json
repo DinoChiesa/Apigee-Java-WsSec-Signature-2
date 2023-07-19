@@ -13,7 +13,7 @@
   },
   "expected" : {
     "success" : "true",
-    "isValid" : "false",
+    "valid" : "false",
     "error" : "signature did not verify"
   }
 }

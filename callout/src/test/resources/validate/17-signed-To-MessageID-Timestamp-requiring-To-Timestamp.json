@@ -1,0 +1,19 @@
+{
+  "description" : "Signed, from SOAPUI with wsa:To, wsa:MessageID, and Timestamp",
+  "input" : "17-from-soapui-signed-To-MessageID-Timestamp.xml",
+  "note" : "MessageID is signed, but this config does not REQUIRE that",
+  "enabled" : true,
+  "context" : {
+  },
+  "properties" : {
+    "debug" : "true",
+    "accept-thumbprints": "1bfc8a0d2a7bfe06d8833c11499a563386aef074",
+    "ignore-expiry" : "true",
+    "ignore-certificate-expiry" : "true",
+    "required-signed-elements": "wsu:Timestamp, wsa:To"
+  },
+  "expected" : {
+    "success" : "true",
+    "valid" : "true"
+  }
+}

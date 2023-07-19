@@ -6,7 +6,7 @@
     <Property name="expiry">30000s</Property>
     <Property name="c14n-inclusive-namespaces">http://example.com/foons, http://schemas.xmlsoap.org/soap/envelope/, http://www.w3.org/2001/XMLSchema, http://www.w3.org/2001/XMLSchema-instance</Property>
     <Property name="transform-inclusive-namespaces">http://example.com/foons, http://www.w3.org/2001/XMLSchema, http://www.w3.org/2001/XMLSchema-instance</Property>
-    <Property name="elements-to-sign">body</Property>
+    <Property name="elements-to-sign">soapenv:Body</Property>
     <Property name="ds-prefix">ds</Property>
     <Property name="key-identifier-type">issuer_serial</Property>
     <Property name="private-key-password">{private.vCertificatePassword}</Property>
@@ -14,5 +14,5 @@
     <Property name='certificate'>{my_certificate}</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Sign</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20230710.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20230718.jar</ResourceURL>
 </JavaCallout>

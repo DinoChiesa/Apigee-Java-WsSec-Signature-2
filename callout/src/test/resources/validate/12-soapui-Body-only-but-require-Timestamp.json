@@ -1,0 +1,19 @@
+{
+  "description" : "Sigs for Body, but Body & Timestamp are required",
+  "input" : "12-soapui-Body-only-signed.xml",
+  "note" : "Only the Body element is signed",
+  "enabled" : true,
+  "context" : {
+  },
+  "properties" : {
+    "debug" : "true",
+    "accept-thumbprints": "4feade38f5e3849a3284e093070ff59cbcc5aaff",
+    "ignore-expiry" : "true"
+  },
+  "expected" : {
+    "success" : "false",
+    "valid" : "false",
+    "errors" : "did not find signature for wsu:Timestamp",
+    "error" : "signature did not verify"
+  }
+}

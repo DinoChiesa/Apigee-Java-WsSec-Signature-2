@@ -1,4 +1,4 @@
-// Copyright 2017-2022 Google LLC.
+// Copyright 2017-2023 Google LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,37 +16,78 @@
 package com.google.apigee.callouts.wssecdsig;
 
 import java.util.HashMap;
+import java.util.Map;
 
 public class TestCase implements Comparable {
 
-    private String _testName;
-    private String _description;
-    private String _input; // filename
-    private Boolean _enabled = false; // can enable or disable individual tests
-    private HashMap<String,String> _properties; // JSON hash
-    private HashMap<String,String> _expected; // JSON hash
-    private HashMap<String,String> _context; // JSON hash
+  private String _testName;
+  private String _description;
+  private String _input; // filename
+  private Boolean _enabled = false; // can enable or disable individual tests
+  private HashMap<String, String> _properties; // JSON hash
+  private HashMap<String, String> _expected; // JSON hash
+  private HashMap<String, String> _context; // JSON hash
 
-    // getters
-    public String getTestName() { return _testName; }
-    public String getDescription() { return _description; }
-    public String getInput() { return _input; }
-    public Boolean getEnabled() { return _enabled; }
-    public HashMap<String,String> getProperties() { return _properties; }
-    public HashMap<String,String> getContext() { return _context; }
-    public HashMap<String,String> getExpected() { return _expected; }
+  // getters
+  public String getTestName() {
+    return _testName;
+  }
 
-    // setters
-    public void setTestName(String n) { _testName = n; }
-    public void setDescription(String d) { _description = d; }
-    public void setInput(String f) { _input = f; }
-    public void setEnabled(Boolean e) { _enabled = e; }
-    public void setExpected(HashMap<String,String> hash) { _expected = hash; }
-    public void setContext(HashMap<String,String> hash) { _context = hash; }
-    public void setProperties(HashMap<String,String> hash) { _properties = hash; }
+  public String getDescription() {
+    return _description;
+  }
 
-    @Override
-    public int compareTo(Object tc) {
-        return getTestName().compareTo( ((TestCase)tc).getTestName() );
-    }
+  public String getInput() {
+    return _input;
+  }
+
+  public Boolean getEnabled() {
+    return _enabled;
+  }
+
+  public Map<String, String> getProperties() {
+    return _properties;
+  }
+
+  public Map<String, String> getContext() {
+    return _context;
+  }
+
+  public Map<String, String> getExpected() {
+    return _expected;
+  }
+
+  // setters
+  public void setTestName(String n) {
+    _testName = n;
+  }
+
+  public void setDescription(String d) {
+    _description = d;
+  }
+
+  public void setInput(String f) {
+    _input = f;
+  }
+
+  public void setEnabled(Boolean e) {
+    _enabled = e;
+  }
+
+  public void setExpected(HashMap<String, String> hash) {
+    _expected = hash;
+  }
+
+  public void setContext(HashMap<String, String> hash) {
+    _context = hash;
+  }
+
+  public void setProperties(HashMap<String, String> hash) {
+    _properties = hash;
+  }
+
+  @Override
+  public int compareTo(Object tc) {
+    return getTestName().compareTo(((TestCase) tc).getTestName());
+  }
 }

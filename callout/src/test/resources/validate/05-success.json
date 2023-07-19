@@ -12,7 +12,7 @@
   },
   "expected" : {
     "success" : "true",
-    "isValid" : "true",
+    "valid" : "true",
     "error" : null
   }
 }

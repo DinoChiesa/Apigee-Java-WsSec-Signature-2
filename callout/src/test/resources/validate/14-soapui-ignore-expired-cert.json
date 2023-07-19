@@ -1,6 +1,6 @@
 {
   "description" : "Signed, from SOAPUI",
-  "input" : "13-soapui-ignore-expired-cert.xml",
+  "input" : "14-soapui-ignore-expired-cert.xml",
   "note" : "this test is enabled",
   "enabled" : true,
   "context" : {
@@ -13,6 +13,6 @@
   },
   "expected" : {
     "success" : "true",
-    "isValid" : "true"
+    "valid" : "true"
   }
 }

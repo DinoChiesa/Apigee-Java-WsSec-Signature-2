@@ -43,6 +43,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -115,8 +116,27 @@ public class Sign extends WssecCalloutBase implements Execution {
 
     if (elt != null) {
       elt.setAttributeNS(Namespaces.XMLNS, "xmlns:" + prefix, namespaceURIToAdd);
+      knownNamespaces.put(namespaceURIToAdd, prefix);
     }
     return prefix;
+  }
+
+  Map<String, String> combineMaps(Map<String, String> original, Map<String, String> toAppend) {
+    for (String key : toAppend.keySet()) {
+      if (!original.containsKey(key)) {
+        original.put(key, toAppend.get(key));
+      }
+    }
+    return original;
+  }
+
+  Map<String, String> transposeMap(Map<String, String> input) {
+    Map<String, String> output = new HashMap<String, String>();
+    for (String key : input.keySet()) {
+      String value = input.get(key);
+      output.put(value, key);
+    }
+    return output;
   }
 
   private /* static */ String randomId() {
@@ -179,10 +199,6 @@ public class Sign extends WssecCalloutBase implements Execution {
 
     // 1. get or set the Id of the Body element
     Element body = (Element) nodes.item(0);
-    String bodyId =
-        (body.hasAttributeNS(Namespaces.WSU, "Id"))
-            ? body.getAttributeNS(Namespaces.WSU, "Id")
-            : wsuIdInjector.apply(body, "Body");
 
     // 2. create or get the soap:Header
     Element header = null;
@@ -221,7 +237,7 @@ public class Sign extends WssecCalloutBase implements Execution {
 
     // 4. embed a Timestamp element under the wssecHeader element (always)
     Element timestamp = doc.createElementNS(Namespaces.WSU, wsuPrefix + ":Timestamp");
-    String timestampId = wsuIdInjector.apply(timestamp, "TS");
+    wsuIdInjector.apply(timestamp, "TS");
     wssecHeader.appendChild(timestamp);
 
     // 5a. embed a Created element into the Timestamp
@@ -321,33 +337,64 @@ public class Sign extends WssecCalloutBase implements Execution {
                     .collect(Collectors.toList()))
             : null;
 
+    // always this transform
     Transform transform =
         signatureFactory.newTransform("http://www.w3.org/2001/10/xml-exc-c14n#", tps);
 
     // Transform transform =
     //     signatureFactory.newTransform(Transform.ENVELOPED, (TransformParameterSpec) null);
 
-    // add signature references.
+    // set the digest method
     String digestMethodUri =
         (signConfiguration.digestMethod != null)
             ? signConfiguration.digestMethod
             : DigestMethod.SHA1;
     DigestMethod digestMethod = signatureFactory.newDigestMethod(digestMethodUri, null);
+
+    // add signature references.
     List<Reference> references = new ArrayList<Reference>();
 
-    if (signConfiguration.elementsToSign == null
-        || signConfiguration.elementsToSign.contains("body")) {
-      references.add(
-          signatureFactory.newReference(
-              "#" + bodyId, digestMethod, Collections.singletonList(transform), null, null));
+    // allow signing of any element specified by prefix:Element
+    Map<String, String> availablePrefixes =
+        combineMaps(transposeMap(knownNamespacesAtRoot), Namespaces.defaultNamespaces);
+    if (signConfiguration.elementsToSign == null) {
+      signConfiguration.elementsToSign =
+          Arrays.asList(Namespaces.defaultPrefixes.get(soapns) + ":Body", "wsu:Timestamp");
     }
+    signConfiguration.elementsToSign.forEach(
+        qualifiedTag -> {
+          String ns = "";
+          String unqualifiedTag = null;
+          if (qualifiedTag.indexOf(":") > 0) {
+            String[] parts = qualifiedTag.split(":", 2);
+            ns = availablePrefixes.get(parts[0]);
+            if (ns == null) {
+              throw new IllegalStateException(
+                  String.format(
+                      "unrecognized namespace prefix. The prefix must be one of {%s}",
+                      String.join(",", availablePrefixes.keySet())));
+            }
+            unqualifiedTag = parts[1];
+          } else {
+            unqualifiedTag = qualifiedTag;
+          }
 
-    if (signConfiguration.elementsToSign == null
-        || signConfiguration.elementsToSign.contains("timestamp")) {
-      references.add(
-          signatureFactory.newReference(
-              "#" + timestampId, digestMethod, Collections.singletonList(transform), null, null));
-    }
+          NodeList nl = doc.getElementsByTagNameNS(ns, unqualifiedTag);
+          if (nl.getLength() != 1) {
+            throw new IllegalStateException(String.format("No %s found to sign", qualifiedTag));
+          }
+          Element element = (Element) nl.item(0);
+
+          String elementId =
+              (element.hasAttributeNS(Namespaces.WSU, "Id"))
+                  ? element.getAttributeNS(Namespaces.WSU, "Id")
+                  : wsuIdInjector.apply(element, unqualifiedTag);
+
+          references.add(
+              signatureFactory.newReference(
+                  "#" + elementId, digestMethod, Collections.singletonList(transform), null, null));
+        });
+
     // now any SignatureConfirmation elements
     if (sigConfirmationIds != null) {
       for (String confirmationId : sigConfirmationIds) {
@@ -617,39 +664,12 @@ public class Sign extends WssecCalloutBase implements Execution {
 
   private List<String> getElementsToSign(MessageContext msgCtxt) throws Exception {
     String elementList = getSimpleOptionalProperty("elements-to-sign", msgCtxt);
-    if (elementList == null) return null;
+    // if (elementList == null) elementList = "soap:Body, wsu:Timestamp";
+    if (elementList == null) return null; // will default later
 
-    // normalize
-    List<String> desiredElementsToSign =
-        Arrays.asList(elementList.split(",[ ]*")).stream()
-            .map(String::toLowerCase)
-            .distinct()
-            .collect(Collectors.toList());
-
-    List<String> allowedElements = Arrays.asList("body", "timestamp");
-
-    if (desiredElementsToSign.size() > allowedElements.size()
-        || desiredElementsToSign.size() == 0) {
-      msgCtxt.setVariable(
-          varName("WARNING"),
-          String.format("use one or more of %s in elements-to-sign", allowedElements.toString()));
-
-      return null;
-    }
-
-    // warn on invalid values
-    List<String> unsupportedElements =
-        desiredElementsToSign.stream()
-            .filter(c -> allowedElements.indexOf(c) == -1)
-            .collect(Collectors.toList());
-
-    if (unsupportedElements.size() > 0) {
-      msgCtxt.setVariable(
-          varName("WARNING"),
-          String.format("use one or more of %s in elements-to-sign", allowedElements.toString()));
-      return null;
-    }
-    return desiredElementsToSign;
+    return Arrays.asList(elementList.split(",[ ]*")).stream()
+        .distinct()
+        .collect(Collectors.toList());
   }
 
   private List<String> getConfirmations(MessageContext msgCtxt) throws Exception {

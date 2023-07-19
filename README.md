@@ -65,7 +65,7 @@ environment-wide or organization-wide jar via the Apigee administrative API.
 
 ## Details
 
-There is a single jar, apigee-wssecdsig-20230710.jar . Within that jar, there are two callout classes,
+There is a single jar, apigee-wssecdsig-20230718.jar . Within that jar, there are two callout classes,
 
 * com.google.apigee.callouts.wssecdsig.Sign - signs the input SOAP document.
 * com.google.apigee.callouts.wssecdsig.Validate - validates the signed SOAP document
@@ -116,7 +116,7 @@ Configure the policy this way:
     <Property name='certificate'>{my_certificate}</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Sign</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20230710.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20230718.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -137,7 +137,7 @@ Information, and much more. These properties are described in detail here:
 | certificate          | required. The certificate matching the private key. In PEM form. |
 | signing-method       | optional. Takes value `rsa-sha1` or `rsa-sha256`. Defaults to `rsa-sha1`. Despite this, `rsa-sha256` is highly recommended. |
 | digest-method        | optional. Takes value `sha1` or `sha256`. Defaults to `sha1`. If you have the flexibility to do so, it's preferred that you use `sha256`. |
-| elements-to-sign     | optional. Takes a comma-separated value. parts can include "timestamp" and "body" (case insensitive). Nothing else. Default: the signer signs both the Timestamp and the soap:Body. |
+| elements-to-sign     | optional. Takes a comma-and-maybe-space-separated value of prefix:Tag forms. For example "wsu:Timestamp, soap:Body".  Case is important. Default: the signer signs both the wsu:Timestamp and the soap:Body. |
 | expiry               | optional. Takes a string like 120s, 10m, 4d, etc to imply 120 seconds, 10 minutes, 4 days, and injects an Expires element into the Timestamp. Default: no expiry. |
 | c14-inclusive-elements | optional. Takes a comma-separated value of namespace _URIs_ (not prefixes). Used to add an InclusiveElements element to the CanonicalizationMethod element.  |
 | transform-inclusive-elements | optional. Takes a comma-separated value of namespace _URIs_ (not prefixes). Used to add an InclusiveElements element to the Transform element.  |
@@ -247,7 +247,7 @@ Here's an example policy configuration:
     <Property name='accept-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20230710.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20230718.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -277,7 +277,7 @@ but NOT require a Timestamp/Expires element, use this:
     <Property name='accept-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20230710.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20230718.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -294,7 +294,7 @@ name on the certificate, use this:
     <Property name='accept-subject-cns'>host.example.com</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20230710.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20230718.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -309,8 +309,8 @@ The properties available for the Validate callout are:
 | `accept-thumbprints-sha256` | optional. a comma-separated list of SHA-256 thumbprints of the certs which are acceptable signers. If any signature is from a cert that has a thumbprint other than that specified, the verification fails. Either this property, or the similar `accept-thumbprints` is required if the `certificate` property is not provided. You should specify only one of `accept-thumbprints` or `accept-thumbprints-256`. |
 | `accept-subject-cns`     | optional. a comma-separated list of common names (CNs) for the subject which are acceptable signers. If any signature is from a CN other than that specified, the verification fails. |
 | `require-expiry`         | optional. true or false, defaults true. Whether to require an expiry in the timestamp.  It is highly recommended that you use 'true' here, or just omit this property and accept the default. |
-| `required-signed-elements` | optional. a comma-separated list of elements that must be signed. Defaults to `body,timestamp` . To require only a signature on the `wsu:Timestamp` and not the `soap:Body` when validating, set this to "timestamp". (You probably don't want to do this.) To require only a signature on the `Body` and not the `Timestamp` when validating, set this to `body`. (You probably don't want to do this, either.) Probably you want to just leave this element out of your configuration and accept the default. |
-| `ignore-expiry`          | optional. true or false. defaults false. When true, tells the validator to ignore the Timestamp/Expires field when evaluating validity of the soap message.  |
+| `required-signed-elements` | optional. a comma-and-maybe-space-separated list of prefix:Tag forms indicating the elements that must be signed. Defaults to `soap:Body, wsu:Timestamp` . To require only a signature on the `wsu:Timestamp` and not the `soap:Body` when validating, set this to `wsu:Timestamp`.  (You probably don't want to do this.) To require only a signature on the `Body` and not the `Timestamp` when validating, set this to `soap:Body`. (You probably don't want to do this, either.) Probably you want to just leave this element out of your configuration and accept the default. Case is significant. |
+| `ignore-expiry`          | optional. true or false. defaults false. When true, tells the validator to ignore the `Timestamp/Expires` field when evaluating validity of the soap message.  |
 | `ignore-certificate-expiry` | optional. true or false. defaults false. When true, tells the validator to ignore any validity dates on the provided certificate. Useful mostly for testing. |
 | `max-lifetime`           | optional. Takes a string like `120s`, `10m`, `4d`, etc to imply 120 seconds, 10 minutes, 4 days.  Use this to limit the acceptable lifetime of the signed document. This requires the Timestamp to include a Created as well as an Expires element. Default: no maximum lifetime. |
 | `throw-fault-on-invalid` | optional. true or false, defaults to false. Whether to throw a fault when the signature is invalid, or when validation fails for another reason (wrong elements signed, lifetime exceeds max, etc). |
@@ -318,7 +318,7 @@ The properties available for the Validate callout are:
 | `issuer-name-style`      | optional. One of {`SHORT`, `SUBJECT_DN`}.  Used only if the signed document includes a KeyInfo that wraps X509IssuerSerial. See the description under the Sign callout for further details. |
 
 
-The result of the Validate callout is to set a single variable: wssec_valid.
+The result of the Validate callout is to set a single variable: `wssec_valid`.
 It takes a true value if the signature was valid; false otherwise. You can use a
 Condition in your Proxy flow to examine that result.  If the document is
 invalid, then the policy will also throw a fault if the throw-fault-on-invalid
@@ -351,8 +351,8 @@ Further comments:
   Timestamp, by computing the difference between the Created and the Expires
   times. It does not make sense to specify `max-lifetime` if you also specify
   `required-signed-elements` to not include Timestamp, for an obvious reason: If
-  the signature does not sign the timestamp, it means any party can change the
-  timestamp, and therefore the computed lifetime of the document would bve
+  the signature does not sign the Timestamp, it means any party can change the
+  Timestamp, and therefore the computed lifetime of the document would be
   untrustworthy.
 
 * it is possible to configure the policy with `require-expiry` = true and

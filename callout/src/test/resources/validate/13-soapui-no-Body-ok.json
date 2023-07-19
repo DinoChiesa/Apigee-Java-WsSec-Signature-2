@@ -1,0 +1,19 @@
+{
+  "description" : "Sig on Body, only Body is required",
+  "input" : "12-soapui-Body-only-signed.xml",
+  "note" : "Only the Body element is signed, and that's ok",
+  "enabled" : true,
+  "context" : {
+  },
+  "properties" : {
+    "debug" : "true",
+    "accept-thumbprints": "4feade38f5e3849a3284e093070ff59cbcc5aaff",
+    "ignore-expiry" : "true",
+    "required-signed-elements": "soap:Body"
+  },
+  "expected" : {
+    "success" : "true",
+    "valid" : "true",
+    "error" : null
+  }
+}

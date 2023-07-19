@@ -1,5 +1,16 @@
-// CalloutTestBase.java
-// ------------------------------------------------------------------
+// Copyright © 2018-2023 Google LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 //
 
 package com.google.apigee.callouts.wssecdsig;
@@ -22,98 +33,101 @@ public abstract class CalloutTestBase {
   }
 
   static final String simpleSoap11 =
-    "<soapenv:Envelope xmlns:ns1='http://ws.example.com/' xmlns:soapenv='http://schemas.xmlsoap.org/soap/envelope/'>"
-    + "  <soapenv:Body>"
-    + "    <ns1:sumResponse>"
-    + "      <ns1:return>9</ns1:return>"
-    + "    </ns1:sumResponse>"
-    + "  </soapenv:Body>"
-    + "</soapenv:Envelope>";
+      "<soapenv:Envelope xmlns:ns1='http://ws.example.com/'"
+          + " xmlns:soapenv='http://schemas.xmlsoap.org/soap/envelope/'>  <soapenv:Body>   "
+          + " <ns1:sumResponse>      <ns1:return>9</ns1:return>    </ns1:sumResponse> "
+          + " </soapenv:Body></soapenv:Envelope>";
 
   static final String altSoap11 =
-    "<soapenv:Envelope xmlns:ns1='http://ws.example.com/'\n"
-    + "    xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'\n"
-    + "    xmlns:xsd='http://www.w3.org/2001/XMLSchema'\n"
-    + "    xmlns:soapenv='http://schemas.xmlsoap.org/soap/envelope/'>\n"
-    + "  <soapenv:Body>\n"
-    + "    <ns1:sumResponse>\n"
-    + "      <ns1:return>9</ns1:return>\n"
-    + "    </ns1:sumResponse>\n"
-    + "  </soapenv:Body>\n"
-    + "</soapenv:Envelope>\n";
+      "<soapenv:Envelope xmlns:ns1='http://ws.example.com/'\n"
+          + "    xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'\n"
+          + "    xmlns:xsd='http://www.w3.org/2001/XMLSchema'\n"
+          + "    xmlns:soapenv='http://schemas.xmlsoap.org/soap/envelope/'>\n"
+          + "  <soapenv:Body>\n"
+          + "    <ns1:sumResponse>\n"
+          + "      <ns1:return>9</ns1:return>\n"
+          + "    </ns1:sumResponse>\n"
+          + "  </soapenv:Body>\n"
+          + "</soapenv:Envelope>\n";
 
-  static final String simpleSoap12 = ""
-    +"<soap:Envelope \n"
-    +"    xmlns:soap='http://www.w3.org/2003/05/soap-envelope'\n"
-    +"    xmlns:v1='https://foo/servicecontract/v1.0'\n"
-    +"    xmlns:v11='https://foo/claims/datacontract/v1.0'>\n"
-    +"  <soap:Header \n"
-    +"      xmlns:wsa='http://www.w3.org/2005/08/addressing'>\n"
-    +"    <wsa:Action>https://foo/v1.0/ClaimsService/FileMultipleClaims</wsa:Action>\n"
-    +"    <wsa:To>https://foo/v1.0/ClaimsService</wsa:To>\n"
-    +"  </soap:Header>\n"
-    +"  <soap:Body>\n"
-    +"    <ns2:FileMultipleClaims \n"
-    +"        xmlns:ns2='https://foo/servicecontract/v1.0'\n"
-    +"        xmlns='https://foo/claims/datacontract/v1.0'>\n"
-    +"      <ns2:request>\n"
-    +"        <body>here</body>\n"
-    +"      </ns2:request>\n"
-    +"    </ns2:FileMultipleClaims>\n"
-    +"  </soap:Body>\n"
-    +"</soap:Envelope>\n";
+  static final String simpleSoap12 =
+      ""
+          + "<soap:Envelope \n"
+          + "    xmlns:soap='http://www.w3.org/2003/05/soap-envelope'\n"
+          + "    xmlns:v1='https://foo/servicecontract/v1.0'\n"
+          + "    xmlns:v11='https://foo/claims/datacontract/v1.0'>\n"
+          + "  <soap:Header \n"
+          + "      xmlns:wsa='http://www.w3.org/2005/08/addressing'>\n"
+          + "    <wsa:Action>https://foo/v1.0/ClaimsService/FileMultipleClaims</wsa:Action>\n"
+          + "    <wsa:To>https://foo/v1.0/ClaimsService</wsa:To>\n"
+          + "  </soap:Header>\n"
+          + "  <soap:Body>\n"
+          + "    <ns2:FileMultipleClaims \n"
+          + "        xmlns:ns2='https://foo/servicecontract/v1.0'\n"
+          + "        xmlns='https://foo/claims/datacontract/v1.0'>\n"
+          + "      <ns2:request>\n"
+          + "        <body>here</body>\n"
+          + "      </ns2:request>\n"
+          + "    </ns2:FileMultipleClaims>\n"
+          + "  </soap:Body>\n"
+          + "</soap:Envelope>\n";
 
-  static final String soapGetContacts = ""
-    + "<soapenv:Envelope\n"
-    + "     xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\"\n"
-    + "     xmlns:oas=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"\n"
-    + "     xmlns:ser=\"http://webservices.example.com/services\">\n"
-    + "   <soapenv:Header>\n"
-    + "      <ser:AuthHeader>\n"
-    + "         <ser:HomeID>88850083</ser:HomeID>\n"
-    + "         <ser:SessionID>6f69356c4c533867635a4c5770326d2f4527320699624269</ser:SessionID>\n"
-    + "         <ser:UserAgent>Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)</ser:UserAgent>\n"
-    + "         <ser:CEUserAgent>CXCTurnkey.FIPlugin.20.1</ser:CEUserAgent>\n"
-    + "      </ser:AuthHeader>\n"
-    + "   </soapenv:Header>\n"
-    + "   <soapenv:Body>\n"
-    + "      <ser:GetContacts>\n"
-    + "         <ser:RqUID>GettingContactWithNickName222</ser:RqUID>\n"
-    + "      </ser:GetContacts>\n"
-    + "   </soapenv:Body>\n"
-    + "</soapenv:Envelope>\n";
+  static final String soapGetContacts =
+      "<soapenv:Envelope\n"
+          + "     xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\"\n"
+          + "     xmlns:oas=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"\n"
+          + "     xmlns:ser=\"http://webservices.example.com/services\">\n"
+          + "   <soapenv:Header>\n"
+          + "      <ser:AuthHeader>\n"
+          + "         <ser:HomeID>88850083</ser:HomeID>\n"
+          + "        "
+          + " <ser:SessionID>6f69356c4c533867635a4c5770326d2f4527320699624269</ser:SessionID>\n"
+          + "         <ser:UserAgent>Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64;"
+          + " Trident/5.0)</ser:UserAgent>\n"
+          + "         <ser:CEUserAgent>CXCTurnkey.FIPlugin.20.1</ser:CEUserAgent>\n"
+          + "      </ser:AuthHeader>\n"
+          + "   </soapenv:Header>\n"
+          + "   <soapenv:Body>\n"
+          + "      <ser:GetContacts>\n"
+          + "         <ser:RqUID>GettingContactWithNickName222</ser:RqUID>\n"
+          + "      </ser:GetContacts>\n"
+          + "   </soapenv:Body>\n"
+          + "</soapenv:Envelope>\n";
 
   static final String soapResponseWithEmptySecurityHeader =
-    "<Envelope \n"
-    + "    xmlns='http://schemas.xmlsoap.org/soap/envelope/'>\n"
-    + "  <Header>\n"
-    + "    <Security \n"
-    + "        xmlns='http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd'/>\n"
-    + "  </Header>\n"
-    + "  <Body>\n"
-    + "    <sumResponse xmlns='http://ws.example.com/'>\n"
-    + "      <return>9</return>\n"
-    + "    </sumResponse>\n"
-    + "  </Body>\n"
-    + "</Envelope>\n";
+      "<soap:Envelope \n"
+          + "    xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/'>\n"
+          + "  <soap:Header>\n"
+          + "    <Security \n"
+          + "       "
+          + " xmlns='http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd'/>\n"
+          + "  </soap:Header>\n"
+          + "  <soap:Body>\n"
+          + "    <sumResponse xmlns='http://ws.example.com/'>\n"
+          + "      <return>9</return>\n"
+          + "    </sumResponse>\n"
+          + "  </soap:Body>\n"
+          + "</soap:Envelope>\n";
 
   static final String soapResponseWithUnsignedConfirmations =
-    "<Envelope xmlns:ns1='http://ws.example.com/'\n"
-    + "    xmlns='http://schemas.xmlsoap.org/soap/envelope/'>\n"
-    + "  <Header>\n"
-    + "    <Security \n"
-    + "        xmlns='http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd'\n"
-    + "        xmlns:wssec11='http://docs.oasis-open.org/wss/oasis-wss-wssecurity-secext-1.1.xsd'>\n"
-    + "      <wssec11:SignatureConfirmation Value='ragnarok2'/>\n"
-    + "      <wssec11:SignatureConfirmation Value='pikachu1'/>\n"
-    + "    </Security>\n"
-    + "  </Header>\n"
-    + "  <Body>\n"
-    + "    <ns1:sumResponse>\n"
-    + "      <ns1:return>9</ns1:return>\n"
-    + "    </ns1:sumResponse>\n"
-    + "  </Body>\n"
-    + "</Envelope>\n";
+      "<Envelope xmlns:ns1='http://ws.example.com/'\n"
+          + "    xmlns='http://schemas.xmlsoap.org/soap/envelope/'>\n"
+          + "  <Header>\n"
+          + "    <Security \n"
+          + "       "
+          + " xmlns='http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd'\n"
+          + "       "
+          + " xmlns:wssec11='http://docs.oasis-open.org/wss/oasis-wss-wssecurity-secext-1.1.xsd'>\n"
+          + "      <wssec11:SignatureConfirmation Value='ragnarok2'/>\n"
+          + "      <wssec11:SignatureConfirmation Value='pikachu1'/>\n"
+          + "    </Security>\n"
+          + "  </Header>\n"
+          + "  <Body>\n"
+          + "    <ns1:sumResponse>\n"
+          + "      <ns1:return>9</ns1:return>\n"
+          + "    </ns1:sumResponse>\n"
+          + "  </Body>\n"
+          + "</Envelope>\n";
 
   static class KeyCertPair {
     public String privateKey;
@@ -354,7 +368,6 @@ public abstract class CalloutTestBase {
                 + "-----END CERTIFICATE-----\n")
       };
 
-
   MessageContext msgCtxt;
   InputStream messageContentStream;
   Message message;
@@ -388,7 +401,8 @@ public abstract class CalloutTestBase {
             if (variables == null) {
               variables = new HashMap();
             }
-            System.out.printf("setVariable(%s, %s)\n", name, value==null?"-null-":value.toString());
+            System.out.printf(
+                "setVariable(%s, %s)\n", name, value == null ? "-null-" : value.toString());
             variables.put(name, value);
             return true;
           }
