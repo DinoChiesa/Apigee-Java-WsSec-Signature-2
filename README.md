@@ -331,19 +331,19 @@ Further comments:
   an embedded RSA key found in the signed document. (This is a reasonable
   feature enhancement; but it hasn't been requested yet.)
 
-* Every certificate has a "thumbprint", which is just a SHA-1 hash of the
-  encoded certificate data. This thumbprint is unique among certificates.  If
-  the certificate is embedded within the signed document, then the Validate
-  callout checks for certificate trust via these thumbprints. In that case,
-  `accept-thumbprints` is required; You must configure it when using the
-  Validate callout on a signed document that embeds the certificate. When
-  validating a signed document that does not embed the certificate, you must
-  explicitly provide the certificate in the callout configuration via the
-  `certificate` property. In that case the `accept-thumbprints` property is
+* Every certificate has a "thumbprint", which is just a SHA-1 or SHA-256 hash of
+  the encoded certificate data. This thumbprint is unique among certificates.
+  If the certificate is embedded within the signed document, then the Validate
+  callout checks for certificate trust via these thumbprints. In that case, one
+  of `accept-thumbprints` or `accept-thumbprints-sha256` is required; You must
+  configure one of those properties when using the Validate callout on a signed
+  document that embeds the certificate.
+
+  When validating a signed document that does not embed the certificate, you
+  must explicitly provide the certificate in the callout configuration via the
+  `certificate` property. In that case `accept-thumbprints` and `accept-thumbprints-sha256` are
   ignored, because the assumption is that if you specify the certificate, you
-  trust it. It is not possible to check the SHA-256 thumbprint at this
-  time. This is a reasonable feature enhancement; but it hasn't been requested
-  yet.
+  trust it.
 
 * With the `max-lifetime` property, you can configure the policy to reject a
   signature that has a lifetime greater, say, 5 minutes. The maximum lifetime of
