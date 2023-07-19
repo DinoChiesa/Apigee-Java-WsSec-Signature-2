@@ -309,7 +309,7 @@ The properties available for the Validate callout are:
 | `accept-thumbprints-sha256` | optional. a comma-separated list of SHA-256 thumbprints of the certs which are acceptable signers. If any signature is from a cert that has a thumbprint other than that specified, the verification fails. Either this property, or the similar `accept-thumbprints` is required if the `certificate` property is not provided. You should specify only one of `accept-thumbprints` or `accept-thumbprints-256`. |
 | `accept-subject-cns`     | optional. a comma-separated list of common names (CNs) for the subject which are acceptable signers. If any signature is from a CN other than that specified, the verification fails. |
 | `require-expiry`         | optional. true or false, defaults true. Whether to require an expiry in the timestamp.  It is highly recommended that you use 'true' here, or just omit this property and accept the default. |
-| `required-signed-elements` | optional. a comma-and-maybe-space-separated list of prefix:Tag forms indicating the elements that must be signed. Defaults to `soap:Body, wsu:Timestamp` . To require only a signature on the `wsu:Timestamp` and not the `soap:Body` when validating, set this to `wsu:Timestamp`.  (You probably don't want to do this.) To require only a signature on the `Body` and not the `Timestamp` when validating, set this to `soap:Body`. (You probably don't want to do this, either.) Probably you want to just leave this element out of your configuration and accept the default. Case is significant. |
+| `required-signed-elements` | optional. a comma-and-maybe-space-separated list of prefix:Tag forms indicating the elements that must be signed. Defaults to `soap:Body, wsu:Timestamp` . To require only a signature on the `wsu:Timestamp` and not the `soap:Body` when validating, set this to `wsu:Timestamp`.  (You probably don't want to do this.) To require only a signature on the `Body` and not the `Timestamp` when validating, set this to `soap:Body`. (You probably don't want to do this, either.) Probably you want to just leave this element out of your configuration and accept the default. Case is significant for the prefix and the tag. The predefined prefixes are listed below. |
 | `ignore-expiry`          | optional. true or false. defaults false. When true, tells the validator to ignore the `Timestamp/Expires` field when evaluating validity of the soap message.  |
 | `ignore-certificate-expiry` | optional. true or false. defaults false. When true, tells the validator to ignore any validity dates on the provided certificate. Useful mostly for testing. |
 | `max-lifetime`           | optional. Takes a string like `120s`, `10m`, `4d`, etc to imply 120 seconds, 10 minutes, 4 days.  Use this to limit the acceptable lifetime of the signed document. This requires the Timestamp to include a Created as well as an Expires element. Default: no maximum lifetime. |
@@ -364,6 +364,23 @@ Further comments:
 * There is a `wssec_error` variable that gets set when the validation check fails.
   It will give you some additional information about the validation failure.
 
+* For specifying which elements must be checked for signature, there is no way
+  to define a prefix in the policy configuration. Instead you must select a
+  prefix from the set of available prefixes, which depends on those prefixes
+  delared in the document root, as well as a set of predefined prefixes. These
+  are:
+
+  | prefix     | namespace |
+  | ---------- | --------- |
+  | `wsa`      | http://www.w3.org/2005/08/addressing |
+  | `wsu`      | http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd |
+  | `soap1.1`  | http://schemas.xmlsoap.org/soap/envelope/ |
+  | `soap1.2`  | http://www.w3.org/2003/05/soap-envelope |
+  | `wssec`    | http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd |
+  | `wssec1.1` | http://docs.oasis-open.org/wss/oasis-wss-wssecurity-secext-1.1.xsd |
+  | `ds`       | http://www.w3.org/2000/09/xmldsig# |
+
+  The prefixes in the document take precedence over these prefixes.
 
 
 See [the example API proxy included here](./bundle) for a working example of these policy configurations.
@@ -578,4 +595,3 @@ certificate, is as easy as 1, 2, 3:
 ## Bugs
 
 * Limitation: The Sign callout always uses XML Canonicalization, never uses Transform.ENVELOPED.
-
