@@ -364,11 +364,11 @@ Further comments:
 * There is a `wssec_error` variable that gets set when the validation check fails.
   It will give you some additional information about the validation failure.
 
-* For specifying which elements must be checked for signature, there is no way
-  to define a prefix in the policy configuration. Instead you must select a
-  prefix from the set of available prefixes, which depends on those prefixes
-  delared in the document root, as well as a set of predefined prefixes. These
-  are:
+* For specifying which elements must be checked for signature in the
+  `required-signed-elements` property, there is no way to define a prefix in the
+  policy configuration. Instead you must select a prefix from the set of
+  available prefixes, which depends on those prefixes delared in the document
+  root, as well as a set of predefined prefixes. These are:
 
   | prefix     | namespace |
   | ---------- | --------- |
@@ -382,6 +382,8 @@ Further comments:
 
   The prefixes in the document take precedence over these prefixes.
 
+  As an example, if your document uses `soapenv` as the prefix for the soap1.1 namespace, then you
+  can use a string like `soapenv:Body` in the `required-signed-elements` property.
 
 See [the example API proxy included here](./bundle) for a working example of these policy configurations.
 
