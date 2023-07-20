@@ -232,8 +232,8 @@ public class Validate extends WssecCalloutBase implements Execution {
 
         String availableIssuerName =
             (nameStyle == IssuerNameStyle.SHORT)
-                ? "CN=" + getCommonName(cert.getSubjectX500Principal())
-                : cert.getSubjectDN().getName();
+                ? "CN=" + getCommonName(cert.getIssuerX500Principal())
+                : cert.getIssuerDN().getName();
 
         if (!assertedIssuerName.equals(availableIssuerName))
           throw new RuntimeException(
