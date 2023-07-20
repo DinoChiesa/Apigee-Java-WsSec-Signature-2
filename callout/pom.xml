@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.google.apigee.callouts</groupId>
   <artifactId>apigee-wssecdsig</artifactId>
-  <version>20230718</version>
+  <version>20230720</version>
   <name>ApigeeJavaWssecSignature</name>
   <url>http://maven.apache.org</url>
   <packaging>jar</packaging>

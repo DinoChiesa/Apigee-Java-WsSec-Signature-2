@@ -238,7 +238,7 @@ public class Validate extends WssecCalloutBase implements Execution {
         if (!assertedIssuerName.equals(availableIssuerName))
           throw new RuntimeException(
               String.format(
-                  "X509SerialNumber mismatch cert(%s) doc(%s)",
+                  "X509IssuerName mismatch cert(%s) doc(%s)",
                   availableIssuerName, assertedIssuerName));
         return new SourcedCert(cert, CertificateSource.CONFIG);
       }

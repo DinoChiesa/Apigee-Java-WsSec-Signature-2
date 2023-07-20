@@ -65,7 +65,7 @@ environment-wide or organization-wide jar via the Apigee administrative API.
 
 ## Details
 
-There is a single jar, apigee-wssecdsig-20230718.jar . Within that jar, there are two callout classes,
+There is a single jar, apigee-wssecdsig-20230720.jar . Within that jar, there are two callout classes,
 
 * com.google.apigee.callouts.wssecdsig.Sign - signs the input SOAP document.
 * com.google.apigee.callouts.wssecdsig.Validate - validates the signed SOAP document
@@ -116,7 +116,7 @@ Configure the policy this way:
     <Property name='certificate'>{my_certificate}</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Sign</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20230718.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20230720.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -127,24 +127,25 @@ Information, and much more. These properties are described in detail here:
 
 | name                 | description |
 | -------------------- | ------------ |
-| source               | optional. the variable name in which to obtain the source document to sign. Defaults to message.content |
-| soap-version         | optional. Either `soap1.1` or `soap1.2`. Defaults to `soap1.1` . |
-| output-variable      | optional. the variable name in which to write the signed XML. Defaults to `message.content` |
-| private-key          | required. the PEM-encoded RSA private key. You can use a variable reference here as shown above. Probably you want to read this from a secure store - maybe the encrypted KVM. |
-| private-key-password | optional. The password for the key, if it is encrypted. |
-| key-identifier-type  | optional. One of {`BST_DIRECT_REFERENCE`, `THUMBPRINT`,  `ISSUER_SERIAL`, `X509_CERT_DIRECT`, or `RSA_KEY_VALUE`}.  Defaults to `BST_DIRECT_REFERENCE`. See below for details on these options. |
-| issuer-name-style    | optional. One of {`SHORT`, `SUBJECT_DN`}.  See below for details. |
-| certificate          | required. The certificate matching the private key. In PEM form. |
-| signing-method       | optional. Takes value `rsa-sha1` or `rsa-sha256`. Defaults to `rsa-sha1`. Despite this, `rsa-sha256` is highly recommended. |
-| digest-method        | optional. Takes value `sha1` or `sha256`. Defaults to `sha1`. If you have the flexibility to do so, it's preferred that you use `sha256`. |
-| elements-to-sign     | optional. Takes a comma-and-maybe-space-separated value of prefix:Tag forms. For example "wsu:Timestamp, soap:Body".  Case is important. Default: the signer signs both the wsu:Timestamp and the soap:Body. |
-| expiry               | optional. Takes a string like 120s, 10m, 4d, etc to imply 120 seconds, 10 minutes, 4 days, and injects an Expires element into the Timestamp. Default: no expiry. |
-| c14-inclusive-elements | optional. Takes a comma-separated value of namespace _URIs_ (not prefixes). Used to add an InclusiveElements element to the CanonicalizationMethod element.  |
-| transform-inclusive-elements | optional. Takes a comma-separated value of namespace _URIs_ (not prefixes). Used to add an InclusiveElements element to the Transform element.  |
-| ds-prefix            | optional. A simple string, to be used as the prefix for the namespace "http://www.w3.org/2000/09/xmldsig#". Some users have expressed a desire to control this, and this callout makes it possible. This property affects the aesthetics of the document only, does not affect the XML InfoSet. In case you care, the default prefix is "ds".  |
-| confirmations        | optional. Either: (a) a list of signature values in SignatureConfirmation elements, which will then be signed. If a SignatureConfirmation element with a given value is not present, one will be injected. or (b) the string `\*all\*` , to indicate that any existing SignatureConfirmation elements in the source document will be signed. or (c) an empty string, which tells the callout to inject an empty SignatureConfirmation element. |
+| `source`               | optional. the variable name in which to obtain the source document to sign. Defaults to message.content |
+| `soap-version`         | optional. Either `soap1.1` or `soap1.2`. Defaults to `soap1.1` . |
+| `output-variable`      | optional. the variable name in which to write the signed XML. Defaults to `message.content` |
+| `private-key`          | required. the PEM-encoded RSA private key. You can use a variable reference here as shown above. Probably you want to read this from a secure store - maybe the encrypted KVM. |
+| `private-key-password` | optional. The password for the key, if it is encrypted. |
+| `key-identifier-type`  | optional. One of {`BST_DIRECT_REFERENCE`, `THUMBPRINT`,  `ISSUER_SERIAL`, `X509_CERT_DIRECT`, or `RSA_KEY_VALUE`}.  Defaults to `BST_DIRECT_REFERENCE`. See below for details on these options. |
+| `issuer-name-style`    | optional. One of {`SHORT`, `SUBJECT_DN`}.  This is relevant only if `key-identifier-type` has the value `ISSUER_SERIAL`. See below for details. |
+| `certificate`          | required. The certificate matching the private key. In PEM form. |
+| `signing-method`       | optional. Takes value `rsa-sha1` or `rsa-sha256`. Defaults to `rsa-sha1`. Despite this, `rsa-sha256` is highly recommended. |
+| `digest-method`        | optional. Takes value `sha1` or `sha256`. Defaults to `sha1`. If you have the flexibility to do so, it's preferred that you use `sha256`. |
+| `elements-to-sign`     | optional. Takes a comma-and-maybe-space-separated value of prefix:Tag forms. For example "wsu:Timestamp, soap:Body, wsa:To, wsa:MessageID".  Case is important. Default: the signer signs both the wsu:Timestamp and the soap:Body. |
+| `expiry`               | optional. Takes a string like 120s, 10m, 4d, etc to imply 120 seconds, 10 minutes, 4 days, and injects an Expires element into the Timestamp. Default: no expiry. |
+| `c14-inclusive-elements` | optional. Takes a comma-separated value of namespace _URIs_ (not prefixes). Used to add an InclusiveElements element to the CanonicalizationMethod element.  |
+| `transform-inclusive-elements` | optional. Takes a comma-separated value of namespace _URIs_ (not prefixes). Used to add an InclusiveElements element to the Transform element.  |
+| `ds-prefix`            | optional. A simple string, to be used as the prefix for the namespace "http://www.w3.org/2000/09/xmldsig#". Some users have expressed a desire to control this, and this callout makes it possible. This property affects the aesthetics of the document only, does not affect the XML InfoSet. In case you care, the default prefix is "ds".  |
+| `confirmations`        | optional. Either: (a) a list of signature values in SignatureConfirmation elements, which will then be signed. If a SignatureConfirmation element with a given value is not present, one will be injected. or (b) the string `\*all\*` , to indicate that any existing SignatureConfirmation elements in the source document will be signed. or (c) an empty string, which tells the callout to inject an empty SignatureConfirmation element. These signatures are in addition to the elements specified in `elements-to-sign`. |
 
-This policy will sign the entire document and embed a Signature element as a child of the Ws-Security header element.
+This policy will create the appropriate signature or signatures, and embed each
+Signature element as a child of the WS-Security header element.
 
 The value you specify for the `key-identifier-type` property affects the shape of the output `KeyInfo` element.  These are the options:
 
@@ -182,6 +183,9 @@ The value you specify for the `key-identifier-type` property affects the shape o
      </wsse:SecurityTokenReference>
    </KeyInfo>
   ```
+  Use this if you plan to share the certificate with the receiver, and the receiver will
+  verify the certificate via  the thumbprint.  There is no way to embed a SHA256 thumbprint of the certificate, today.
+
 
 * `issuer_serial` (common with WCF) gives you a `SecurityTokenReference` with an identification of an X509 cert, like this:
 
@@ -231,7 +235,7 @@ The value you specify for the `key-identifier-type` property affects the shape o
    </KeyInfo>
   ```
 
-All of these are valid according to the WS-Security standard. The sender and
+All of these are valid according to the WS-Security standard. In all cases, the sender and
 receiver of a signed document must agree on which configuration to use.
 
 
@@ -247,7 +251,7 @@ Here's an example policy configuration:
     <Property name='accept-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20230718.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20230720.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -277,7 +281,7 @@ but NOT require a Timestamp/Expires element, use this:
     <Property name='accept-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20230718.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20230720.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -294,7 +298,7 @@ name on the certificate, use this:
     <Property name='accept-subject-cns'>host.example.com</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20230718.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20230720.jar</ResourceURL>
 </JavaCallout>
 ```
 
