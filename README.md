@@ -321,7 +321,7 @@ The properties available for the Validate callout are:
 | `throw-fault-on-invalid` | optional. true or false, defaults to false. Whether to throw a fault when the signature is invalid, or when validation fails for another reason (wrong elements signed, lifetime exceeds max, etc). |
 | `certificate`            | optional. The certificate that provides the public key to verify the signature. This is required (and used) only if the KeyInfo in the signed document does not explicitly provide the Certificate.  |
 | `issuer-name-style`      | optional. One of {`CN`, `DN`}.  Used only if the signed document includes a KeyInfo that wraps X509IssuerSerial. See below for further details. |
-| `issuer-name-unordered-comparison-of-rdns`  | optional. true/false. Applies only if the signed document includes a KeyInfo that wraps X509IssuerSerial and the `issuer-name-style` is `DN`. See the description under the Sign callout for further details. |
+| `issuer-name-unordered-comparison-of-rdns`  | optional. true/false. Applies only if the signed document includes a KeyInfo that wraps X509IssuerSerial and the `issuer-name-style` is `DN` (which is the default). See the description under the Sign callout for further details. |
 | `issuer-name-unordered-comparison-exclude-numeric-oids`  | optional. true/false. Applies only if the signed document includes a KeyInfo that wraps X509IssuerSerial and the `issuer-name-style` is `DN`, and `issuer-name-unordered-comparison-of-rdns` is `true`. See the description under the Sign callout for further details. |
 
 
@@ -356,9 +356,15 @@ Further comments:
   document includes a `KeyInfo` element, which wraps an `X509IssuerSerial`
   element. Signers can use a brief form, specifying only the CN of the issuer
   (e.g. `CN=xxx`), or a full DN style, of a structure similar to
-  `CN=xxx,O=xxx,L=xxx,ST=xxx,C=US`.  By default the callout will infer the appropriate
-  name style. Specify either `CN` or `DN` here to force the callout to use
-  a particular style.
+  `CN=xxx,O=xxx,L=xxx,ST=xxx,C=US`.  By default the callout will infer the
+  appropriate name style. Specify either `CN` or `DN` here to force the callout
+  to use a particular style. If you use `DN` here, or leave it blank, there is
+  an additional property `issuer-name-unordered-comparison-of-rdns`, which takes
+  a true/false value, defaulting to false. When true, it tells the callout to
+  compare the RDNs within the DN, without respect to order.  As long as all of
+  the RDNs mentioned in the `IssuerName` element in the signed document, are
+  also present in the DN of the issuer name of the certificate used for
+  validation, then the signature will be accepted.
 
 * With the `max-lifetime` property, you can configure the policy to reject a
   signature that has a lifetime greater, say, 5 minutes. The maximum lifetime of
