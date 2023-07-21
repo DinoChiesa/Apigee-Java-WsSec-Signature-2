@@ -65,7 +65,7 @@ environment-wide or organization-wide jar via the Apigee administrative API.
 
 ## Details
 
-There is a single jar, apigee-wssecdsig-20230720.jar . Within that jar, there are two callout classes,
+There is a single jar, apigee-wssecdsig-20230720a.jar . Within that jar, there are two callout classes,
 
 * com.google.apigee.callouts.wssecdsig.Sign - signs the input SOAP document.
 * com.google.apigee.callouts.wssecdsig.Validate - validates the signed SOAP document
@@ -116,7 +116,7 @@ Configure the policy this way:
     <Property name='certificate'>{my_certificate}</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Sign</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20230720.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20230720a.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -133,7 +133,7 @@ Information, and much more. These properties are described in detail here:
 | `private-key`          | required. the PEM-encoded RSA private key. You can use a variable reference here as shown above. Probably you want to read this from a secure store - maybe the encrypted KVM. |
 | `private-key-password` | optional. The password for the key, if it is encrypted. |
 | `key-identifier-type`  | optional. One of {`BST_DIRECT_REFERENCE`, `THUMBPRINT`,  `ISSUER_SERIAL`, `X509_CERT_DIRECT`, or `RSA_KEY_VALUE`}.  Defaults to `BST_DIRECT_REFERENCE`. See below for details on these options. |
-| `issuer-name-style`    | optional. One of {`SHORT`, `SUBJECT_DN`}.  This is relevant only if `key-identifier-type` has the value `ISSUER_SERIAL`. See below for details. |
+| `issuer-name-style`    | optional. One of {`CN`, `DN`}.  This is relevant only if `key-identifier-type` has the value `ISSUER_SERIAL`. See below for details. |
 | `certificate`          | required. The certificate matching the private key. In PEM form. |
 | `signing-method`       | optional. Takes value `rsa-sha1` or `rsa-sha256`. Defaults to `rsa-sha1`. Despite this, `rsa-sha256` is highly recommended. |
 | `digest-method`        | optional. Takes value `sha1` or `sha256`. Defaults to `sha1`. If you have the flexibility to do so, it's preferred that you use `sha256`. |
@@ -202,10 +202,11 @@ The value you specify for the `key-identifier-type` property affects the shape o
    </KeyInfo>
   ```
 
-  For this case, you can optionally specify another property, `issuer-name-style`, as
-  either `short` or `subject_dn`.  The former is the default, and an example for
-  that is shown above. The latter provides the full distinguished name, which
-  results in something like this:
+  For this case, you can optionally specify another property,
+  `issuer-name-style`, as either `CN` or `DN`.  For the former, and an example
+  for that is shown above; only the CN is included in the `IssuerName`
+  element. The latter is the default, and provides the full distinguished name (DN),
+  which results in something like this:
 
    ```xml
    <X509IssuerSerial>
@@ -251,7 +252,7 @@ Here's an example policy configuration:
     <Property name='accept-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20230720.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20230720a.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -281,7 +282,7 @@ but NOT require a Timestamp/Expires element, use this:
     <Property name='accept-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20230720.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20230720a.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -298,7 +299,7 @@ name on the certificate, use this:
     <Property name='accept-subject-cns'>host.example.com</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20230720.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20230720a.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -319,7 +320,9 @@ The properties available for the Validate callout are:
 | `max-lifetime`           | optional. Takes a string like `120s`, `10m`, `4d`, etc to imply 120 seconds, 10 minutes, 4 days.  Use this to limit the acceptable lifetime of the signed document. This requires the Timestamp to include a Created as well as an Expires element. Default: no maximum lifetime. |
 | `throw-fault-on-invalid` | optional. true or false, defaults to false. Whether to throw a fault when the signature is invalid, or when validation fails for another reason (wrong elements signed, lifetime exceeds max, etc). |
 | `certificate`            | optional. The certificate that provides the public key to verify the signature. This is required (and used) only if the KeyInfo in the signed document does not explicitly provide the Certificate.  |
-| `issuer-name-style`      | optional. One of {`SHORT`, `SUBJECT_DN`}.  Used only if the signed document includes a KeyInfo that wraps X509IssuerSerial. See the description under the Sign callout for further details. |
+| `issuer-name-style`      | optional. One of {`CN`, `DN`}.  Used only if the signed document includes a KeyInfo that wraps X509IssuerSerial. See below for further details. |
+| `issuer-name-unordered-comparison-of-rdns`  | optional. true/false. Applies only if the signed document includes a KeyInfo that wraps X509IssuerSerial and the `issuer-name-style` is `DN`. See the description under the Sign callout for further details. |
+| `issuer-name-unordered-comparison-exclude-numeric-oids`  | optional. true/false. Applies only if the signed document includes a KeyInfo that wraps X509IssuerSerial and the `issuer-name-style` is `DN`, and `issuer-name-unordered-comparison-of-rdns` is `true`. See the description under the Sign callout for further details. |
 
 
 The result of the Validate callout is to set a single variable: `wssec_valid`.
@@ -349,6 +352,14 @@ Further comments:
   ignored, because the assumption is that if you specify the certificate, you
   trust it.
 
+* The `issuer-name-style` property is meaningful only if the incoming signed
+  document includes a `KeyInfo` element, which wraps an `X509IssuerSerial`
+  element. Signers can use a brief form, specifying only the CN of the issuer
+  (e.g. `CN=xxx`), or a full DN style, of a structure similar to
+  `CN=xxx,O=xxx,L=xxx,ST=xxx,C=US`.  By default the callout will infer the appropriate
+  name style. Specify either `CN` or `DN` here to force the callout to use
+  a particular style.
+
 * With the `max-lifetime` property, you can configure the policy to reject a
   signature that has a lifetime greater, say, 5 minutes. The maximum lifetime of
   a signed documented is computed from the asserted (and, ideally signed)
@@ -371,23 +382,19 @@ Further comments:
 * For specifying which elements must be checked for signature in the
   `required-signed-elements` property, there is no way to define a prefix in the
   policy configuration. Instead you must select a prefix from the set of
-  available prefixes, which depends on those prefixes delared in the document
-  root, as well as a set of predefined prefixes. These are:
+  available "conventional" prefixes known by this callout. These are:
 
   | prefix     | namespace |
   | ---------- | --------- |
   | `wsa`      | http://www.w3.org/2005/08/addressing |
   | `wsu`      | http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd |
-  | `soap1.1`  | http://schemas.xmlsoap.org/soap/envelope/ |
-  | `soap1.2`  | http://www.w3.org/2003/05/soap-envelope |
-  | `wssec`    | http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd |
-  | `wssec1.1` | http://docs.oasis-open.org/wss/oasis-wss-wssecurity-secext-1.1.xsd |
-  | `ds`       | http://www.w3.org/2000/09/xmldsig# |
+  | `soap`  |  either http://schemas.xmlsoap.org/soap/envelope/ for soap1.1 or http://www.w3.org/2003/05/soap-envelope for soap1.2|
 
-  The prefixes in the document take precedence over these prefixes.
+  These are the only prefixes available to check.
 
   As an example, if your document uses `soapenv` as the prefix for the soap1.1 namespace, then you
-  can use a string like `soapenv:Body` in the `required-signed-elements` property.
+  can use a string like `soap:Body` in the `required-signed-elements` property to require that
+  the callout validate that  the Body element has been signed.
 
 See [the example API proxy included here](./bundle) for a working example of these policy configurations.
 

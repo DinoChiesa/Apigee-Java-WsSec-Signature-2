@@ -539,12 +539,12 @@ public class Sign extends WssecCalloutBase implements Execution {
       Element x509IssuerName =
           doc.createElementNS(Namespaces.XMLDSIG, dsPrefix.apply("X509IssuerName"));
 
-      if (signConfiguration.issuerNameStyle == IssuerNameStyle.SHORT) {
+      if (signConfiguration.issuerNameStyle == IssuerNameStyle.CN) {
         x509IssuerName.setTextContent(
-            "CN=" + getCommonName(signConfiguration.certificate.getSubjectX500Principal()));
+            "CN=" + getCommonName(signConfiguration.certificate.getIssuerDN().getName()));
       } else {
         // x509IssuerName.setTextContent(signConfiguration.certificate.getSubjectX500Principal().getName());
-        x509IssuerName.setTextContent(signConfiguration.certificate.getSubjectDN().getName());
+        x509IssuerName.setTextContent(signConfiguration.certificate.getIssuerDN().getName());
       }
 
       Element x509SerialNumber =

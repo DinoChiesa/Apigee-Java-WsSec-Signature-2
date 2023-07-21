@@ -1,0 +1,22 @@
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:urn="urn:memberpoints.services.apigee.com">
+   <soapenv:Header><wsse:Security xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"><wsu:Timestamp wsu:Id="TS-7E0B6E7EB688763C1B168989109640656"><wsu:Created>2023-07-20T22:11:36Z</wsu:Created><wsu:Expires>2023-07-20T22:13:36Z</wsu:Expires></wsu:Timestamp><ds:Signature Id="SIG-7E0B6E7EB688763C1B168989109641061" xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:SignedInfo><ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"><ec:InclusiveNamespaces PrefixList="soapenv urn" xmlns:ec="http://www.w3.org/2001/10/xml-exc-c14n#"/></ds:CanonicalizationMethod><ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/><ds:Reference URI="#id-7E0B6E7EB688763C1B168989109640760"><ds:Transforms><ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"><ec:InclusiveNamespaces PrefixList="urn" xmlns:ec="http://www.w3.org/2001/10/xml-exc-c14n#"/></ds:Transform></ds:Transforms><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/><ds:DigestValue>zre0MrBq2oAldWclg1WO8LW3TnGQsevyUyfK/EecWvc=</ds:DigestValue></ds:Reference><ds:Reference URI="#TS-7E0B6E7EB688763C1B168989109640656"><ds:Transforms><ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"><ec:InclusiveNamespaces PrefixList="wsse soapenv urn" xmlns:ec="http://www.w3.org/2001/10/xml-exc-c14n#"/></ds:Transform></ds:Transforms><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/><ds:DigestValue>wXrZDfQQPUhY64aQg6S8DexN0PBBroV4BYa7td77Amw=</ds:DigestValue></ds:Reference></ds:SignedInfo><ds:SignatureValue>U2h4O29iFILlrzZ7Fxzo+FSsaRSqWqd+2J60iZNcitfC0DSbB9G/QE8aieYdeyLi6zebITaDogQtU6u6RhBZZksIMrgyWIOiDQYKb5L20qGIQutI2nAvSjGTlHRLhd/bOPhfmwtS/ainHQWUNE3KCbgtKgnAVkXG1NOXUD96hD3PVL550CEc92PBqBSBq7sRzPokE3dfzG04Gz3/o86bfcOL418HqXUWc+UKoOg2pfJc/eGAMWbpjkVwq1UxKiasUpiKV1hS7iZMjvi4xdOPlSgSBQcy50pxWltPyg9gzAB7IclI62OJnpUFfn9oRRsH/acGZlBy0q1vy9neydjcQg==</ds:SignatureValue><ds:KeyInfo Id="KI-7E0B6E7EB688763C1B168989109640758"><wsse:SecurityTokenReference wsu:Id="STR-7E0B6E7EB688763C1B168989109640759"><ds:X509Data><ds:X509IssuerSerial><ds:X509IssuerName>1.2.840.113549.1.9.1=#16126463686965736140676f6f676c652e636f6d,CN=apigee.google.net,OU=Apigee,O=Google,L=Kirkland,ST=Washington,C=US</ds:X509IssuerName><ds:X509SerialNumber>14301260475740828433</ds:X509SerialNumber></ds:X509IssuerSerial></ds:X509Data></wsse:SecurityTokenReference></ds:KeyInfo></ds:Signature></wsse:Security></soapenv:Header>
+   <soapenv:Body wsu:Id="id-7E0B6E7EB688763C1B168989109640760" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
+      <urn:addMember>
+         <!--Optional:-->
+         <urn:MemberPoints>
+            <!--Optional:-->
+            <urn:id>?</urn:id>
+            <!--Optional:-->
+            <urn:name>?</urn:name>
+            <!--Optional:-->
+            <urn:phone>?</urn:phone>
+            <!--Optional:-->
+            <urn:balance>?</urn:balance>
+            <!--Optional:-->
+            <urn:inception>?</urn:inception>
+            <!--Optional:-->
+            <urn:updated>?</urn:updated>
+         </urn:MemberPoints>
+      </urn:addMember>
+   </soapenv:Body>
+</soapenv:Envelope>

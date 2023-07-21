@@ -44,7 +44,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.naming.InvalidNameException;
-import javax.security.auth.x500.X500Principal;
 import javax.xml.bind.DatatypeConverter;
 import javax.xml.crypto.KeySelector;
 import javax.xml.crypto.MarshalException;
@@ -121,6 +120,42 @@ public class Validate extends WssecCalloutBase implements Execution {
       if (id.equals(candidateId)) return candidate;
     }
     return null;
+  }
+
+  private boolean issuerNameMatch(
+      String assertedIssuerName, X509Certificate cert, IssuerNameStyle nameStyle)
+      throws InvalidNameException {
+    String issuerOnCertFullDN = cert.getIssuerDN().getName();
+
+    logger.debug("issuerNameMatch() assertedIssuerName {}", assertedIssuerName);
+    logger.debug("issuerNameMatch() rndsOnCert {}", issuerOnCertFullDN);
+    if (nameStyle == IssuerNameStyle.CN
+        || (nameStyle == IssuerNameStyle.NOT_SPECIFIED && !assertedIssuerName.contains(","))) {
+      logger.debug("issuerNameMatch() CN comparison");
+      String cn = getCommonName(issuerOnCertFullDN);
+      String availableIssuerName = "CN=" + (cn == null ? "-null-" : cn);
+      return assertedIssuerName.equals(availableIssuerName);
+    }
+
+    // DN style
+    if (wantUnorderedComparisonOfIssuerRDNs()) {
+      logger.debug("issuerNameMatch() unordered comparison of RDNs");
+      List<String> rdnsOnCert = fullDnToRdnStrings(issuerOnCertFullDN);
+      logger.debug("issuerNameMatch() rndsOnCert {}", rdnsOnCert);
+      List<String> rdnsListedInSignature = fullDnToRdnStrings(assertedIssuerName);
+      logger.debug("issuerNameMatch() rdnsListedInSignature {}", rdnsListedInSignature);
+      List<String> rdnsToCheck =
+          wantExcludeNumericOIDs()
+              ? rdnsListedInSignature.stream()
+                  .filter(e -> !Character.isDigit(e.charAt(0)))
+                  .collect(Collectors.toList())
+              : rdnsListedInSignature;
+      logger.debug("issuerNameMatch() rdnsToCheck {}", rdnsToCheck);
+      return rdnsOnCert.containsAll(rdnsToCheck);
+    }
+
+    logger.debug("issuerNameMatch() full DN equality");
+    return assertedIssuerName.equals(issuerOnCertFullDN);
   }
 
   private SourcedCert getCertificate(
@@ -228,18 +263,13 @@ public class Validate extends WssecCalloutBase implements Execution {
         String assertedIssuerName = x509IssuerName.getTextContent();
         if (assertedIssuerName == null)
           throw new RuntimeException("KeyInfo/SecurityTokenReference/../X509IssuerName missing");
-        IssuerNameStyle nameStyle = getIssuerNameStyle(msgCtxt);
 
-        String availableIssuerName =
-            (nameStyle == IssuerNameStyle.SHORT)
-                ? "CN=" + getCommonName(cert.getIssuerX500Principal())
-                : cert.getIssuerDN().getName();
-
-        if (!assertedIssuerName.equals(availableIssuerName))
+        if (!issuerNameMatch(assertedIssuerName, cert, getIssuerNameStyle(msgCtxt))) {
           throw new RuntimeException(
               String.format(
                   "X509IssuerName mismatch cert(%s) doc(%s)",
-                  availableIssuerName, assertedIssuerName));
+                  cert.getIssuerDN().getName(), assertedIssuerName));
+        }
         return new SourcedCert(cert, CertificateSource.CONFIG);
       }
       // <KeyInfo>
@@ -504,8 +534,9 @@ public class Validate extends WssecCalloutBase implements Execution {
           String tagName = referent.getLocalName();
           String ns = referent.getNamespaceURI();
           if (tagName != null && ns != null) {
+
+            // check for signature wrapping
             if (ns.equals(Namespaces.WSU)) {
-              // check for signature wrapping
               Node parent = referent.getParentNode();
               if (parent.getNodeType() == Node.ELEMENT_NODE
                   && parent.getLocalName().equals("Security")
@@ -522,15 +553,14 @@ public class Validate extends WssecCalloutBase implements Execution {
                           .getOwnerDocument()
                           .getDocumentElement()
                           .equals(headerParent)) {
-                    // foundTags.add("wsu:Timestamp");
                     foundTags.add("wsu:" + tagName);
                     foundOne = true;
                   }
                 }
               }
             }
+
             if (ns.equals(Namespaces.WSA)) {
-              // check for signature wrapping
               Node parent = referent.getParentNode();
               if (parent.getNodeType() == Node.ELEMENT_NODE
                   && parent.getLocalName().equals("Header")
@@ -545,14 +575,14 @@ public class Validate extends WssecCalloutBase implements Execution {
                 }
               }
             }
+
             if (ns.equals(soapNs)) {
-              // check for signature wrapping
               Node parent = referent.getParentNode();
               if (parent.getNodeType() == Node.ELEMENT_NODE
                   && parent.getLocalName().equals("Envelope")
                   && parent.getNamespaceURI().equals(soapNs)
                   && parent.getOwnerDocument().getDocumentElement().equals(parent)) {
-                // foundTags.add("soap:Body");
+                // probably tagName is Body, but could be Header
                 foundTags.add("soap:" + tagName);
                 foundOne = true;
               }
@@ -805,6 +835,21 @@ public class Validate extends WssecCalloutBase implements Execution {
         .collect(Collectors.toList());
   }
 
+  private boolean wantUnorderedComparisonOfIssuerRDNs() {
+    String value = (String) this.properties.get("issuer-name-unordered-comparison-of-rdns");
+    if (value == null) return false; // default false
+    if (value.trim().toLowerCase().equals("true")) return true;
+    return false;
+  }
+
+  private boolean wantExcludeNumericOIDs() {
+    String value =
+        (String) this.properties.get("issuer-name-unordered-comparison-exclude-numeric-oids");
+    if (value == null) return false; // default false
+    if (value.trim().toLowerCase().equals("true")) return true;
+    return false;
+  }
+
   private List<String> getAcceptableThumbprints(MessageContext msgCtxt) throws Exception {
     String nameList = getSimpleOptionalProperty("accept-thumbprints", msgCtxt);
     if (nameList == null) return null;
@@ -954,12 +999,12 @@ public class Validate extends WssecCalloutBase implements Execution {
             }
 
             // record issuer
-            X500Principal principal = certificate.getIssuerX500Principal();
-            String commonName = getCommonName(principal);
+            String issuerFullDN = certificate.getIssuerDN().getName();
+            String commonName = getCommonName(issuerFullDN);
             msgCtxt.setVariable(varName("cert_" + i + "_issuer_cn"), commonName);
             // record subject
-            principal = certificate.getSubjectX500Principal();
-            commonName = getCommonName(principal);
+            String subjectFullDN = certificate.getSubjectDN().getName();
+            commonName = getCommonName(subjectFullDN);
             msgCtxt.setVariable(varName("cert_" + i + "_subject_cn"), commonName);
             // and check CN
             if (acceptableSubjectCNs != null && isValid) {

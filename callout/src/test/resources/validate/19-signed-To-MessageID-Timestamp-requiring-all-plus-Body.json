@@ -1,7 +1,7 @@
 {
   "description" : "Sigs on wsa:To, wsa:MessageID, and Timestamp, requiring all + Body",
   "input" : "17-from-soapui-signed-To-MessageID-Timestamp.xml",
-  "note" : "this is active",
+  "note" : "Body is not signed in this document",
   "enabled" : true,
   "context" : {
   },

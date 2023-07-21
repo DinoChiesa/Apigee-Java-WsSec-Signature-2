@@ -810,6 +810,7 @@ public class TestWssecSignCallout extends CalloutTestBase {
     props.put("source", "message.content");
     props.put("expiry", minutesExpiry + "m");
     props.put("key-identifier-type", "issuer_serial");
+    props.put("issuer-name-style", "CN");
     props.put("private-key", "{my-private-key}");
     props.put("certificate", "{my-certificate}");
     props.put("output-variable", "output");

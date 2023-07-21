@@ -32,13 +32,14 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
-import javax.security.auth.x500.X500Principal;
 import javax.xml.bind.DatatypeConverter;
 import javax.xml.crypto.dsig.DigestMethod;
 import org.w3c.dom.Document;
@@ -191,26 +192,27 @@ public abstract class WssecCalloutBase {
     String certificateString = getSimpleRequiredProperty("certificate", msgCtxt);
     certificateString = certificateString.trim();
     X509Certificate certificate = (X509Certificate) certificateFromPEM(certificateString);
-    X500Principal principal = certificate.getIssuerX500Principal();
-    msgCtxt.setVariable(varName("cert_issuer_cn"), getCommonName(principal));
+    String issuerDN = certificate.getIssuerDN().getName();
+    msgCtxt.setVariable(varName("cert_issuer_cn"), getCommonName(issuerDN));
+    msgCtxt.setVariable(varName("cert_issuer_dn"), issuerDN);
     msgCtxt.setVariable(varName("cert_thumbprint"), getThumbprintHex(certificate));
     return certificate;
   }
 
   enum IssuerNameStyle {
     NOT_SPECIFIED,
-    SHORT,
-    SUBJECT_DN
+    CN,
+    DN
   }
 
   protected IssuerNameStyle getIssuerNameStyle(MessageContext msgCtxt) {
     String kitString = getSimpleOptionalProperty("issuer-name-style", msgCtxt);
-    if (kitString == null) return IssuerNameStyle.SHORT;
+    if (kitString == null) return IssuerNameStyle.NOT_SPECIFIED;
     kitString = kitString.trim().toUpperCase();
-    if (kitString.equals("SHORT")) return IssuerNameStyle.SHORT;
-    if (kitString.equals("SUBJECT_DN")) return IssuerNameStyle.SUBJECT_DN;
+    if (kitString.equals("SHORT") || kitString.equals("CN")) return IssuerNameStyle.CN;
+    if (kitString.equals("SUBJECT_DN") || kitString.equals("DN")) return IssuerNameStyle.DN;
     msgCtxt.setVariable(varName("warning"), "unrecognized issuer-name-style");
-    return IssuerNameStyle.SHORT;
+    return IssuerNameStyle.NOT_SPECIFIED;
   }
 
   private String signingMethodToUri(String shortName) {
@@ -276,8 +278,8 @@ public abstract class WssecCalloutBase {
     }
   }
 
-  protected static String getCommonName(X500Principal principal) throws InvalidNameException {
-    LdapName ldapDN = new LdapName(principal.getName());
+  protected static String getCommonName(String fullDN) throws InvalidNameException {
+    LdapName ldapDN = new LdapName(fullDN);
     String cn = null;
     for (Rdn rdn : ldapDN.getRdns()) {
       // System.out.println(rdn.getType() + " -> " + rdn.getValue());
@@ -286,6 +288,13 @@ public abstract class WssecCalloutBase {
       }
     }
     return cn;
+  }
+
+  protected static List<String> fullDnToRdnStrings(String fullDN) throws InvalidNameException {
+    return (new LdapName(fullDN))
+        .getRdns().stream()
+            .map(e -> String.format("%s=%s", e.getType(), e.getValue()))
+            .collect(Collectors.toList());
   }
 
   protected static String getThumbprintBase64(X509Certificate certificate)
