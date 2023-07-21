@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import javax.naming.InvalidNameException;
 import javax.xml.bind.DatatypeConverter;
 import javax.xml.crypto.KeySelector;
@@ -138,24 +139,52 @@ public class Validate extends WssecCalloutBase implements Execution {
     }
 
     // DN style
-    if (wantUnorderedComparisonOfIssuerRDNs()) {
-      logger.debug("issuerNameMatch() unordered comparison of RDNs");
-      List<String> rdnsOnCert = fullDnToRdnStrings(issuerOnCertFullDN);
-      logger.debug("issuerNameMatch() rndsOnCert {}", rdnsOnCert);
-      List<String> rdnsListedInSignature = fullDnToRdnStrings(assertedIssuerName);
-      logger.debug("issuerNameMatch() rdnsListedInSignature {}", rdnsListedInSignature);
-      List<String> rdnsToCheck =
-          wantExcludeNumericOIDs()
-              ? rdnsListedInSignature.stream()
-                  .filter(e -> !Character.isDigit(e.charAt(0)))
-                  .collect(Collectors.toList())
-              : rdnsListedInSignature;
-      logger.debug("issuerNameMatch() rdnsToCheck {}", rdnsToCheck);
-      return rdnsOnCert.containsAll(rdnsToCheck);
-    }
+    IssuerNameDNComparison comparisonStyle = getIssuerNameDNComparison();
+    switch (comparisonStyle) {
+      case UNORDERED:
+        logger.debug("issuerNameMatch() unordered comparison of RDNs");
+        List<String> rdnsOnCert1 = fullDnToRdnStrings(issuerOnCertFullDN);
+        logger.debug("issuerNameMatch() rndsOnCert {}", rdnsOnCert1);
+        List<String> rdnsListedInSignature = fullDnToRdnStrings(assertedIssuerName);
+        logger.debug("issuerNameMatch() rdnsListedInSignature {}", rdnsListedInSignature);
+        List<String> rdnsToCheck =
+            wantExcludeNumericOIDs()
+                ? rdnsListedInSignature.stream()
+                    .filter(e -> !Character.isDigit(e.charAt(0)))
+                    .collect(Collectors.toList())
+                : rdnsListedInSignature;
+        logger.debug("issuerNameMatch() rdnsToCheck {}", rdnsToCheck);
+        return rdnsOnCert1.containsAll(rdnsToCheck);
 
-    logger.debug("issuerNameMatch() full DN equality");
-    return assertedIssuerName.equals(issuerOnCertFullDN);
+      case NORMAL:
+      case REVERSE:
+        logger.debug("issuerNameMatch() piecewise RDN comparison");
+        final List<String> issuerRDNs = fullDnToRdnStrings(assertedIssuerName);
+        final List<String> rdnsOnCert2 = fullDnToRdnStrings(issuerOnCertFullDN);
+        int L1 = issuerRDNs.size();
+        int L2 = rdnsOnCert2.size();
+        if (L1 > L2) return false;
+        if (comparisonStyle == IssuerNameDNComparison.REVERSE) {
+          Collections.reverse(issuerRDNs);
+        }
+        logger.debug("issuerNameMatch() rndsOnCert {}", rdnsOnCert2);
+        logger.debug("issuerNameMatch() issuerRDNs {}", issuerRDNs);
+
+        return IntStream.range(0, L1)
+            .allMatch(
+                i -> {
+                  String rdnOnDoc = issuerRDNs.get(i);
+                  if (wantExcludeNumericOIDs() && Character.isDigit(rdnOnDoc.charAt(0)))
+                    return true;
+                  return rdnOnDoc.equals(rdnsOnCert2.get(i));
+                });
+
+      case NOT_SPECIFIED:
+      case STRING:
+      default:
+        logger.debug("issuerNameMatch() DN string equality");
+        return assertedIssuerName.equals(issuerOnCertFullDN);
+    }
   }
 
   private SourcedCert getCertificate(
@@ -835,16 +864,28 @@ public class Validate extends WssecCalloutBase implements Execution {
         .collect(Collectors.toList());
   }
 
-  private boolean wantUnorderedComparisonOfIssuerRDNs() {
-    String value = (String) this.properties.get("issuer-name-unordered-comparison-of-rdns");
-    if (value == null) return false; // default false
-    if (value.trim().toLowerCase().equals("true")) return true;
-    return false;
+  enum IssuerNameDNComparison {
+    NOT_SPECIFIED,
+    STRING,
+    NORMAL,
+    REVERSE,
+    UNORDERED
+  }
+
+  private IssuerNameDNComparison getIssuerNameDNComparison() {
+    String value = (String) this.properties.get("issuer-name-dn-comparison");
+    if (value == null) return IssuerNameDNComparison.NOT_SPECIFIED;
+    value = value.trim().toUpperCase();
+    try {
+      return IssuerNameDNComparison.valueOf(value);
+    } catch (IllegalArgumentException iae) {
+      // gulp
+    }
+    return IssuerNameDNComparison.NOT_SPECIFIED;
   }
 
   private boolean wantExcludeNumericOIDs() {
-    String value =
-        (String) this.properties.get("issuer-name-unordered-comparison-exclude-numeric-oids");
+    String value = (String) this.properties.get("issuer-name-dn-comparison-exclude-numeric-oids");
     if (value == null) return false; // default false
     if (value.trim().toLowerCase().equals("true")) return true;
     return false;

@@ -65,7 +65,7 @@ environment-wide or organization-wide jar via the Apigee administrative API.
 
 ## Details
 
-There is a single jar, apigee-wssecdsig-20230720a.jar . Within that jar, there are two callout classes,
+There is a single jar, apigee-wssecdsig-20230721.jar . Within that jar, there are two callout classes,
 
 * com.google.apigee.callouts.wssecdsig.Sign - signs the input SOAP document.
 * com.google.apigee.callouts.wssecdsig.Validate - validates the signed SOAP document
@@ -116,7 +116,7 @@ Configure the policy this way:
     <Property name='certificate'>{my_certificate}</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Sign</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20230720a.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20230721.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -252,7 +252,7 @@ Here's an example policy configuration:
     <Property name='accept-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20230720a.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20230721.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -282,7 +282,7 @@ but NOT require a Timestamp/Expires element, use this:
     <Property name='accept-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20230720a.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20230721.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -299,7 +299,7 @@ name on the certificate, use this:
     <Property name='accept-subject-cns'>host.example.com</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20230720a.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20230721.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -321,8 +321,8 @@ The properties available for the Validate callout are:
 | `throw-fault-on-invalid` | optional. true or false, defaults to false. Whether to throw a fault when the signature is invalid, or when validation fails for another reason (wrong elements signed, lifetime exceeds max, etc). |
 | `certificate`            | optional. The certificate that provides the public key to verify the signature. This is required (and used) only if the KeyInfo in the signed document does not explicitly provide the Certificate.  |
 | `issuer-name-style`      | optional. One of {`CN`, `DN`}.  Used only if the signed document includes a KeyInfo that wraps X509IssuerSerial. See below for further details. |
-| `issuer-name-unordered-comparison-of-rdns`  | optional. true/false. Applies only if the signed document includes a KeyInfo that wraps X509IssuerSerial and the `issuer-name-style` is `DN` (which is the default). See the description under the Sign callout for further details. |
-| `issuer-name-unordered-comparison-exclude-numeric-oids`  | optional. true/false. Applies only if the signed document includes a KeyInfo that wraps X509IssuerSerial and the `issuer-name-style` is `DN`, and `issuer-name-unordered-comparison-of-rdns` is `true`. See the description under the Sign callout for further details. |
+| `issuer-name-dn-comparison` | optional. One of {`string`, `normal`, `reverse`, `unordered`}, default is `string`. Applies only if the signed document includes a KeyInfo that wraps X509IssuerSerial and the `issuer-name-style` is `DN` (which is the default). See below for further details. |
+| `issuer-name-dn-comparison-exclude-numeric-oids`  | optional. true/false. Applies only if the signed document includes a KeyInfo that wraps X509IssuerSerial and the `issuer-name-style` is `DN`, and `issuer-name-dn-comparison` is `normal`, `reverse` or `unordered`. See below for further details. |
 
 
 The result of the Validate callout is to set a single variable: `wssec_valid`.
@@ -359,12 +359,30 @@ Further comments:
   `CN=xxx,O=xxx,L=xxx,ST=xxx,C=US`.  By default the callout will infer the
   appropriate name style. Specify either `CN` or `DN` here to force the callout
   to use a particular style. If you use `DN` here, or leave it blank, there is
-  an additional property `issuer-name-unordered-comparison-of-rdns`, which takes
-  a true/false value, defaulting to false. When true, it tells the callout to
-  compare the RDNs within the DN, without respect to order.  As long as all of
-  the RDNs mentioned in the `IssuerName` element in the signed document, are
-  also present in the DN of the issuer name of the certificate used for
-  validation, then the signature will be accepted.
+  an additional property `issuer-name-dn-comparison`, which accepts one of
+  {`string`, `normal`, `reverse`, `unordered`}.
+
+    * `string`: does a straight string
+      comparison of the Issuer DN in the document, against the Issuer DN on the
+      certificate.
+
+    * `normal`, `reverse`, `unordered`: compares each RDN in the Issuer DN in
+      the document, against the corresponding RDN from the Issuer DN on the
+      certificate. In the `normal` case, the order is normal.  In the `reverse`
+      case, the callout reverses the order of the RDNs before comparison; some
+      signers do this. In the `unordered` case, the callout just checks that
+      each RDN in the Issuer DN from the doc is present in the Issuer DN on the
+      cert, without considering order. In all three of these options, there is
+      another property, `issuer-name-dn-comparison-exclude-numeric-oids`, which
+      tells the callout to exclude RDNs that begin with numbers. Sometimes, RDNs
+      are encoded into strings using [an LDAP
+      OID](https://ldap.com/ldap-oid-reference-guide/), rather than a string,
+      for the attribute type.  For example, the OID `1.2.840.113549.1.9.1`
+      refers to an `emailAddress` attribute. If a signed document uses numeric
+      OIDs for some RDNs, the straight "string comparison" will fail. This
+      property can work around that interoperability issue.
+      
+
 
 * With the `max-lifetime` property, you can configure the policy to reject a
   signature that has a lifetime greater, say, 5 minutes. The maximum lifetime of
