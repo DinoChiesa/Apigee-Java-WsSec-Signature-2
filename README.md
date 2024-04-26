@@ -43,7 +43,7 @@ This example is not an official Google product, nor is it part of an official Go
 
 ## License
 
-This material is Copyright 2018-2022, Google LLC.
+This material is [Copyright 2018-2023, Google LLC.](./NOTICE)
 and is licensed under the Apache 2.0 license. See the [LICENSE](LICENSE) file.
 
 This code is open source but you don't need to compile it in order to use it.
@@ -627,6 +627,14 @@ certificate, is as easy as 1, 2, 3:
  openssl req -key privatekey.pem -new -out domain.csr
  openssl x509 -req -days 3650 -in domain.csr -signkey privatekey.pem -out domain.cert
 ```
+
+## Support
+
+This callout is open-source software, and is not a supported part of Apigee.  If
+you need assistance, you can try inquiring on [the Google Cloud Community forum
+dedicated to Apigee](https://goo.gle/apigee-community) There is no service-level
+guarantee for responses to inquiries posted to that forum; we do the best we can!
+
 
 
 ## Bugs
