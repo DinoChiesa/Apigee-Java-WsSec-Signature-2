@@ -43,7 +43,7 @@ This example is not an official Google product, nor is it part of an official Go
 
 ## License
 
-This material is [Copyright 2018-2023, Google LLC.](./NOTICE)
+This material is [Copyright 2018-2024, Google LLC.](./NOTICE)
 and is licensed under the Apache 2.0 license. See the [LICENSE](LICENSE) file.
 
 This code is open source but you don't need to compile it in order to use it.
@@ -65,7 +65,7 @@ environment-wide or organization-wide jar via the Apigee administrative API.
 
 ## Details
 
-There is a single jar, apigee-wssecdsig-20230721.jar . Within that jar, there are two callout classes,
+There is a single jar, apigee-wssecdsig-20240426.jar . Within that jar, there are two callout classes,
 
 * com.google.apigee.callouts.wssecdsig.Sign - signs the input SOAP document.
 * com.google.apigee.callouts.wssecdsig.Validate - validates the signed SOAP document
@@ -116,7 +116,7 @@ Configure the policy this way:
     <Property name='certificate'>{my_certificate}</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Sign</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20230721.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20240426.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -252,7 +252,7 @@ Here's an example policy configuration:
     <Property name='accept-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20230721.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20240426.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -282,7 +282,7 @@ but NOT require a Timestamp/Expires element, use this:
     <Property name='accept-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20230721.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20240426.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -299,7 +299,7 @@ name on the certificate, use this:
     <Property name='accept-subject-cns'>host.example.com</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20230721.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20240426.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -412,13 +412,13 @@ Further comments:
   | ---------- | --------- |
   | `wsa`      | http://www.w3.org/2005/08/addressing |
   | `wsu`      | http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd |
-  | `soap`  |  either http://schemas.xmlsoap.org/soap/envelope/ for soap1.1 or http://www.w3.org/2003/05/soap-envelope for soap1.2|
+  | `soap`     |  either http://schemas.xmlsoap.org/soap/envelope/ for soap1.1 or http://www.w3.org/2003/05/soap-envelope for soap1.2|
 
   These are the only prefixes available to check.
 
   As an example, if your document uses `soapenv` as the prefix for the soap1.1 namespace, then you
   can use a string like `soap:Body` in the `required-signed-elements` property to require that
-  the callout validate that  the Body element has been signed.
+  the callout validate that the Body element has been signed.
 
 See [the example API proxy included here](./bundle) for a working example of these policy configurations.
 
@@ -437,6 +437,7 @@ expected places in the XML document.
 ## Example API Proxy Bundle
 
 Deploy the API Proxy to an organization and environment using a tool like [importAndDeploy.js](https://github.com/DinoChiesa/apigee-edge-js-examples/blob/main/importAndDeploy.js)
+or [apigeecli](https://github.com/apigee/apigeecli/blob/main/docs/apigeecli.md).
 
 There are some sample SOAP request documents included in this repo that you can use for demonstrations.
 
