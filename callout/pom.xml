@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.google.apigee.callouts</groupId>
   <artifactId>apigee-wssecdsig</artifactId>
-  <version>20230721</version>
+  <version>20240426</version>
   <name>ApigeeJavaWssecSignature</name>
   <url>http://maven.apache.org</url>
   <packaging>jar</packaging>
@@ -21,6 +21,13 @@
     <apiproxy.java.rsrc.dir>../bundle/apiproxy/resources/java</apiproxy.java.rsrc.dir>
   </properties>
 
+  <repositories>
+    <repository>
+      <id>artifact-registry</id>
+      <url>https://us-maven.pkg.dev/apigee-release/apigee-java-callout-dependencies</url>
+    </repository>
+  </repositories>
+
   <dependencies>
 
     <dependency>
@@ -33,42 +40,19 @@
       <artifactId>bcpkix-jdk15on</artifactId>
       <version>${bouncycastle.version}</version>
     </dependency>
-<!--
-
-The following 2 jar dependencies from Apigee are not avaiable in any
-public repo. You can install them in your machine-local repo (The .m2
-cache) to get this pom.xml to build successfully.
-
-Run the  buildsetup.sh script to do this, or
-
-do it manually by running these commands:
-
-  mvn install:install-file \
-   -Dfile=/Path/To/expressions-1.0.0.jar \
-   -DgroupId=com.apigee.edge \
-   -DartifactId=expressions \
-   -Dversion=1.0.0 \
-   -Dpackaging=jar \
-   -DgeneratePom=true
-
-  mvn install:install-file \
-   -Dfile=/Path/To/message-flow-1.0.0.jar \
-   -DgroupId=com.apigee.edge \
-   -DartifactId=message-flow \
-   -Dversion=1.0.0 \
-   -Dpackaging=jar \
-   -DgeneratePom=true
--->
-
     <dependency>
-      <groupId>com.apigee.edge</groupId>
+      <groupId>com.apigee.gateway.libraries</groupId>
       <artifactId>message-flow</artifactId>
       <version>1.0.0</version>
+      <scope>provided</scope>
+      <type>jar</type>
     </dependency>
     <dependency>
-      <groupId>com.apigee.edge</groupId>
+      <groupId>com.apigee.infra.libraries</groupId>
       <artifactId>expressions</artifactId>
       <version>1.0.0</version>
+      <scope>provided</scope>
+      <type>jar</type>
     </dependency>
 
     <dependency>
@@ -128,8 +112,9 @@ do it manually by running these commands:
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
+              <excludeScope>provided</excludeScope>
               <outputDirectory>${project.build.directory}/lib</outputDirectory>
-              <includeScope>compile</includeScope>
+              <includeScope>runtime</includeScope>
               <overWriteReleases>false</overWriteReleases>
               <overWriteSnapshots>false</overWriteSnapshots>
               <overWriteIfNewer>true</overWriteIfNewer>
@@ -192,12 +177,11 @@ do it manually by running these commands:
                 <copy todir="${apiproxy.java.rsrc.dir}">
                   <fileset dir="${project.build.directory}">
                     <include name="${project.build.finalName}.jar"/>
-                    <include name="lib/*.jar"/>
                     <!-- copy any required dependencies that are not
-                    already included in the Edge runtime:
+                    already included in the Apigee runtime:
                     -->
-                    <exclude name="lib/message-flow-1.0.0.jar"/>
-                    <exclude name="lib/expressions-1.0.0.jar"/>
+                    <include name="lib/*.jar"/>
+                    <!-- exclude files we can count on. -->
                     <exclude name="lib/slf4j-api-${slf4j.version}.jar"/>
                     <exclude name="lib/bc*-jdk15on-*.jar"/>
                   </fileset>

@@ -7,7 +7,7 @@
   },
   "properties" : {
     "debug" : "true",
-    "accept-thumbprints": "4feade38f5e3849a3284e093070ff59cbcc5aaff",
+    "accept-thumbprints": "5ce8b8fd30c30967fd3b9d5c28db0d8fec5a9aa3",
     "ignore-expiry" : "true",
     "required-signed-elements": "soap:Body"
   },
