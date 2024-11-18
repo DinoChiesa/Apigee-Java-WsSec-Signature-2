@@ -1,8 +1,8 @@
 # Java Callout for WS-Security Digital Signature
 
 This repo contains the Java source code and pom.xml file required to compile a
-simple Java callout for Apigee, that creates or validates a signed SOAP
-document that complies with the WS-Security standard. This repo also contains
+simple Java callout for Apigee, that creates or validates a _signed_ SOAP
+document that complies with [the SOAP Message Security standard](https://docs.oasis-open.org/wss-m/wss/v1.1.1/os/wss-SOAPMessageSecurity-v1.1.1-os.html), sometimes referred to as WS-Security. This repo also contains
 the packaged jar.
 
 There's a great deal of flexibility in the WS-Security standard, in terms of how
@@ -15,12 +15,13 @@ referenced. This callout in particular supports:
 
 - When signing
   - signing either or both of the soap:Body, and the wssec:Security/wsu:Timestamp element, and optionally signing SignatureConfirmation elements. Signing both Body and Timestamp is highly recommended.
-  - injecting a Timestamp element if one does not exist
+  - injecting a Timestamp element if one does not exist, with an expiry, optionally
   - injecting one or more SignatureConfirmation elements as necessary
 
 - When validating
   - validating all signatures
   - checking that either the Body, or the Timestamp, or both, have been signed.
+  - checking the Timestamp expiry, and optionally the maximum lifetime of the signed document
   - checking signatures via public keys embedded in X509v3 certificates.
   - Obtaining the certificates to use to Validate in one of two ways: either in the signed document itself, or as configuration to the Validate step.
 
@@ -51,7 +52,7 @@ This code is open source but you don't need to compile it in order to use it.
 ## Building
 
 You do not need to build this callout in order to use it. You can build it if
-you wish. To do so, use [Apache Maven](https://maven.apache.org/). You need maven v3.5 at a minimum.
+you wish. To do so, use [Apache Maven](https://maven.apache.org/). You need maven v3.9 at a minimum.
 
 ```
 mvn clean package
