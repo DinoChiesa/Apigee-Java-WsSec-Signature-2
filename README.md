@@ -65,7 +65,7 @@ environment-wide or organization-wide jar via the Apigee administrative API.
 
 ## Details
 
-There is a single jar, apigee-wssecdsig-20240426.jar . Within that jar, there are two callout classes,
+There is a single jar, apigee-wssecdsig-20241118.jar . Within that jar, there are two callout classes,
 
 * com.google.apigee.callouts.wssecdsig.Sign - signs the input SOAP document.
 * com.google.apigee.callouts.wssecdsig.Validate - validates the signed SOAP document
@@ -116,7 +116,7 @@ Configure the policy this way:
     <Property name='certificate'>{my_certificate}</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Sign</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20240426.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20241118.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -252,7 +252,7 @@ Here's an example policy configuration:
     <Property name='accept-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20240426.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20241118.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -282,7 +282,7 @@ but NOT require a Timestamp/Expires element, use this:
     <Property name='accept-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20240426.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20241118.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -299,7 +299,7 @@ name on the certificate, use this:
     <Property name='accept-subject-cns'>host.example.com</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20240426.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20241118.jar</ResourceURL>
 </JavaCallout>
 ```
 

@@ -71,18 +71,42 @@ public class Validate extends WssecCalloutBase implements Execution {
 
   private static Element getSecurityElement(Document doc, String soapNs) {
     NodeList nl = doc.getElementsByTagNameNS(soapNs, "Envelope");
-    if (nl.getLength() != 1) {
+    if (nl.getLength() == 0) {
       throw new RuntimeException("No element: soap:Envelope");
+    }
+    else if (nl.getLength() != 1) {
+      throw new RuntimeException("Moe than one element: soap:Envelope");
     }
     Element envelope = (Element) nl.item(0);
     nl = envelope.getElementsByTagNameNS(soapNs, "Header");
-    if (nl.getLength() != 1) {
+    if (nl.getLength() == 0) {
       throw new RuntimeException("No element: soap:Header");
     }
+    else if (nl.getLength() != 1) {
+      throw new RuntimeException("More than one element: soap:Header");
+    }
     Element header = (Element) nl.item(0);
+    Node headerParent = header.getParentNode();
+    if (headerParent.getNodeType() != Node.ELEMENT_NODE
+        || !headerParent.getLocalName().equals("Envelope")
+        || !headerParent.getNamespaceURI().equals(soapNs)
+        || !headerParent.getOwnerDocument().getDocumentElement().equals(headerParent)) {
+      throw new RuntimeException("Misplaced SOAP Header");
+    }
+
     nl = header.getElementsByTagNameNS(Namespaces.WSSEC, "Security");
-    if (nl.getLength() != 1) {
+    if (nl.getLength() == 0) {
       throw new RuntimeException("No element: wssec:Security");
+    }
+    else if (nl.getLength() != 1) {
+      throw new RuntimeException("More than one element: wssec:Security");
+    }
+    Element security = (Element) nl.item(0);
+    Node securityParent = security.getParentNode();
+    if (securityParent.getNodeType() != Node.ELEMENT_NODE
+        || !securityParent.getLocalName().equals("Header")
+        || !securityParent.getNamespaceURI().equals(soapNs)) {
+      throw new RuntimeException("Misplaced WS-Sec Security element");
     }
     return (Element) nl.item(0);
   }
@@ -548,8 +572,10 @@ public class Validate extends WssecCalloutBase implements Execution {
   private static boolean checkCompulsoryElements(
       Document doc, String soapNs, Element signatureElement, List<String> foundTags) {
     boolean foundOne = false;
+    logger.debug("checkCompulsoryElements()");
     NodeList nl = signatureElement.getElementsByTagNameNS(XMLSignature.XMLNS, "SignedInfo");
     if (nl.getLength() == 1) {
+      logger.debug("checkCompulsoryElements() one SignedInfo");
       Element signedInfo = (Element) nl.item(0);
       nl = signedInfo.getElementsByTagNameNS(XMLSignature.XMLNS, "Reference");
       if (nl.getLength() == 0) {
@@ -562,6 +588,7 @@ public class Validate extends WssecCalloutBase implements Execution {
         if (referent != null) {
           String tagName = referent.getLocalName();
           String ns = referent.getNamespaceURI();
+          logger.debug("checkCompulsoryElements() localName {} ns {}", tagName, ns);
           if (tagName != null && ns != null) {
 
             // check for signature wrapping
@@ -570,38 +597,19 @@ public class Validate extends WssecCalloutBase implements Execution {
               if (parent.getNodeType() == Node.ELEMENT_NODE
                   && parent.getLocalName().equals("Security")
                   && parent.getNamespaceURI().equals(Namespaces.WSSEC)) {
-                Node securityParent = parent.getParentNode();
-                if (securityParent.getNodeType() == Node.ELEMENT_NODE
-                    && securityParent.getLocalName().equals("Header")
-                    && securityParent.getNamespaceURI().equals(soapNs)) {
-                  Node headerParent = securityParent.getParentNode();
-                  if (headerParent.getNodeType() == Node.ELEMENT_NODE
-                      && headerParent.getLocalName().equals("Envelope")
-                      && headerParent.getNamespaceURI().equals(soapNs)
-                      && headerParent
-                          .getOwnerDocument()
-                          .getDocumentElement()
-                          .equals(headerParent)) {
-                    foundTags.add("wsu:" + tagName);
-                    foundOne = true;
-                  }
-                }
+                foundTags.add("wsu:" + tagName);
+                foundOne = true;
               }
             }
+
 
             if (ns.equals(Namespaces.WSA)) {
               Node parent = referent.getParentNode();
               if (parent.getNodeType() == Node.ELEMENT_NODE
                   && parent.getLocalName().equals("Header")
                   && parent.getNamespaceURI().equals(soapNs)) {
-                Node headerParent = parent.getParentNode();
-                if (headerParent.getNodeType() == Node.ELEMENT_NODE
-                    && headerParent.getLocalName().equals("Envelope")
-                    && headerParent.getNamespaceURI().equals(soapNs)
-                    && headerParent.getOwnerDocument().getDocumentElement().equals(headerParent)) {
-                  foundTags.add("wsa:" + tagName);
-                  foundOne = true;
-                }
+                foundTags.add("wsa:" + tagName);
+                foundOne = true;
               }
             }
 
@@ -676,6 +684,7 @@ public class Validate extends WssecCalloutBase implements Execution {
     if (signatures.getLength() == 0) {
       throw new RuntimeException("No element: Signature");
     }
+
     ValidationResult result = ValidationResult.emptyValidationResult();
     markIdAttributes(doc, validationConfig.soapNs);
 
@@ -721,6 +730,9 @@ public class Validate extends WssecCalloutBase implements Execution {
 
     // check for presence of signed elements
     if (isValid && validationConfig.requiredSignedElements.size() > 0) {
+      logger.debug("validate_RSA() signedElements required {} found {}",
+        validationConfig.requiredSignedElements, signedElements);
+
       msgCtxt.setVariable(varName("found_signed_elements"), String.join(",", signedElements));
       List<String> errors = new ArrayList<String>();
       validationConfig.requiredSignedElements.forEach(

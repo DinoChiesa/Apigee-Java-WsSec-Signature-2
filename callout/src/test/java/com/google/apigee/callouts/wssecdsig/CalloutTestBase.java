@@ -94,6 +94,29 @@ public abstract class CalloutTestBase {
           + "   </soapenv:Body>\n"
           + "</soapenv:Envelope>\n";
 
+  static final String misplacedSecurityHeader =
+      "<soapenv:Envelope\n"
+          + "     xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\"\n"
+          + "     xmlns:oas=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"\n"
+          + "     xmlns:ser=\"http://webservices.example.com/services\">\n"
+          + "   <soapenv:Header>\n"
+          + "      <ser:AuthHeader>\n"
+          + "         <ser:HomeID>88850083</ser:HomeID>\n"
+          + "         <oas:Security>\n"
+          + "            <oas:UsernameToken>\n"
+          + "              <oas:Username>redacted</oas:Username>\n"
+          + "              <oas:Password>redacted</oas:Password>\n"
+          + "            </oas:UsernameToken>\n"
+          + "        </oas:Security>\n"
+          + "      </ser:AuthHeader>\n"
+          + "   </soapenv:Header>\n"
+          + "   <soapenv:Body>\n"
+          + "      <ser:GetContacts>\n"
+          + "         <ser:RqUID>GettingContactWithNickName222</ser:RqUID>\n"
+          + "      </ser:GetContacts>\n"
+          + "   </soapenv:Body>\n"
+          + "</soapenv:Envelope>\n";
+
   static final String soapResponseWithEmptySecurityHeader =
       "<soap:Envelope \n"
           + "    xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/'>\n"

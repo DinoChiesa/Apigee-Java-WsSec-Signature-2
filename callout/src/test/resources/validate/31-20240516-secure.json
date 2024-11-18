@@ -1,0 +1,20 @@
+{
+  "description" : "Sig on wsa:To",
+  "input" : "31-20240516-secure.xml",
+  "note" : "This signature seems wrong, but this is what we have",
+  "enabled" : true,
+  "context" : {
+  },
+  "properties" : {
+    "debug" : "true",
+    "soap-version" : "soap1.2",
+    "accept-thumbprints": "d7f99159cf02cca2ed295d68aa531b21e151b00e",
+    "ignore-expiry" : "true",
+    "not-ignore-certificate-expiry" : "true",
+    "required-signed-elements": "wsa:To"
+  },
+  "expected" : {
+    "success" : "true",
+    "valid" : "true"
+  }
+}
