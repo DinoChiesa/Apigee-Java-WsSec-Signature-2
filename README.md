@@ -19,6 +19,7 @@ referenced. This callout in particular supports:
   - injecting one or more SignatureConfirmation elements as necessary
 
 - When validating
+  - checking that the WS-Security Security header is a child of the SOAP Header
   - validating all signatures
   - checking that either the Body, or the Timestamp, or both, have been signed.
   - checking the Timestamp expiry, and optionally the maximum lifetime of the signed document
@@ -66,7 +67,7 @@ environment-wide or organization-wide jar via the Apigee administrative API.
 
 ## Details
 
-There is a single jar, apigee-wssecdsig-20241118.jar . Within that jar, there are two callout classes,
+There is a single jar, apigee-wssecdsig-20241120.jar . Within that jar, there are two callout classes,
 
 * com.google.apigee.callouts.wssecdsig.Sign - signs the input SOAP document.
 * com.google.apigee.callouts.wssecdsig.Validate - validates the signed SOAP document
@@ -117,7 +118,7 @@ Configure the policy this way:
     <Property name='certificate'>{my_certificate}</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Sign</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20241118.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20241120.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -253,7 +254,7 @@ Here's an example policy configuration:
     <Property name='accept-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20241118.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20241120.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -283,7 +284,7 @@ but NOT require a Timestamp/Expires element, use this:
     <Property name='accept-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20241118.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20241120.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -300,7 +301,7 @@ name on the certificate, use this:
     <Property name='accept-subject-cns'>host.example.com</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20241118.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20241120.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -318,6 +319,7 @@ The properties available for the Validate callout are:
 | `required-signed-elements` | optional. a comma-and-maybe-space-separated list of prefix:Tag forms indicating the elements that must be signed. Defaults to `soap:Body, wsu:Timestamp` . To require only a signature on the `wsu:Timestamp` and not the `soap:Body` when validating, set this to `wsu:Timestamp`.  (You probably don't want to do this.) To require only a signature on the `Body` and not the `Timestamp` when validating, set this to `soap:Body`. (You probably don't want to do this, either.) Probably you want to just leave this element out of your configuration and accept the default. Case is significant for the prefix and the tag. The predefined prefixes are listed below. |
 | `ignore-expiry`          | optional. true or false. defaults false. When true, tells the validator to ignore the `Timestamp/Expires` field when evaluating validity of the soap message.  |
 | `ignore-certificate-expiry` | optional. true or false. defaults false. When true, tells the validator to ignore any validity dates on the provided certificate. Useful mostly for testing. |
+| `ignore-security-header-placement` | optional. true or false, defaults false. When true, tells the validator to not check the placement of the Security header in the signed payload. For compatibility with some legacy systems. This is not recommended because it can expose you to [signature wrapping attacks](https://secops.group/xml-signature-wrapping/). |
 | `max-lifetime`           | optional. Takes a string like `120s`, `10m`, `4d`, etc to imply 120 seconds, 10 minutes, 4 days.  Use this to limit the acceptable lifetime of the signed document. This requires the Timestamp to include a Created as well as an Expires element. Default: no maximum lifetime. |
 | `throw-fault-on-invalid` | optional. true or false, defaults to false. Whether to throw a fault when the signature is invalid, or when validation fails for another reason (wrong elements signed, lifetime exceeds max, etc). |
 | `certificate`            | optional. The certificate that provides the public key to verify the signature. This is required (and used) only if the KeyInfo in the signed document does not explicitly provide the Certificate.  |
@@ -329,10 +331,16 @@ The properties available for the Validate callout are:
 The result of the Validate callout is to set a single variable: `wssec_valid`.
 It takes a true value if the signature was valid; false otherwise. You can use a
 Condition in your Proxy flow to examine that result.  If the document is
-invalid, then the policy will also throw a fault if the throw-fault-on-invalid
+invalid, then the policy will also throw a fault if the `throw-fault-on-invalid`
 property is true.
 
 Further comments:
+
+* The Validate callout checks for the presence of a Security header which uses the XML namespace
+  `http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd`.
+  This is normally a child of the SOAP Header. This callout by default checks that placement,
+  to protect against [XM Signature Wrapping attacks](https://secops.group/xml-signature-wrapping/), but
+  you can disable the check using the property `ignore-security-header-placement`. See the table above.
 
 * The Validate callout verifies signatures using x509v3 certificates that
   contain RSA public keys. The callout is not able to validate a signature using
@@ -382,7 +390,6 @@ Further comments:
       refers to an `emailAddress` attribute. If a signed document uses numeric
       OIDs for some RDNs, the straight "string comparison" will fail. This
       property can work around that interoperability issue.
-      
 
 
 * With the `max-lifetime` property, you can configure the policy to reject a
@@ -433,7 +440,36 @@ The actual body gets replaced with malicious content.
 
 This callout is not vulnerable to the signature wrapping attack, because it
 verifies that the Body and Timestamp are signed, and that they appear in the
-expected places in the XML document.
+expected places in the XML document, and that there is exactly one WS-Security
+Security element, and that it is a direct child of the SOAP Header element.
+
+Regarding the check on placement, if you have a signed SOAP document that looks like this:
+```
+<soapenv:Envelope
+    xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+    xmlns:oas="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd"
+    xmlns:ser="http://webservices.cashedge.com/services"
+    xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
+    <soapenv:Header>
+      <ser:AuthHeader>
+        <ser:HomeID>redacted</ser:HomeID>
+        <!-- In this document, the Security element is not a child of the soap Header. -->
+        <oas:Security>
+          <oas:UsernameToken>
+            <oas:Username>redacted</oas:Username>
+            <oas:Password>redacted</oas:Password>
+          </oas:UsernameToken>
+        </oas:Security>
+      </ser:AuthHeader>
+```
+
+...the callout will, by default, reject that because the Security element is not
+a direct child of the soap Header.
+
+You can disable the check of the placement of the Security header, by setting
+the property `ignore-security-header-placement` to the value `true`. In that
+case, the Validate callout would treat a signed document structured as above, to
+be valid.
 
 ## Example API Proxy Bundle
 

@@ -1,4 +1,4 @@
-// Copyright 2018-2023 Google LLC
+// Copyright 2018-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -73,19 +73,18 @@ public class Validate extends WssecCalloutBase implements Execution {
     NodeList nl = doc.getElementsByTagNameNS(soapNs, "Envelope");
     if (nl.getLength() == 0) {
       throw new RuntimeException("No element: soap:Envelope");
-    }
-    else if (nl.getLength() != 1) {
+    } else if (nl.getLength() != 1) {
       throw new RuntimeException("Moe than one element: soap:Envelope");
     }
     Element envelope = (Element) nl.item(0);
     nl = envelope.getElementsByTagNameNS(soapNs, "Header");
     if (nl.getLength() == 0) {
       throw new RuntimeException("No element: soap:Header");
-    }
-    else if (nl.getLength() != 1) {
+    } else if (nl.getLength() != 1) {
       throw new RuntimeException("More than one element: soap:Header");
     }
     Element header = (Element) nl.item(0);
+    // Check placement of SOAP header.
     Node headerParent = header.getParentNode();
     if (headerParent.getNodeType() != Node.ELEMENT_NODE
         || !headerParent.getLocalName().equals("Envelope")
@@ -94,25 +93,19 @@ public class Validate extends WssecCalloutBase implements Execution {
       throw new RuntimeException("Misplaced SOAP Header");
     }
 
+    // fetch Security header
     nl = header.getElementsByTagNameNS(Namespaces.WSSEC, "Security");
     if (nl.getLength() == 0) {
       throw new RuntimeException("No element: wssec:Security");
-    }
-    else if (nl.getLength() != 1) {
+    } else if (nl.getLength() != 1) {
       throw new RuntimeException("More than one element: wssec:Security");
     }
     Element security = (Element) nl.item(0);
-    Node securityParent = security.getParentNode();
-    if (securityParent.getNodeType() != Node.ELEMENT_NODE
-        || !securityParent.getLocalName().equals("Header")
-        || !securityParent.getNamespaceURI().equals(soapNs)) {
-      throw new RuntimeException("Misplaced WS-Sec Security element");
-    }
-    return (Element) nl.item(0);
+    return security;
   }
 
-  private static NodeList getSignatures(Document doc, String soapNs) {
-    return getSecurityElement(doc, soapNs).getElementsByTagNameNS(XMLSignature.XMLNS, "Signature");
+  private static NodeList getSignatures(Element security, String soapNs) {
+    return security.getElementsByTagNameNS(XMLSignature.XMLNS, "Signature");
   }
 
   private static String toCertPEM(String s) {
@@ -602,7 +595,6 @@ public class Validate extends WssecCalloutBase implements Execution {
               }
             }
 
-
             if (ns.equals(Namespaces.WSA)) {
               Node parent = referent.getParentNode();
               if (parent.getNodeType() == Node.ELEMENT_NODE
@@ -680,7 +672,19 @@ public class Validate extends WssecCalloutBase implements Execution {
           InvalidNameException,
           CertificateEncodingException {
 
-    NodeList signatures = getSignatures(doc, validationConfig.soapNs);
+    Element securityElement = getSecurityElement(doc, validationConfig.soapNs);
+
+    // Optionally Check the placement of the Security header.
+    if (!validationConfig.ignoreSecurityHeaderPlacement) {
+      Node securityParent = securityElement.getParentNode();
+      if (securityParent.getNodeType() != Node.ELEMENT_NODE
+          || !securityParent.getLocalName().equals("Header")
+          || !securityParent.getNamespaceURI().equals(validationConfig.soapNs)) {
+        throw new RuntimeException("Misplaced WS-Sec Security element");
+      }
+    }
+
+    NodeList signatures = getSignatures(securityElement, validationConfig.soapNs);
     if (signatures.getLength() == 0) {
       throw new RuntimeException("No element: Signature");
     }
@@ -730,8 +734,10 @@ public class Validate extends WssecCalloutBase implements Execution {
 
     // check for presence of signed elements
     if (isValid && validationConfig.requiredSignedElements.size() > 0) {
-      logger.debug("validate_RSA() signedElements required {} found {}",
-        validationConfig.requiredSignedElements, signedElements);
+      logger.debug(
+          "validate_RSA() signedElements required {} found {}",
+          validationConfig.requiredSignedElements,
+          signedElements);
 
       msgCtxt.setVariable(varName("found_signed_elements"), String.join(",", signedElements));
       List<String> errors = new ArrayList<String>();
@@ -844,15 +850,19 @@ public class Validate extends WssecCalloutBase implements Execution {
   }
 
   private boolean wantIgnoreExpiry(MessageContext msgCtxt) throws Exception {
-    String wantIgnore = getSimpleOptionalProperty("ignore-expiry", msgCtxt);
-    if (wantIgnore == null) return false;
-    wantIgnore = wantIgnore.trim();
-    if (wantIgnore.trim().toLowerCase().equals("true")) return true;
-    return false;
+    return _wantIgnore("ignore-expiry", msgCtxt);
   }
 
   private boolean wantIgnoreCertificateExpiry(MessageContext msgCtxt) throws Exception {
-    String wantIgnore = getSimpleOptionalProperty("ignore-certificate-expiry", msgCtxt);
+    return _wantIgnore("ignore-certificate-expiry", msgCtxt);
+  }
+
+  private boolean wantIgnoreSecurityHeaderPlacement(MessageContext msgCtxt) throws Exception {
+    return _wantIgnore("ignore-security-header-placement", msgCtxt);
+  }
+
+  private boolean _wantIgnore(String propertyName, MessageContext msgCtxt) throws Exception {
+    String wantIgnore = getSimpleOptionalProperty(propertyName, msgCtxt);
     if (wantIgnore == null) return false;
     wantIgnore = wantIgnore.trim();
     if (wantIgnore.trim().toLowerCase().equals("true")) return true;
@@ -928,6 +938,7 @@ public class Validate extends WssecCalloutBase implements Execution {
     public String signingMethod;
     public String digestMethod;
     public boolean ignoreCertificateExpiry;
+    public boolean ignoreSecurityHeaderPlacement;
 
     public ValidateConfiguration() {}
 
@@ -960,6 +971,11 @@ public class Validate extends WssecCalloutBase implements Execution {
       this.ignoreCertificateExpiry = wantIgnore;
       return this;
     }
+
+    public ValidateConfiguration setSecurityHeaderPlacementHandling(boolean wantIgnore) {
+      this.ignoreSecurityHeaderPlacement = wantIgnore;
+      return this;
+    }
   }
 
   public ExecutionResult execute(final MessageContext msgCtxt, final ExecutionContext execContext) {
@@ -976,7 +992,8 @@ public class Validate extends WssecCalloutBase implements Execution {
                   (getSoapVersion(msgCtxt).equals("soap1.2"))
                       ? Namespaces.SOAP1_2
                       : Namespaces.SOAP1_1)
-              .setCertificateExpiryHandling(wantIgnoreCertificateExpiry(msgCtxt));
+              .setCertificateExpiryHandling(wantIgnoreCertificateExpiry(msgCtxt))
+              .setSecurityHeaderPlacementHandling(wantIgnoreSecurityHeaderPlacement(msgCtxt));
 
       ValidationResult validationResult = validate_RSA(document, validationConfig, msgCtxt);
       boolean isValid = validationResult.isValid();

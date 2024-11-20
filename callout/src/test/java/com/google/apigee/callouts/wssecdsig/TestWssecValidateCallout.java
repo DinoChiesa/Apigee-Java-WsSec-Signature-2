@@ -1,3 +1,18 @@
+// Copyright 2018-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
 package com.google.apigee.callouts.wssecdsig;
 
 import com.apigee.flow.execution.ExecutionResult;
@@ -767,7 +782,7 @@ public class TestWssecValidateCallout extends CalloutTestBase {
     Boolean isValid = (Boolean) msgCtxt.getVariable("wssec_valid");
     Assert.assertTrue(isValid, method + "valid");
   }
-  
+
   @Test
   public void misplacedSecHeader() throws Exception {
     String method = "misplacedSecHeader() ";
@@ -800,7 +815,7 @@ public class TestWssecValidateCallout extends CalloutTestBase {
     props2.put("debug", "true");
     props2.put("accept-thumbprints", "ada3a946669ad4e6e2c9f81360c3249e49a57a7d");
     props2.put("require-expiry", "false");
-    //props2.put("certificate", "{my-certificate}");
+    // props2.put("certificate", "{my-certificate}");
     props2.put("source", "signed-document");
 
     Validate callout2 = new Validate(props2);
@@ -814,5 +829,53 @@ public class TestWssecValidateCallout extends CalloutTestBase {
 
     Boolean isValid = (Boolean) msgCtxt.getVariable("wssec_valid");
     Assert.assertFalse(isValid, method + "valid");
+  }
+
+  @Test
+  public void misplacedSecHeader_PlacementIgnored() throws Exception {
+    String method = "misplacedSecHeader_PlacementIgnored() ";
+    msgCtxt.setVariable("message.content", misplacedSecurityHeader);
+    msgCtxt.setVariable("my-private-key", pairs[2].privateKey);
+    msgCtxt.setVariable("my-certificate", pairs[2].certificate);
+
+    Map<String, String> props1 = new HashMap<String, String>();
+    props1.put("debug", "true");
+    props1.put("source", "message.content");
+    props1.put("private-key", "{my-private-key}");
+    props1.put("certificate", "{my-certificate}");
+    props1.put("key-identifier-type", "BST_DIRECT_REFERENCE");
+    props1.put("output-variable", "output");
+
+    Sign callout1 = new Sign(props1);
+
+    // execute and retrieve output
+    ExecutionResult actualResult1 = callout1.execute(msgCtxt, exeCtxt);
+    Assert.assertEquals(actualResult1, ExecutionResult.SUCCESS, "result not as expected");
+    Object errorOutput1 = msgCtxt.getVariable("wssec_error");
+    Assert.assertNull(errorOutput1, "errorOutput");
+
+    String signedDocument = (String) msgCtxt.getVariable("output");
+
+    // now, round-trip. Check that the signed document validates.
+    msgCtxt.setVariable("signed-document", signedDocument);
+
+    Map<String, String> props2 = new HashMap<String, String>();
+    props2.put("debug", "true");
+    props2.put("accept-thumbprints", "ada3a946669ad4e6e2c9f81360c3249e49a57a7d");
+    props2.put("require-expiry", "false");
+    props2.put("ignore-security-header-placement", "true");
+    props2.put("source", "signed-document");
+
+    Validate callout2 = new Validate(props2);
+
+    // execute and retrieve output
+    ExecutionResult actualResult2 = callout2.execute(msgCtxt, exeCtxt);
+    Assert.assertEquals(actualResult2, ExecutionResult.SUCCESS, "result not as expected");
+    Object errorOutput2 = msgCtxt.getVariable("wssec_error");
+    Assert.assertNull(errorOutput2, "errorOutput");
+    // Assert.assertEquals(errorOutput2, "Misplaced WS-Sec Security element");
+
+    Boolean isValid = (Boolean) msgCtxt.getVariable("wssec_valid");
+    Assert.assertTrue(isValid, method + "valid");
   }
 }
