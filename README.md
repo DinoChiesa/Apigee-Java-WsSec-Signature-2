@@ -85,16 +85,20 @@ The Sign callout has these constraints and features:
 The Validate callout has these constraints and features:
 * supports RSA algorithms - rsa-sha1 (default) or rsa-sha256 (recommended)
 * supports soap1.1. (Not tested with soap 1.2; might work!)
+* Enforces the location of the WS-Sec Security element as a child of the SOAP header (by default, though this is optional.
 * If a Timestamp is present in the WS-Security header, validates expiry.
 * Optionally _require_ that a Timestamp is present in the WS-Security header, with an Expires element.
 * Optionally enforce a maximum lifetime of the signature. This is the difference between Created and Expires within the Timestamp. You may wish to limit this to 5 minutes, for example.
 * verify that a specific digest method - sha-1 or sha-256 - is used when signing.
+* verify that the certificate that provides the verification key, is not expired
+* verify the thumbprint on the certificate that provides the verification key
+* optionally verify the Common Name on the certificate matches a particular value
 
 ## Dependencies
 
 Make sure these JARs are available as resources in the  proxy or in the environment or organization.
 
-* Bouncy Castle: bcprov-jdk15on-1.62.jar, bcpkix-jdk15on-1.62.jar
+* Bouncy Castle: bcprov-jdk15on-1.66.jar, bcpkix-jdk15on-1.66.jar
 
 This Callout does not depend on WSS4J.  The WSS4J is prohibited from use within
 Apigee SaaS, due to Java permissions settings. This callout is intended to be
