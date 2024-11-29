@@ -40,6 +40,7 @@ public class FakeMessageContext implements MessageContext {
     return variables;
   }
 
+  @SuppressWarnings("unchecked")
   public <T> T getVariable(final String name) {
     return (T) getVariables().get(name);
   }

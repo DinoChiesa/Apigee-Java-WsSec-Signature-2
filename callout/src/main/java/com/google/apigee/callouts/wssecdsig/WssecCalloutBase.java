@@ -132,6 +132,18 @@ public abstract class WssecCalloutBase {
     return soapVersion;
   }
 
+  protected boolean wantIgnoreSecurityHeaderPlacement(MessageContext msgCtxt) throws Exception {
+    return _wantIgnore("ignore-security-header-placement", msgCtxt);
+  }
+
+  protected boolean _wantIgnore(String propertyName, MessageContext msgCtxt) throws Exception {
+    String wantIgnore = getSimpleOptionalProperty(propertyName, msgCtxt);
+    if (wantIgnore == null) return false;
+    wantIgnore = wantIgnore.trim();
+    if (wantIgnore.trim().toLowerCase().equals("true")) return true;
+    return false;
+  }
+
   protected String getSimpleOptionalProperty(String propName, MessageContext msgCtxt) {
     String value = (String) this.properties.get(propName);
     if (value == null) {

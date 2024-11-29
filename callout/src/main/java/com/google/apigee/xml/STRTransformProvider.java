@@ -18,6 +18,7 @@ import java.security.Provider;
 
 public class STRTransformProvider extends Provider {
 
+  @SuppressWarnings("deprecation")
   public STRTransformProvider() {
     super("STRTransform", 1.6, "Security Token Reference Transform Provider");
     put("TransformService." + STRTransform.TRANSFORM_URI, "com.google.apigee.xml.STRTransform");

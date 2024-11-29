@@ -74,7 +74,7 @@ public class Validate extends WssecCalloutBase implements Execution {
     if (nl.getLength() == 0) {
       throw new RuntimeException("No element: soap:Envelope");
     } else if (nl.getLength() != 1) {
-      throw new RuntimeException("Moe than one element: soap:Envelope");
+      throw new RuntimeException("More than one element: soap:Envelope");
     }
     Element envelope = (Element) nl.item(0);
     nl = envelope.getElementsByTagNameNS(soapNs, "Header");
@@ -90,7 +90,7 @@ public class Validate extends WssecCalloutBase implements Execution {
         || !headerParent.getLocalName().equals("Envelope")
         || !headerParent.getNamespaceURI().equals(soapNs)
         || !headerParent.getOwnerDocument().getDocumentElement().equals(headerParent)) {
-      throw new RuntimeException("Misplaced SOAP Header");
+      throw new IllegalStateException("Misplaced SOAP Header");
     }
 
     // fetch Security header
@@ -855,18 +855,6 @@ public class Validate extends WssecCalloutBase implements Execution {
 
   private boolean wantIgnoreCertificateExpiry(MessageContext msgCtxt) throws Exception {
     return _wantIgnore("ignore-certificate-expiry", msgCtxt);
-  }
-
-  private boolean wantIgnoreSecurityHeaderPlacement(MessageContext msgCtxt) throws Exception {
-    return _wantIgnore("ignore-security-header-placement", msgCtxt);
-  }
-
-  private boolean _wantIgnore(String propertyName, MessageContext msgCtxt) throws Exception {
-    String wantIgnore = getSimpleOptionalProperty(propertyName, msgCtxt);
-    if (wantIgnore == null) return false;
-    wantIgnore = wantIgnore.trim();
-    if (wantIgnore.trim().toLowerCase().equals("true")) return true;
-    return false;
   }
 
   private List<String> getAcceptableSubjectCommonNames(MessageContext msgCtxt) throws Exception {

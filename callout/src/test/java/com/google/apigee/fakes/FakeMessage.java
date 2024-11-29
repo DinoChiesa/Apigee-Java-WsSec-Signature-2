@@ -91,6 +91,7 @@ public class FakeMessage implements Message {
     return qparams;
   }
 
+  @SuppressWarnings("unchecked")
   public <T> T getVariable(final String name) {
     return (T) getVariables().get(name);
   }

@@ -796,6 +796,7 @@ public class TestWssecValidateCallout extends CalloutTestBase {
     props1.put("private-key", "{my-private-key}");
     props1.put("certificate", "{my-certificate}");
     props1.put("key-identifier-type", "BST_DIRECT_REFERENCE");
+    props1.put("ignore-security-header-placement", "true");
     props1.put("output-variable", "output");
 
     Sign callout1 = new Sign(props1);
@@ -844,6 +845,7 @@ public class TestWssecValidateCallout extends CalloutTestBase {
     props1.put("private-key", "{my-private-key}");
     props1.put("certificate", "{my-certificate}");
     props1.put("key-identifier-type", "BST_DIRECT_REFERENCE");
+    props1.put("ignore-security-header-placement", "true");
     props1.put("output-variable", "output");
 
     Sign callout1 = new Sign(props1);

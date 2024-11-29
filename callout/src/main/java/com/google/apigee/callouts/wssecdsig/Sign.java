@@ -1,4 +1,4 @@
-// Copyright 2018-2023 Google LLC
+// Copyright 2018-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -86,6 +86,7 @@ import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfo;
 import org.bouncycastle.pkcs.PKCSException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 public class Sign extends WssecCalloutBase implements Execution {
@@ -211,7 +212,7 @@ public class Sign extends WssecCalloutBase implements Execution {
     }
 
     // 3. create or get the WS-Security element within the header
-    Element wssecHeader = null;
+    Element securityElement = null;
     String wssePrefix = null;
 
     nodes = header.getElementsByTagNameNS(Namespaces.WSSEC, "Security");
@@ -221,24 +222,35 @@ public class Sign extends WssecCalloutBase implements Execution {
           (knownWssePrefix != null)
               ? knownWssePrefix
               : Namespaces.defaultPrefixes.get(Namespaces.WSSEC);
-      wssecHeader = doc.createElementNS(Namespaces.WSSEC, wssePrefix + ":Security");
-      wssecHeader.setAttributeNS(soapns, soapPrefix + ":mustUnderstand", "1");
+      securityElement = doc.createElementNS(Namespaces.WSSEC, wssePrefix + ":Security");
+      securityElement.setAttributeNS(soapns, soapPrefix + ":mustUnderstand", "1");
       if (knownWssePrefix == null) {
-        wssecHeader.setAttributeNS(Namespaces.XMLNS, "xmlns:" + wssePrefix, Namespaces.WSSEC);
+        securityElement.setAttributeNS(Namespaces.XMLNS, "xmlns:" + wssePrefix, Namespaces.WSSEC);
       }
-      header.appendChild(wssecHeader);
+      // append WSSEC Security element under SOAP header
+      header.appendChild(securityElement);
     } else {
-      wssecHeader = (Element) nodes.item(0);
-      if (!wssecHeader.hasAttributeNS(soapns, "mustUnderstand")) {
-        wssecHeader.setAttributeNS(soapns, soapPrefix + ":mustUnderstand", "1");
+      securityElement = (Element) nodes.item(0);
+      // Optionally Check the placement of the existing Security header.
+      if (!signConfiguration.ignoreSecurityHeaderPlacement) {
+        Node securityParent = securityElement.getParentNode();
+        if (securityParent.getNodeType() != Node.ELEMENT_NODE
+            || !securityParent.getLocalName().equals("Header")
+            || !securityParent.getNamespaceURI().equals(soapns)) {
+          throw new IllegalStateException("Misplaced WS-Sec Security element");
+        }
       }
-      wssePrefix = declareXmlnsPrefix(wssecHeader, knownNamespacesAtRoot, Namespaces.WSSEC);
+
+      if (!securityElement.hasAttributeNS(soapns, "mustUnderstand")) {
+        securityElement.setAttributeNS(soapns, soapPrefix + ":mustUnderstand", "1");
+      }
+      wssePrefix = declareXmlnsPrefix(securityElement, knownNamespacesAtRoot, Namespaces.WSSEC);
     }
 
-    // 4. embed a Timestamp element under the wssecHeader element (always)
+    // 4. embed a Timestamp element under the security element (always)
     Element timestamp = doc.createElementNS(Namespaces.WSU, wsuPrefix + ":Timestamp");
     wsuIdInjector.apply(timestamp, "TS");
-    wssecHeader.appendChild(timestamp);
+    securityElement.appendChild(timestamp);
 
     // 5a. embed a Created element into the Timestamp
     Element created = doc.createElementNS(Namespaces.WSU, wsuPrefix + ":Created");
@@ -256,10 +268,11 @@ public class Sign extends WssecCalloutBase implements Execution {
     List<String> sigConfirmationIds = null;
     if (signConfiguration.confirmations != null) {
       sigConfirmationIds = new ArrayList<String>();
-      Map<String, String> knownNsAtSecurity = Namespaces.getExistingNamespaces(wssecHeader);
-      String wsse11Prefix = declareXmlnsPrefix(wssecHeader, knownNsAtSecurity, Namespaces.WSSEC_11);
+      Map<String, String> knownNsAtSecurity = Namespaces.getExistingNamespaces(securityElement);
+      String wsse11Prefix =
+          declareXmlnsPrefix(securityElement, knownNsAtSecurity, Namespaces.WSSEC_11);
       NodeList existingConfirmations =
-          wssecHeader.getElementsByTagNameNS(Namespaces.WSSEC_11, "SignatureConfirmation");
+          securityElement.getElementsByTagNameNS(Namespaces.WSSEC_11, "SignatureConfirmation");
       int numExistingConfirmations = existingConfirmations.getLength();
       if (signConfiguration.confirmations.size() == 1
           && signConfiguration.confirmations.get(0).equals("*all*")) {
@@ -296,7 +309,7 @@ public class Sign extends WssecCalloutBase implements Execution {
               confirmation.setAttribute("Value", value);
             }
             sigConfirmationIds.add(wsuIdInjector.apply(confirmation, "Conf"));
-            wssecHeader.appendChild(confirmation);
+            securityElement.appendChild(confirmation);
           }
         }
       }
@@ -324,7 +337,7 @@ public class Sign extends WssecCalloutBase implements Execution {
       bst.setAttribute("ValueType", Constants.X509_V3_TYPE);
       bst.setTextContent(
           Base64.getEncoder().encodeToString(signConfiguration.certificate.getEncoded()));
-      wssecHeader.appendChild(bst);
+      securityElement.appendChild(bst);
     }
 
     // 8. specify the things to be signed, and how
@@ -437,7 +450,8 @@ public class Sign extends WssecCalloutBase implements Execution {
 
     // The marshalled XMLSignature (SignatureS?) will be added as the last child element
     // of the specified parent node.
-    DOMSignContext signingContext = new DOMSignContext(signConfiguration.privatekey, wssecHeader);
+    DOMSignContext signingContext =
+        new DOMSignContext(signConfiguration.privatekey, securityElement);
     if (signConfiguration.digSigPrefix != null) {
       signingContext.setDefaultNamespacePrefix(signConfiguration.digSigPrefix);
     }
@@ -755,6 +769,7 @@ public class Sign extends WssecCalloutBase implements Execution {
     public List<String> c14nInclusiveNamespaces;
     public List<String> transformInclusiveNamespaces;
     public String digSigPrefix;
+    public boolean ignoreSecurityHeaderPlacement;
 
     public SignConfiguration() {
       keyIdentifierType = KeyIdentifierType.BST_DIRECT_REFERENCE;
@@ -824,6 +839,11 @@ public class Sign extends WssecCalloutBase implements Execution {
       this.digSigPrefix = prefix;
       return this;
     }
+
+    public SignConfiguration setSecurityHeaderPlacementHandling(boolean wantIgnore) {
+      this.ignoreSecurityHeaderPlacement = wantIgnore;
+      return this;
+    }
   }
 
   public ExecutionResult execute(final MessageContext msgCtxt, final ExecutionContext execContext) {
@@ -844,7 +864,8 @@ public class Sign extends WssecCalloutBase implements Execution {
               .withConfirmations(getConfirmations(msgCtxt))
               .withC14nInclusiveNamespaces(getC14nInclusiveNamespaces(msgCtxt))
               .withTransformInclusiveNamespaces(getTransformInclusiveNamespaces(msgCtxt))
-              .withDigSigPrefix(getDigSigPrefix(msgCtxt));
+              .withDigSigPrefix(getDigSigPrefix(msgCtxt))
+              .setSecurityHeaderPlacementHandling(wantIgnoreSecurityHeaderPlacement(msgCtxt));
 
       String resultingXmlString = sign_RSA(document, signConfiguration);
       String outputVar = getOutputVar(msgCtxt);

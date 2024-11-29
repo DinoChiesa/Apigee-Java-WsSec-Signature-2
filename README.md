@@ -58,13 +58,13 @@ you wish. To do so, use [Apache Maven](https://maven.apache.org/). To build, you
 - JDK 8 or JDK 11
 - maven v3.9 at a minimum
 
-To build on JDK 11:
+To build on JDK 11, make sure you have a JDK11 bin on your path, and:
 
 ```
 mvn clean package
 ```
 
-To build on JDK 8:
+To build on JDK 8, make sure you have a JDK8 bin on your path, and:
 
 ```
 mvn -f pom-java8.xml clean package
@@ -78,7 +78,7 @@ environment-wide or organization-wide jar via the Apigee administrative API.
 
 ## Details
 
-There is a single jar, apigee-wssecdsig-20241120.jar . Within that jar, there are two callout classes,
+There is a single jar, apigee-wssecdsig-20241129.jar . Within that jar, there are two callout classes,
 
 * com.google.apigee.callouts.wssecdsig.Sign - signs the input SOAP document.
 * com.google.apigee.callouts.wssecdsig.Validate - validates the signed SOAP document
@@ -133,7 +133,7 @@ Configure the policy this way:
     <Property name='certificate'>{my_certificate}</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Sign</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20241120.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20241129.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -160,6 +160,8 @@ Information, and much more. These properties are described in detail here:
 | `transform-inclusive-elements` | optional. Takes a comma-separated value of namespace _URIs_ (not prefixes). Used to add an InclusiveElements element to the Transform element.  |
 | `ds-prefix`            | optional. A simple string, to be used as the prefix for the namespace "http://www.w3.org/2000/09/xmldsig#". Some users have expressed a desire to control this, and this callout makes it possible. This property affects the aesthetics of the document only, does not affect the XML InfoSet. In case you care, the default prefix is "ds".  |
 | `confirmations`        | optional. Either: (a) a list of signature values in SignatureConfirmation elements, which will then be signed. If a SignatureConfirmation element with a given value is not present, one will be injected. or (b) the string `\*all\*` , to indicate that any existing SignatureConfirmation elements in the source document will be signed. or (c) an empty string, which tells the callout to inject an empty SignatureConfirmation element. These signatures are in addition to the elements specified in `elements-to-sign`. |
+| `ignore-security-header-placement` | optional. true or false, defaults false. When true, tells the sign callout to not check the placement of any existing Security header in the unsigned payload. For compatibility with some legacy systems. This is not recommended because it can expose you to [signature wrapping attacks](https://secops.group/xml-signature-wrapping/). |
+
 
 This policy will create the appropriate signature or signatures, and embed each
 Signature element as a child of the WS-Security header element.
@@ -269,7 +271,7 @@ Here's an example policy configuration:
     <Property name='accept-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20241120.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20241129.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -299,7 +301,7 @@ but NOT require a Timestamp/Expires element, use this:
     <Property name='accept-thumbprints'>ada3a946669ad4e6e2c9f81360c3249e49a57a7d</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20241120.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20241129.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -316,7 +318,7 @@ name on the certificate, use this:
     <Property name='accept-subject-cns'>host.example.com</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.wssecdsig.Validate</ClassName>
-  <ResourceURL>java://apigee-wssecdsig-20241120.jar</ResourceURL>
+  <ResourceURL>java://apigee-wssecdsig-20241129.jar</ResourceURL>
 </JavaCallout>
 ```
 
