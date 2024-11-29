@@ -154,6 +154,7 @@ public class TestParameterizedValidate extends CalloutTestBase {
     }
 
     messageContentStream = getInputStream(tc);
+    message.setContent(messageContentStream);
 
     Validate callout = new Validate(tc.getProperties());
 

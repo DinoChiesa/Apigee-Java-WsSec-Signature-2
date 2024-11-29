@@ -24,7 +24,7 @@ public class Namespaces {
   public static final Map<String, String> defaultNamespaces;
 
   static {
-    Map map1 = new HashMap<String, String>();
+    Map<String, String> map1 = new HashMap<String, String>();
     map1.put(WSA, "wsa");
     map1.put(WSU, "wsu");
     map1.put(SOAP1_1, "soap1.1");
@@ -35,7 +35,7 @@ public class Namespaces {
 
     defaultPrefixes = Collections.synchronizedMap(map1);
 
-    Map map2 = new HashMap<String, String>();
+    Map<String, String> map2 = new HashMap<String, String>();
     map2.put("wsa", WSA);
     map2.put("wsu", WSU);
     map2.put("soap1.1", SOAP1_1);

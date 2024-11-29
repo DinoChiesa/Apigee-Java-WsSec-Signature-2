@@ -12,12 +12,15 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <jdk.target.version>11</jdk.target.version>
+    <jdk.target.version>8</jdk.target.version>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+    <maven.compiler.release>1.8</maven.compiler.release>
     <slf4j.version>1.7.14</slf4j.version>
     <testng.version>6.8.7</testng.version>
-    <bouncycastle.version>[1.66,)</bouncycastle.version>
+    <bouncycastle.version>[1.67,)</bouncycastle.version>
     <jackson.version>[2.9.10.1,)</jackson.version>
-    <jmockit.version>1.55.0</jmockit.version>
+    <jmockit.version>1.49.4</jmockit.version>
     <apiproxy.java.rsrc.dir>../bundle/apiproxy/resources/java</apiproxy.java.rsrc.dir>
   </properties>
 
@@ -141,6 +144,11 @@
         <configuration>
           <showDeprecation>true</showDeprecation>
           <release>${jdk.target.version}</release>
+          <!-- the following may be necessary when building with java 1.8 -->
+          <source>${jdk.target.version}</source>
+          <target>${jdk.target.version}</target>
+
+          <!-- testCompile gets its configuration from maven.compiler.release  -->
           <compilerArgs>
             <!-- <arg>-verbose</arg> -->
             <arg>-Xlint:unchecked,deprecation</arg>

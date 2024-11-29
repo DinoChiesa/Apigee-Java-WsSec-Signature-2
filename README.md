@@ -53,10 +53,21 @@ This code is open source but you don't need to compile it in order to use it.
 ## Building
 
 You do not need to build this callout in order to use it. You can build it if
-you wish. To do so, use [Apache Maven](https://maven.apache.org/). You need maven v3.9 at a minimum.
+you wish. To do so, use [Apache Maven](https://maven.apache.org/). To build, you need:
+
+- JDK 8 or JDK 11
+- maven v3.9 at a minimum
+
+To build on JDK 11:
 
 ```
 mvn clean package
+```
+
+To build on JDK 8:
+
+```
+mvn -f pom-java8.xml clean package
 ```
 
 The 'package' goal will copy the jar to the resources/java directory for the
