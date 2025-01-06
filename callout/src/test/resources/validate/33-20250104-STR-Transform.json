@@ -1,0 +1,18 @@
+{
+  "description": "STR-Transform as produced by WSS4J",
+  "input": "33-20250104-STR-Transform.xml",
+  "note": "This should work if we ignore expiry. Three elements are signed: Timestamp, Body, STR.",
+  "enabled": true,
+  "context": {},
+  "properties": {
+    "debug": "true",
+    "soap-version": "soap1.1",
+    "accept-thumbprints": "d370e816393da0fbf120976c8553ba952e89da76",
+    "ignore-expiry": "true",
+    "ignore-certificate-expiry": "true"
+  },
+  "expected": {
+    "success": "true",
+    "valid": "true"
+  }
+}

@@ -1,4 +1,4 @@
-// Copyright 2018-2024 Google LLC
+// Copyright 2018-2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import com.google.apigee.util.TimeResolver;
 import com.google.apigee.util.XmlUtils;
 import com.google.apigee.xml.Constants;
 import com.google.apigee.xml.Namespaces;
+import jakarta.xml.bind.DatatypeConverter;
 import java.security.KeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -45,7 +46,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.naming.InvalidNameException;
-import javax.xml.bind.DatatypeConverter;
 import javax.xml.crypto.KeySelector;
 import javax.xml.crypto.MarshalException;
 import javax.xml.crypto.dsig.XMLSignature;
@@ -531,6 +531,8 @@ public class Validate extends WssecCalloutBase implements Execution {
     //
     // see
     // https://wiki.scn.sap.com/wiki/display/Security/Single+Sign+on+using+SAML+Sender+Vouches+example
+
+    // This marks Ids; Each signed element has a wsu:Id attr.
     Consumer<NodeList> maybeMarkIdAttribute =
         (nl) -> {
           if (nl.getLength() == 1) {
@@ -541,7 +543,6 @@ public class Validate extends WssecCalloutBase implements Execution {
           }
         };
 
-    // mark the Ids signed elements have an Id
     maybeMarkIdAttribute.accept(doc.getElementsByTagNameNS(soapNs, "Body"));
 
     NodeList nl = doc.getElementsByTagNameNS(soapNs, "Header");
@@ -553,6 +554,8 @@ public class Validate extends WssecCalloutBase implements Execution {
         maybeMarkIdAttribute.accept(security.getElementsByTagNameNS(Namespaces.WSU, "Timestamp"));
         maybeMarkIdAttribute.accept(
             security.getElementsByTagNameNS(Namespaces.WSSEC, "SecurityTokenReference"));
+        maybeMarkIdAttribute.accept(
+            security.getElementsByTagNameNS(Namespaces.WSSEC, "BinarySecurityToken"));
       }
 
       // WSA elements

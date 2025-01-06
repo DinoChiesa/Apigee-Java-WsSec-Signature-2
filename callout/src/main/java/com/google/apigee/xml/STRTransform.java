@@ -15,31 +15,34 @@
 package com.google.apigee.xml;
 
 import com.google.apigee.util.XmlUtils;
-import java.io.InputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.security.InvalidAlgorithmParameterException;
+import java.security.MessageDigest;
 import java.security.spec.AlgorithmParameterSpec;
+import java.util.Base64;
 import java.util.Iterator;
 import javax.xml.crypto.Data;
 import javax.xml.crypto.MarshalException;
 import javax.xml.crypto.NodeSetData;
-import javax.xml.crypto.OctetStreamData;
 import javax.xml.crypto.XMLCryptoContext;
 import javax.xml.crypto.XMLStructure;
 import javax.xml.crypto.dom.DOMCryptoContext;
-import javax.xml.crypto.dsig.CanonicalizationMethod;
 import javax.xml.crypto.dsig.TransformException;
 import javax.xml.crypto.dsig.TransformService;
-import javax.xml.crypto.dsig.XMLSignatureFactory;
-import javax.xml.crypto.dsig.spec.C14NMethodParameterSpec;
 import javax.xml.crypto.dsig.spec.TransformParameterSpec;
+import org.apache.xml.security.c14n.Canonicalizer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class STRTransform extends TransformService {
+
+  static {
+    org.apache.xml.security.Init.init();
+  }
 
   private static final Logger logger = LoggerFactory.getLogger(STRTransform.class);
 
@@ -141,69 +144,56 @@ public class STRTransform extends TransformService {
         throw new TransformException("No SecurityTokenReference found");
       }
 
-      // //
-      // // Third and fourth step are performed by dereferenceSTR()
-      // //
-      // Object wsDocInfoObject = xc.getProperty(TRANSFORM_WS_DOC_INFO);
-      // WSDocInfo wsDocInfo = null;
-      // if (wsDocInfoObject instanceof WSDocInfo) {
-      //   wsDocInfo = (WSDocInfo)wsDocInfoObject;
-      // }
-      //
-      // Document doc = str.getOwnerDocument();
-      // Element dereferencedToken =
-      //   STRTransformUtil.dereferenceSTR(doc, secRef, wsDocInfo);
-
       Document doc = str.getOwnerDocument();
       Element reference = XmlUtils.getDirectChildElement(str, "Reference", Namespaces.WSSEC);
       String uri = reference.getAttribute("URI");
+      if (uri == null) {
+        throw new TransformException("Could not find URI on STR/Reference");
+      }
+      logger.debug(String.format("found URI [%s]", uri));
+      System.out.printf("\n** found URI: %s\n", uri);
       Element dereferencedToken = XmlUtils.getReferencedElement(doc, uri);
 
-      if (dereferencedToken != null) {
-        String type = dereferencedToken.getAttributeNS(null, "ValueType");
-        if (Constants.X509_V3_TYPE.equals(type)) {
-          //
-          // Add the WSSE/WSU namespaces to the element for C14n?
-          // This would be necessary only if the generator didn't already include the
-          // namespace on the element, which ... seems like an edge case.
-          //
-          // // XMLUtils.setNamespace(
-          // //                       dereferencedToken, WSConstants.WSSE_NS,
-          // WSConstants.WSSE_PREFIX
-          // //                       );
-          // // XMLUtils.setNamespace(
-          // //                       dereferencedToken, WSConstants.WSU_NS, WSConstants.WSU_PREFIX
-          // //                       );
-        }
+      if (dereferencedToken == null) {
+        throw new TransformException(String.format("Could not de-reference element [%s]", uri));
       }
+
+      System.out.printf("** referenced element:\n%s\n", XmlUtils.asString(dereferencedToken));
+
+      Element sigReference = (Element) (transformElement.getParentNode().getParentNode());
+      Element digestValue =
+          XmlUtils.getDirectChildElement(sigReference, "DigestValue", Namespaces.XMLDSIG);
+      System.out.printf("** expected digest value: %s\n", digestValue.getTextContent());
+
+      // // Make sure we are adding the default namespace if it is necessary to do so.
+      // boolean wantDefaultNs =
+      //     (dereferencedToken.getLocalName().equals("BinarySecurityToken")
+      //         || dereferencedToken.getAttributeNS(null, "EncodingType") != null
+      //         || dereferencedToken.getAttributeNS(null, "ValueType") != null);
 
       //
       // C14n with specified algorithm. According to WSS Specification.
       //
 
-      XMLSignatureFactory fac = XMLSignatureFactory.getInstance("DOM");
-      CanonicalizationMethod canonicalizationMethod =
-          fac.newCanonicalizationMethod(canonAlgo, (C14NMethodParameterSpec) null);
-
-      Data tokenData = new NodeSetDataImpl(dereferencedToken, NodeSetDataImpl.getRootNodeFilter());
-      OctetStreamData transformedData =
-          (OctetStreamData) canonicalizationMethod.transform(tokenData, null);
+      Canonicalizer canonicalizer = Canonicalizer.getInstance(canonAlgo);
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      canonicalizer.canonicalizeSubtree(dereferencedToken, "#default", true, baos);
 
       if (os != null) {
-        logger.debug("transformIt() outputStream is non-null");
-
-        // copy to the output stream
-        byte[] buf = new byte[1024];
-        InputStream source = transformedData.getOctetStream();
-        int length;
-        while ((length = source.read(buf)) > 0) {
-          os.write(buf, 0, length);
-        }
+        byte[] b = baos.toByteArray();
+        os.write(b, 0, b.length);
+        String referredData = new String(b);
+        String sha1Digest =
+            Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA1").digest(b));
+        System.out.printf("\n** transformed (c14n) data:\n%s\n", referredData);
+        System.out.printf("\n** digest of same: %s\n", sha1Digest);
         return null;
       }
 
       logger.debug("transformIt() outputStream is null");
-      return transformedData;
+
+      // return transformedData;
+      return null;
 
     } catch (Exception ex) {
       throw new TransformException(ex);

@@ -1,0 +1,162 @@
+Saturday,  4 January 2025, 05:36
+
+from https://www.w3.org/2008/xmlsec/Drafts/transform-note/Overview-diff.html#WSS-STR-Transform
+
+  The STR Transform [WSS_STRTransform] is a way to sign tokens that are not part
+  of the message. (or, are part of the message, but are referred indirectly.
+
+  In the first case, 
+  Suppose a signature is signed with a X509 certificate, and the KeyInfo
+  contains only the IssuerSerial of the certificate. If the signature includes a
+  Reference to the KeyInfo, it is only signing the IssueSerial of the
+  certificate, not the actual certificate. This is where an STR-Transform comes
+  in - it is a transform that "resolves" token references and replaces them with
+  actual tokens, i.e. it will replace the IssuerSerial with the actual
+  certificate. So if this signature contains an STR-Transform, it will sign the
+  actual certificate even though the actual certificate is not in the message.
+
+  In the second case, indirect reference, there is a ds:Reference that points to
+  a SecurityTokenReference, which itself points to a SAML Assertion, which is in
+  the XML document. Just WHY a signer would want to sign this way, with two
+  hops, is a little unclear to me. Why not have the ds:Reference point directly
+  to the SAML Assertion, which is an XML element in the document after all? But
+  anyway, thank you, over-enthusiastic XML spec writers of the mid-2000's,
+  that's possible in XML DSIG and WSSE. And in fact, the only examples I have
+  that use STR-Transform show this scenario.
+
+  STR-Transform can be viewed as a combination of two transforms, because it
+
+  - at first replaces token references by actual tokens in the nodeset
+  - then canonicalizes this nodeset with the replaced references
+
+
+
+Dino adds:
+
+Correctly validating a signature that uses an STR-Transform requires that the
+validator have access to the original cert, to de-reference it when validating
+the signature.
+
+The one set of examples I have that use STR-Transform, apply them to SAML
+Assertions. They're not external. (See 03-MSDN-example.xml in 
+src/test/resources/validate )
+
+The code I had previously added, to handle the STR-Transforms isn't
+general. It isn't "resolving an external token". It's resolving to a token (SAML
+Assertion in this case) that is present in the XML document. 
+There doesn't seem to be a need to create a signed document this way.  But
+anyway it's possible.  
+
+This means .. the STR-Transform is not very useful. It's not a "general"
+transform that can resolve external tokens. In this case, it's not fulfilling
+the "extra hop" reference to the SAML token. If the signer had done things a
+little more simply, there would be no need for this. 
+
+In any case the validation seems to be correct. But as this repo does not have
+test cases for that scenario, it's not proven.
+
+At this time, Saturday,  4 January 2025, 05:52, 1-14-0-apigee-3 is now
+rejecting the use of the Security provider to perform the STR-Transform.
+
+
+Some open questions then:
+
+- which customers need this?  I suppose few, maybe one. (Probably UHG / Change
+  Healthcare / Optum)
+
+- how hard would it be to implement a validation with STR-Transform _without_
+  using the Java Security Provider model? Maybe too hard. 
+
+- can i produce valid test cases that actually work? Would need a source for
+  Signing with STR-Transform. 
+
+
+Xsueh-hung says he may be able to modify the permissions to allow this
+particular kind of provider. That may be the easiest way to go. And low risk. 
+
+But we still would need test cases.
+
+In the meantime, the interim approach is to remove the STR-Transform code from
+the callout.
+
+Which I have done in branch remove-str-transform
+
+
+
+There is code that manually
+handles the STR-Transform , here:
+
+https://github.com/damianskolasa/wss4j-ecc/blob/master/src/main/java/org/apache/ws/security/processor/SignatureProcessor.java#L539
+
+
+
+I can't believe it, but I might have another go.
+
+OK I made some progress here.
+
+The xml-exc-c14n process, as implemented in xml-sec (or apache santuario)
+inserts the empty namespace declaration into the element.
+(newlines inserted for readability)
+
+<wsse:BinarySecurityToken
+  xmlns=""
+  xmlns:wsse="http://docs.oasis-open.org/wss/..."
+  xmlns:wsu="http://docs.oasis-open.org/wss/200..."
+  EncodingType="http:....#Base64Binary"
+  ValueType="http://d....#X509v3"
+  wsu:Id="X509-b47ed374-14d0-4705-935d-a94c8ef32e58">...
+
+
+This is what was causing the digests to not match. 
+I did not understand how STR-Transform was working - the digests never worked
+out for me.   Now I see why - there were xmlns="" in the c14n output during
+igning, but not during validation. This caused the digests to not match.
+
+
+I did not understand why c14n would add  xmlns="", but just re-read the spec.
+It's not absolutely clear, but it seems that xml-exc-c14n will include the default
+namespace ("") if an element or an attribute in the nodeset "visibly uses" the
+default namespace.  Since the BinarySecurityToken uses EncodingType and
+ValueType, both of which are unqualified, that indicates the default
+namespace. So must include xmlns="" in the c14n version. 
+
+
+By The Way, https://www.w3.org/TR/xml-c14n11/ is C14n v1.1, which is  later than
+the final https://www.w3.org/TR/xml-exc-c14n , from 2002.  But signed documents
+usually use xml-exc-c14n  . 
+
+
+OK, given this knowledge, how would I go about ....modifying the
+wssec-signature-2 callout, to get validation of signatures on documents that use
+STR-Transform, to actually work?
+
+I was able to do this in 2 ways:
+
+- one, is a super hack. I run the canonicalizer, transform the result into a
+  string, MANUALLY inject a xmlns="" into the element, and then return THAT.
+  This is really ugly.
+
+- 2nd option.  Invoke the org.apache.xml.security.c14n.Canonicalizer directly.
+  This ensure that we use the correct C14n implementation from Apache. call
+  canonicalizeSubtree with the magic incantation that tells c14n to include the
+  default namespace. This introduces a new explicit dependency on santuario .
+  In TESTS, this works. Not sure this will work in Apigee runtime.
+  
+The obstacles that remain
+- The changes to 1-14-0-apigee-3 prevent registration of a "Provider" for this
+  purpose.  So I'd need to do that somehow "outside" the realm of a security
+  provider.  Or get Hseuh-Hung to allow this kind of provider.
+
+- Not sure the xml-sec Init() is going to be acceptable in Apigee. 
+  Looking at the code there, there is some cause for hope. 
+  Haven't tried it.
+
+
+Look in 
+/ssh:cloudtop:/usr/local/google/home/dchiesa/newdev/java/wss4j-example
+
+for a reliable way of producing a SOAP message with
+STR-Transform, not in the general sense, but only in the case where the STR
+referred to a BinarySecurityToken within the same XML document. This is the
+case I saw on the Apigee community site in 2021.
+
