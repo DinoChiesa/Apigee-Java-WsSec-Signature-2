@@ -1,4 +1,4 @@
-// Copyright 2018-2024 Google LLC
+// Copyright © 2018-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import com.google.apigee.util.TimeResolver;
 import com.google.apigee.util.XmlUtils;
 import com.google.apigee.xml.Constants;
 import com.google.apigee.xml.Namespaces;
+import jakarta.xml.bind.DatatypeConverter;
 import java.security.KeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -45,7 +46,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.naming.InvalidNameException;
-import javax.xml.bind.DatatypeConverter;
 import javax.xml.crypto.KeySelector;
 import javax.xml.crypto.MarshalException;
 import javax.xml.crypto.dsig.XMLSignature;
@@ -147,6 +147,13 @@ public class Validate extends WssecCalloutBase implements Execution {
 
     logger.debug("issuerNameMatch() assertedIssuerName {}", assertedIssuerName);
     logger.debug("issuerNameMatch() rndsOnCert {}", issuerOnCertFullDN);
+
+    // shortcut string comparison
+    if (assertedIssuerName.equals(issuerOnCertFullDN)) {
+      return true;
+    }
+
+    // CN style
     if (nameStyle == IssuerNameStyle.CN
         || (nameStyle == IssuerNameStyle.NOT_SPECIFIED && !assertedIssuerName.contains(","))) {
       logger.debug("issuerNameMatch() CN comparison");
@@ -726,6 +733,9 @@ public class Validate extends WssecCalloutBase implements Execution {
         }
         KeySelector ks = KeySelector.singletonKeySelector(sourcedCert.certificate.getPublicKey());
         DOMValidateContext vc = new DOMValidateContext(ks, signatureElement);
+        // Explicitly set secure validation to FALSE, to allow SHA-1 to be used in some cases.
+        vc.setProperty("org.jcp.xml.dsig.secureValidation", Boolean.FALSE);
+
         XMLSignature signature = signatureFactory.unmarshalXMLSignature(vc);
         isValid = signature.validate(vc);
         logger.debug("validate_RSA() signature is valid? {}", isValid);

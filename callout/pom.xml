@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.google.apigee.callouts</groupId>
   <artifactId>apigee-wssecdsig</artifactId>
-  <version>20241129</version>
+  <version>20260209</version>
   <name>ApigeeJavaWssecSignature</name>
   <url>http://maven.apache.org</url>
   <packaging>jar</packaging>
@@ -15,7 +15,7 @@
     <jdk.target.version>11</jdk.target.version>
     <slf4j.version>1.7.14</slf4j.version>
     <testng.version>6.8.7</testng.version>
-    <bouncycastle.version>[1.66,)</bouncycastle.version>
+    <bouncycastle.version>[1.70,)</bouncycastle.version>
     <jackson.version>[2.9.10.1,)</jackson.version>
     <jmockit.version>1.55.0</jmockit.version>
     <apiproxy.java.rsrc.dir>../bundle/apiproxy/resources/java</apiproxy.java.rsrc.dir>
@@ -30,6 +30,7 @@
 
   <dependencies>
 
+<!--
     <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcprov-jdk15on</artifactId>
@@ -40,6 +41,20 @@
       <artifactId>bcpkix-jdk15on</artifactId>
       <version>${bouncycastle.version}</version>
     </dependency>
+-->
+
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bc-fips</artifactId>
+      <version>2.1.2</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcpkix-fips</artifactId>
+      <version>2.1.10</version>
+    </dependency>
+
     <dependency>
       <groupId>com.apigee.gateway.libraries</groupId>
       <artifactId>message-flow</artifactId>
@@ -53,6 +68,18 @@
       <version>1.0.0</version>
       <scope>provided</scope>
       <type>jar</type>
+    </dependency>
+
+    <dependency>
+      <groupId>jakarta.xml.bind</groupId>
+      <artifactId>jakarta.xml.bind-api</artifactId>
+      <version>4.0.2</version>
+    </dependency>
+    <dependency>
+      <groupId>com.sun.xml.bind</groupId>
+      <artifactId>jaxb-impl</artifactId>
+      <version>2.3.3</version>
+      <scope>runtime</scope>
     </dependency>
 
     <dependency>
@@ -227,6 +254,11 @@
           <systemPropertyVariables>
             <org.slf4j.simpleLogger.defaultLogLevel>DEBUG</org.slf4j.simpleLogger.defaultLogLevel>
             <org.slf4j.simpleLogger.showDateTime>true</org.slf4j.simpleLogger.showDateTime>
+
+            <!-- allow SHA-1 in Java17 and later -->
+            <org.jcp.xml.dsig.secureValidation>false</org.jcp.xml.dsig.secureValidation>
+
+
             <!--
                 to use slf4j-jdk14
 

@@ -1,4 +1,4 @@
-// Copyright 2018-2024 Google LLC
+// Copyright © 2018-2024,2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -615,7 +615,7 @@ public class Sign extends WssecCalloutBase implements Execution {
             "Didn't find OpenSSL key. Found: " + o.getClass().getName());
       }
 
-      JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
+      JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BCFIPS");
 
       if (o instanceof PEMKeyPair) {
         // eg, "openssl genrsa -out keypair-rsa-2048-unencrypted.pem 2048"
@@ -644,7 +644,9 @@ public class Sign extends WssecCalloutBase implements Execution {
       if (o instanceof PEMEncryptedKeyPair) {
         // eg, "openssl genrsa -aes256 -out private-encrypted-aes-256-cbc.pem 2048"
         PEMDecryptorProvider decProv =
-            new JcePEMDecryptorProviderBuilder().setProvider("BC").build(password.toCharArray());
+            new JcePEMDecryptorProviderBuilder()
+                .setProvider("BCFIPS")
+                .build(password.toCharArray());
         KeyPair keyPair = converter.getKeyPair(((PEMEncryptedKeyPair) o).decryptKeyPair(decProv));
         return (RSAPrivateKey) keyPair.getPrivate();
       }

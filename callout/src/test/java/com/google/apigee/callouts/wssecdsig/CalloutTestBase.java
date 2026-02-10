@@ -1,4 +1,4 @@
-// Copyright © 2018-2023 Google LLC.
+// Copyright © 2018-2023,2026 Google LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,7 +31,9 @@ public abstract class CalloutTestBase {
   InputStream messageContentStream;
 
   static {
-    java.security.Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
+    // java.security.Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
+    java.security.Security.addProvider(
+        new org.bouncycastle.jcajce.provider.BouncyCastleFipsProvider());
   }
 
   static final String simpleSoap11 =

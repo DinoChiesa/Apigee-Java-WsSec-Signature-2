@@ -1,4 +1,4 @@
-// Copyright 2018-2021 Google LLC
+// Copyright © 2018-2021,2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.google.apigee.callouts.wssecdsig;
 import com.apigee.flow.message.MessageContext;
 import com.google.apigee.util.XmlUtils;
 import com.google.apigee.xml.Constants;
+import jakarta.xml.bind.DatatypeConverter;
 import java.io.ByteArrayInputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -40,7 +41,6 @@ import java.util.stream.Collectors;
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
-import javax.xml.bind.DatatypeConverter;
 import javax.xml.crypto.dsig.DigestMethod;
 import org.w3c.dom.Document;
 
@@ -49,6 +49,7 @@ public abstract class WssecCalloutBase {
     try {
       initSTRTransform();
     } catch (Exception e) {
+      System.out.printf("Error during initialization: " + e);
       throw new ExceptionInInitializerError(e);
     }
   }
@@ -279,7 +280,7 @@ public abstract class WssecCalloutBase {
 
   protected static Certificate certificateFromPEM(String certificateString) throws KeyException {
     try {
-      CertificateFactory certFactory = CertificateFactory.getInstance("X.509", "BC");
+      CertificateFactory certFactory = CertificateFactory.getInstance("X.509", "BCFIPS");
       certificateString = reformIndents(certificateString);
       Certificate certificate =
           certFactory.generateCertificate(
